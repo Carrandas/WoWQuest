@@ -142,7 +142,7 @@ button:disabled { cursor: not-allowed; }
 .log .ding span { font-family: var(--display); font-size: 20px; color: var(--gold); }
 .log .quest span { color: #ffe680; }
 .log .spell span { color: #8fd0ff; }
-.log .loot2 span { color: var(--uncommon); } .log .loot3 span { color: var(--rare); } .log .loot4 span { color: var(--epic); }
+.log .loot2 span { color: var(--uncommon); } .log .loot3 span { color: var(--rare); } .log .loot4 span { color: var(--epic); } .log .loot5 span { color: var(--legend); font-weight: 700; }
 .log .dung span { color: #ff9a5c; font-weight: 700; }
 .log .boss span { color: #ffb07a; }
 .log .zone span { color: var(--good); font-weight: 700; }
@@ -360,12 +360,14 @@ const TIERS = {
 const MYSTIC = /Wand|Orb|Tome|Focus|Skull|Libram|Totem|Idol|Staff/;
 const JEWEL = { Neck: ["Pendant", "Choker", "Necklace"], Finger: ["Band", "Ring", "Signet"], Trinket: ["Talisman", "Charm", "Medallion"], Back: ["Cloak", "Cape", "Shroud"] };
 const QMULT = [0.5, 0.85, 1, 1.18, 1.4, 1.7];
+// dungeon set, tier 1 (Molten Core), tier 2 (Blackwing Lair), tier 2.5 (Ahn'Qiraj), tier 3 (Naxxramas)
 const SETS = {
-  Warrior: ["Valor", "Battlegear of Might", "Battlegear of Wrath"], Paladin: ["Lightforge", "Lawbringer", "Judgement"],
-  Hunter: ["Beaststalker", "Giantstalker", "Dragonstalker"], Rogue: ["Shadowcraft", "Nightslayer", "Bloodfang"],
-  Priest: ["Devout", "Vestments of Prophecy", "Vestments of Transcendence"], Shaman: ["The Elements", "The Earthfury", "The Ten Storms"],
-  Mage: ["Magister's", "Arcanist", "Netherwind"], Warlock: ["Dreadmist", "Felheart", "Nemesis"], Druid: ["Wildheart", "Cenarion", "Stormrage"],
+  Warrior: ["Valor", "Battlegear of Might", "Battlegear of Wrath", "Conqueror's", "Dreadnaught"], Paladin: ["Lightforge", "Lawbringer", "Judgement", "Avenger's", "Redemption"],
+  Hunter: ["Beaststalker", "Giantstalker", "Dragonstalker", "Striker's", "Cryptstalker"], Rogue: ["Shadowcraft", "Nightslayer", "Bloodfang", "Deathdealer's", "Bonescythe"],
+  Priest: ["Devout", "Vestments of Prophecy", "Vestments of Transcendence", "Oracle", "Faith"], Shaman: ["The Elements", "The Earthfury", "The Ten Storms", "Stormcaller's", "Earthshatter"],
+  Mage: ["Magister's", "Arcanist", "Netherwind", "Enigma", "Frostfire"], Warlock: ["Dreadmist", "Felheart", "Nemesis", "Doomcaller's", "Plagueheart"], Druid: ["Wildheart", "Cenarion", "Stormrage", "Genesis", "Dreamwalker"],
 };
+const TIER_NAME = ["dungeon set", "Tier 1", "Tier 2", "Tier 2.5", "Tier 3"];
 const SETSHORT = { "Battlegear of Might": "Might", "Battlegear of Wrath": "Wrath", "Vestments of Prophecy": "Prophecy", "Vestments of Transcendence": "Transcendence", "The Elements": "Elements", "The Earthfury": "Earthfury", "The Ten Storms": "Ten Storms" };
 const FOOD = ["Tough Jerky", "Haunch of Meat", "Mutton Chop", "Wild Hog Shank", "Cured Ham Steak", "Roasted Quail"];
 const DRINK = ["Refreshing Spring Water", "Ice Cold Milk", "Melon Juice", "Sweet Nectar", "Moonberry Juice", "Morning Glory Dew"];
@@ -465,9 +467,30 @@ const DUNGEONS = [
   ["Stratholme", 58, 60, "B", "Strat", "Crimson Defender,Thuzadin Necromancer,Skeletal Berserker,Bile Spewer", "The Unforgiven,Timmy the Cruel,Malor the Zealous,Balnazzar,Baroness Anastari,Nerub'enkan,Maleki the Pallid,Magistrate Barthilas,Ramstein the Gorger,Baron Rivendare", "Runeblade of Baron Rivendare|m,Deathcharger's Reins,Hammer of the Grand Crusader|m,Timmy's Galoshes|m,Crimson Hammersmith's Apron|m,Skull of Burning Shadows|c"],
 ];
 const RAIDS = [
-  ["Onyxia's Lair", 60, 60, "B", "Ony", "Onyxian Warder,Onyxian Whelp", "Onyxia", "Deathbringer|m,Vis'kag the Bloodletter|m,Ring of Binding,Onyxia Hide Backpack,Head of Onyxia,Sapphiron Drape|c"],
-  ["Molten Core", 60, 60, "B", "MC", "Molten Giant,Firelord,Core Hound,Lava Surger,Flamewaker Elite", "Lucifron,Magmadar,Gehennas,Garr,Shazzrah,Baron Geddon,Golemagg the Incinerator,Sulfuron Harbinger,Majordomo Executus,Ragnaros", "Bindings of the Windseeker,Eye of Sulfuras|m,Band of Accuria|m,Perdition's Blade|m,Choker of the Fire Lord|c,Striker's Mark|m,Talisman of Ephemeral Power|c,Onslaught Girdle|m,Crimson Shocker|c,Azuresong Mageblade|c,Medallion of Steadfast Might|m"],
+  ["Molten Core", 60, 60, "B", "MC", "Molten Giant,Firelord,Core Hound,Lava Surger,Flamewaker Elite", "Lucifron,Magmadar,Gehennas,Garr,Shazzrah,Baron Geddon,Golemagg the Incinerator,Sulfuron Harbinger,Majordomo Executus,Ragnaros", "Bindings of the Windseeker|m,Eye of Sulfuras|m,Band of Accuria|m,Perdition's Blade|m,Choker of the Fire Lord|c,Striker's Mark|m,Talisman of Ephemeral Power|c,Onslaught Girdle|m,Crimson Shocker|c,Azuresong Mageblade|c,Medallion of Steadfast Might|m"],
+  ["Onyxia's Lair", 60, 60, "B", "Ony", "Onyxian Warder,Onyxian Whelp", "Onyxia", "Deathbringer|m,Vis'kag the Bloodletter|m,Ring of Binding,Onyxia Hide Backpack,Sapphiron Drape|c"],
+  ["Blackwing Lair", 60, 60, "B", "BWL", "Blackwing Legionnaire,Death Talon Wyrmguard,Blackwing Technician,Death Talon Overseer,Blackwing Mage", "Razorgore the Untamed,Vaelastrasz the Corrupt,Broodlord Lashlayer,Firemaw,Ebonroc,Flamegor,Chromaggus,Nefarian", "Ashkandi|m,Chromatically Tempered Sword|m,Crul'shorukh|m,Maladath|m,Staff of the Shadow Flame|c,Lok'amir il Romathis|c,Neltharion's Tear|c,Rejuvenating Gem|c,Drake Fang Talisman|m,Elementium Threaded Cloak,Shroud of Pure Thought|c,Taut Dragonhide Belt|m,Black Brood Pauldrons|m,Helm of Endless Rage|m"],
+  ["Zul'Gurub", 60, 60, "B", "ZG", "Gurubashi Berserker,Hakkari Priest,Zulian Tiger,Razzashi Serpent,Gurubashi Axe Thrower", "High Priestess Jeklik,High Priest Venoxis,High Priestess Mar'li,Bloodlord Mandokir,High Priest Thekal,High Priestess Arlokk,Jin'do the Hexxer,Hakkar", "Zin'rokh|m,Warblade of the Hakkari|m,Fang of the Faceless|m,Jin'do's Judgement|c,Animist's Leggings|c,Blooddrenched Mask|m,Zandalarian Hero Charm|c,Zandalarian Hero Medallion|m,Bloodsoaked Pauldrons|m,Mar'li's Touch|c"],
+  ["Ruins of Ahn'Qiraj", 60, 60, "B", "AQ20", "Anubisath Guardian,Qiraji Swarmguard,Hive'Zara Soldier,Flesh Hunter", "Kurinnaxx,General Rajaxx,Moam,Buru the Gorger,Ayamiss the Hunter,Ossirian the Unscarred", "Qiraji Sacrificial Dagger|m,Toughened Silithid Hide Gloves|m,Manslayer of the Qiraji|m,Eye of Moam|c,Stinger of Ayamiss|m,Crossbow of Imminent Doom|m,Sand Polished Hammer|m,Staff of the Ruins|c,Mantle of Maz'Nadir|c,Vestments of the Shifting Sands|c"],
+  ["Temple of Ahn'Qiraj", 60, 60, "B", "AQ40", "Anubisath Defender,Qiraji Champion,Obsidian Eradicator,Vekniss Warrior,Qiraji Brainwasher", "The Prophet Skeram,Bug Trio,Battleguard Sartura,Fankriss the Unyielding,Viscidus,Princess Huhuran,Emperor Vek'lor and Emperor Vek'nilash,Ouro,C'Thun", "Hammer of Ji'zhi|c,Ancient Qiraji Ripper|m,Gloves of Enforcement|m,Wand of Qiraji Nobility|c,Ring of Emperor Vek'lor|c,Vek'nilash's Circlet|m,Burrower Bracers|c,Death's Sting|m,Dark Edge of Insanity|m,Cloak of the Devoured|c"],
+  ["Naxxramas", 60, 60, "B", "Naxx", "Deathknight Captain,Necro Knight,Plagued Gargoyle,Living Monstrosity,Stoneskin Gargoyle", "Anub'Rekhan,Grand Widow Faerlina,Maexxna,Noth the Plaguebringer,Heigan the Unclean,Loatheb,Instructor Razuvious,Gothik the Harvester,The Four Horsemen,Patchwerk,Grobbulus,Gluth,Thaddius,Sapphiron,Kel'Thuzad", "Wraith Blade|c,Widow's Remorse|m,Hatchet of Sundered Bone|m,Might of Menethil|m,Kingsfall|m,Soulseeker|c,Hammer of the Twisting Nether|c,Cloak of the Necropolis|c,Shroud of Dominion|m,The Hungering Cold|m"],
 ];
+// size, gear score needed, wipe chance per boss, tier dropped, item levels, final boss
+const RAID_INFO = {
+  "Molten Core": { size: 40, gs: 62, lock: 7, need: null, wipe: 0.12, set: 1, ilvl: [66, 72], last: "Ragnaros" },
+  "Onyxia's Lair": { size: 40, gs: 62, lock: 5, need: null, wipe: 0.12, set: 2, ilvl: [70, 75], last: "Onyxia" },
+  "Blackwing Lair": { size: 40, gs: 78, lock: 7, need: "Molten Core", wipe: 0.14, set: 2, ilvl: [71, 77], last: "Nefarian" },
+  "Zul'Gurub": { size: 20, gs: 64, lock: 3, need: null, wipe: 0.1, set: null, ilvl: [65, 71], last: "Hakkar" },
+  "Ruins of Ahn'Qiraj": { size: 20, gs: 72, lock: 3, need: "Zul'Gurub", wipe: 0.1, set: null, ilvl: [67, 72], last: "Ossirian the Unscarred" },
+  "Temple of Ahn'Qiraj": { size: 40, gs: 94, lock: 7, need: "Blackwing Lair", wipe: 0.16, set: 3, ilvl: [75, 81], last: "C'Thun" },
+  "Naxxramas": { size: 40, gs: 102, lock: 7, need: "Temple of Ahn'Qiraj", wipe: 0.18, set: 4, ilvl: [80, 90], last: "Kel'Thuzad" },
+};
+const SET_ILVL = [60, 66, 76, 78, 86];
+const SET_SLOTS = [["Head", "Shoulder", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet"], null, null, ["Head", "Shoulder", "Chest", "Legs", "Feet"], null];
+const LEGENDARY = {
+  "Bindings of the Windseeker": { name: "Thunderfury, Blessed Blade of the Windseeker", parts: 2 },
+  "Eye of Sulfuras": { name: "Sulfuras, Hand of Ragnaros", parts: 1 },
+};
 for (const d of DUNGEONS.concat(RAIDS)) d[7] = d[7].split(",");
 
 // ---------- tuning ----------
@@ -530,17 +553,17 @@ function makeItem(slot, ilvl, q) {
   return { name, ilvl, q, slot };
 }
 const SLOT_WORDS = [
-  [/Bow|Gun|Rifle|Crossbow|Wand|Twitchbow|Shortbow|Libram|Idol|Totem/, "Ranged"], [/Buckler|Shield|Deflector|Guardian|Aegis/, "Off Hand"],
+  [/Bow\b|Gun\b|Rifle|Striker.s Mark|Crossbow|Wand\b|Twitchbow|Shortbow|Libram|Idol|Totem/, "Ranged"], [/Buckler|Shield|Deflector|Guardian|Aegis/, "Off Hand"],
   [/Cape|Cloak|Shroud|Drape|Hide$/, "Back"], [/Shoulder|Pauldrons|Mantle|Spaulders/, "Shoulder"], [/Leggings|Legguards|Dungarees|Legplates|Pants/, "Legs"],
   [/Belt|Girdle|Sash|Waistband/, "Waist"], [/Bracers|Bindings|Shackles|Bracelets|Cuffs/, "Wrist"], [/Gloves|Gauntlets|Fists|Knuckles|Handguards/, "Hands"],
-  [/Boots|Ankleguards|Galoshes|Sabatons|Footpads|Treads/, "Feet"], [/Helm|Hood|Chapeau|Cap$|Crown|Barbute|Mask|Head of/, "Head"],
-  [/Armor|Robe|Overshirt|Breastplate|Tunic|Chain|Hauberk|Apron|Vest/, "Chest"], [/Ring|Band|Seal|Loop/, "Finger"],
+  [/Boots|Ankleguards|Galoshes|Sabatons|Footpads|Treads/, "Feet"], [/Helm|Hood|Chapeau|Cap$|Crown|Barbute|Mask|Circlet|Head of/, "Head"],
+  [/Armor|Robe|Overshirt|Breastplate|Tunic|Chain|Hauberk|Apron|Vest/, "Chest"], [/Ring\b|Band\b|Seal\b|Loop\b/, "Finger"],
   [/Amulet|Necklace|Choker|Pendant|Collar|Medallion|Heart|Diamond/, "Neck"],
-  [/Talisman|Charm|Carrot|Reins|Caller|Eye of Sulfuras|Stone|Shard|Skull|Backpack|Grimoire/, "Trinket"],
+  [/Talisman|Charm|Carrot|Reins|Caller|Stone|Shard|Skull|Backpack|Grimoire|Tear$|Gem$|Eye of Moam/, "Trinket"],
 ];
 function namedSlot(n) { for (const [re, s] of SLOT_WORDS) if (re.test(n)) return s; return "Main Hand"; }
-function setPiece(tier, ilvl) {
-  const slots = ["Head", "Shoulder", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet"], slot = pick(slots), set = SETS[S.cls][tier];
+function setPiece(tier, ilvl, slot) {
+  slot = slot || pick(SET_SLOTS[tier] || SET_SLOTS[0]); const set = SETS[S.cls][tier];
   return { name: (SETSHORT[set] || set) + " " + ARMOR_BASE[armorType()][slot], ilvl, q: tier ? 4 : 3, slot, set: tier };
 }
 // equip if better, otherwise into the bags as something to sell
@@ -548,7 +571,7 @@ function gain(it, how) {
   const cur = S.equip[it.slot];
   if (power(it) > power(cur)) {
     S.equip[it.slot] = it;
-    log(`${how} ${it.name} (item level ${it.ilvl}). Equipped.`, "loot" + Math.min(4, Math.max(2, it.q)));
+    log(`${how} ${it.name} (item level ${it.ilvl}). Equipped.`, "loot" + Math.min(5, Math.max(2, it.q)));
     if (cur && cur.q >= 1) addBag({ name: cur.name, val: Math.round(cur.ilvl * cur.ilvl * 2 * QMULT[cur.q]), q: cur.q });
     return true;
   }
@@ -706,6 +729,8 @@ let simClock = null;                       // wall clock while catching up on of
 const realNow = () => simClock ?? Date.now();
 const stamp = () => ({ at: realNow(), p: S.time, L: S.level });
 const eq = f => SLOTS.some(s => S.equip[s] && f(S.equip[s]));
+const full = f => SLOTS.every(s => S.equip[s] && f(S.equip[s]));
+const fullSet = t => (SET_SLOTS[t] || SET_SLOTS[0]).every(s => S.equip[s] && S.equip[s].set >= t);
 const onRoute = z => route().some(l => l.z === z);
 const factionDungeons = () => DUNGEONS.filter(d => d[3] === "B" || d[3] === S.faction[0]);
 const ACH = [
@@ -724,9 +749,16 @@ const ACH = [
   { id: "green", name: "Fine Threads", desc: "Equip your first green item.", test: () => eq(it => it.q >= 2) },
   { id: "blue", name: "Rare Find", desc: "Equip your first blue item.", test: () => eq(it => it.q >= 3) },
   { id: "purple", name: "Epic!", desc: "Equip your first purple item.", test: () => eq(it => it.q >= 4) },
-  { id: "t0", name: "Dressed for Dungeons", desc: "Equip a piece of your dungeon set.", test: () => eq(it => it.set === 0) },
-  { id: "t1", name: "Tier 1", desc: "Equip a Molten Core set piece.", test: () => eq(it => it.set === 1) },
-  { id: "t2", name: "Tier 2", desc: "Equip a Tier 2 set piece.", test: () => eq(it => it.set === 2) },
+  { id: "legend", name: "Legendary!", desc: "Wield a legendary weapon: Thunderfury, Sulfuras or Atiesh.", test: () => eq(it => it.q >= 5) },
+  { id: "fgreen", name: "Head to Toe in Green", desc: "Every slot green or better.", test: () => full(it => it.q >= 2) },
+  { id: "fblue", name: "Blue Steel", desc: "Every slot blue or better.", test: () => full(it => it.q >= 3) },
+  { id: "fepic", name: "Purple Reign", desc: "Every slot epic or better.", test: () => full(it => it.q >= 4) },
+  { id: "t0", name: "Dressed for Dungeons", desc: "Equip a piece of your dungeon set.", test: () => eq(it => it.set >= 0) },
+  { id: "ft0", name: "Full Dungeon Set", desc: "Wear all eight pieces of your dungeon set (or better tier pieces).", test: () => fullSet(0) },
+  ...[1, 2, 3, 4].flatMap(t => [
+    { id: "t" + t, name: TIER_NAME[t], desc: `Equip a ${TIER_NAME[t]} piece (${["", "Molten Core", "Blackwing Lair", "Temple of Ahn'Qiraj", "Naxxramas"][t]}).`, test: () => eq(it => it.set >= t) },
+    { id: "ft" + t, name: "Full " + TIER_NAME[t], desc: `Wear every ${TIER_NAME[t]} slot (${(SET_SLOTS[t] || SET_SLOTS[0]).length} pieces), or better tier pieces.`, test: () => fullSet(t) },
+  ]),
   { id: "bags", name: "Four Bags", desc: "Fill all four bag slots.", test: () => S.bagSlots.length >= 4 },
   { id: "mount", name: "Giddy Up!", desc: "Get your first mount.", test: () => S.mount >= 1 },
   { id: "epic", name: "Epic Steed", desc: "Ride an epic mount.", test: () => S.mount >= 2 },
@@ -741,8 +773,8 @@ const ACH = [
   { id: "d1", name: "Dungeon Delver", desc: "Clear your first dungeon.", test: () => S.dungeons.length >= 1 },
   { id: "d10", name: "Seasoned Adventurer", desc: "Clear 10 different dungeons.", test: () => S.dungeons.filter(n => !RAIDS.some(r => r[0] === n)).length >= 10 },
   { id: "dall", name: "Dungeon Master", desc: "Clear every dungeon open to your faction.", test: () => factionDungeons().every(d => S.dungeons.includes(d[0])) },
-  { id: "ony", name: "Onyxia's Lair", desc: "Defeat Onyxia.", test: () => S.dungeons.includes("Onyxia's Lair") },
-  { id: "mc", name: "Molten Core", desc: "Defeat Ragnaros in Molten Core.", test: () => S.dungeons.includes("Molten Core") },
+  ...RAIDS.map(r => ({ id: "raid-" + r[4], name: r[0], desc: `Defeat ${RAID_INFO[r[0]].last} (${RAID_INFO[r[0]].size}-man raid).`, test: () => S.dungeons.includes(r[0]) })),
+  { id: "raidall", name: "Raider", desc: "Clear every raid, from Molten Core to Naxxramas.", test: () => RAIDS.every(r => S.dungeons.includes(r[0])) },
 ];
 function checkAch(quiet) {
   for (const a of ACH) {
@@ -879,10 +911,14 @@ function queueCity() {
   q.push({ k: "choose", d: `Studying the map for the next adventure`, t: sec(6) });
 }
 
+// a raid is open when the previous tier is cleared, your gear is ready and you are not saved to it
+const raidLocked = n => S.lock && S.lock[n] && S.time - S.lock[n] < RAID_INFO[n].lock * 86400000;
+const raidOpen = r => { const i = RAID_INFO[r[0]]; return gearScore() >= i.gs && (!i.need || S.dungeons.includes(i.need)) && !raidLocked(r[0]); };
 function pickDungeon() {
   const ok = d => d[3] === "B" || d[3] === S.faction[0];
   if (S.level >= 60) {
-    if (gearScore() >= 62 && Math.random() < 0.4) return pick(RAIDS);
+    const open = RAIDS.filter(raidOpen);
+    if (open.length && Math.random() < 0.7) return Math.random() < 0.7 ? open[open.length - 1] : pick(open);
     return pick(DUNGEONS.filter(d => d[1] >= 52 && ok(d)));
   }
   return DUNGEONS.find(d => ok(d) && !S.dungeons.includes(d[0]) && S.level >= d[1] && S.level <= d[1] + 6);
@@ -891,7 +927,7 @@ function queueDungeon(d) {
   const q = S.queue, raid = RAIDS.includes(d), bosses = d[6].split(","), trash = d[5].split(",");
   const chat = pick([`LFM ${d[4]}, need heals`, `LF1M ${d[4]}, have summon`, `LFG ${d[4]}, ${S.cls.toLowerCase()} lvl ${S.level}`, `LF tank for ${d[4]} then GO`, `${d[4]} run, LF2M, PST`]);
   S.dg = { name: d[0], killed: 0, total: bosses.length, raid };
-  q.push({ k: "lfg", d: raid ? `Waiting on the raid invite for ${d[0]}` : `Looking for group: "${chat}"`, t: sec(raid ? 120 : 60 + R(120)), chat: raid ? `[Raid] ${d[4]} invites going out, 40 man, be on time!` : chat, dn: d[0] });
+  q.push({ k: "lfg", d: raid ? `Waiting on the raid invite for ${d[0]}` : `Looking for group: "${chat}"`, t: sec(raid ? 120 : 60 + R(120)), chat: raid ? `[Raid] ${d[4]} invites going out, ${RAID_INFO[d[0]].size} man, be on time!` : chat, dn: d[0] });
   q.push({ k: "dtravel", d: `Traveling to ${d[0]} with the group`, t: sec(raid ? 180 : 120), dn: d[0] });
   q.push({ k: "dbuff", d: raid ? "Buffing up and drinking a flask at the instance portal" : "Buffing up at the instance entrance", t: sec(8), raid });
   bosses.forEach(b => {
@@ -918,14 +954,47 @@ function lootDrop(dn, boss) {
   const owner = x => d[6].split(",").find(b => keys(b).some(w => x.replace(/'s?\b/g, "").includes(w)));
   const mine = fits.filter(x => owner(x) === boss), free = fits.filter(x => !owner(x));
   const pool = mine.length && Math.random() < 0.7 ? mine : free.length ? free : mine;
+  const ri = RAID_INFO[dn], r = Math.random();
   let it;
-  if (raid && Math.random() < 0.5) it = setPiece(dn === "Molten Core" && boss !== "Ragnaros" ? 1 : 2, dn === "Molten Core" && boss !== "Ragnaros" ? 66 : 76);
-  else if (!raid && d[1] >= 52 && S.level >= 58 && Math.random() < 0.3) it = setPiece(0, 60);
-  else if (pool.length) { const name = pick(pool).split("|")[0]; it = { name, slot: namedSlot(name), ilvl: raid ? 68 + R(8) : Math.round((d[1] + d[2]) / 2) + 3, q: raid ? 4 : 3 }; }
+  if (ri && ri.set != null && r < 0.55) {
+    const pin = boss === "Onyxia" ? "Head" : boss === "Ragnaros" ? "Legs" : null, tier = pin ? 2 : ri.set;
+    it = setPiece(tier, SET_ILVL[tier], pin);
+  } else if (!raid && d[1] >= 52 && S.level >= 58 && r < 0.3) it = setPiece(0, SET_ILVL[0]);
+  else if (r > 0.8) {
+    // a generic piece for the weakest slot, so every slot can reach blue (dungeons) or purple (raids)
+    let slot = SLOTS[0]; SLOTS.forEach(s => { if (power(S.equip[s]) < power(S.equip[slot])) slot = s; });
+    it = makeItem(slot, ri ? ri.ilvl[0] + R(ri.ilvl[1] - ri.ilvl[0] + 1) : Math.round((d[1] + d[2]) / 2) + 3, ri ? 4 : 3);
+  } else if (pool.length) {
+    let name = pick(pool).split("|")[0];
+    const alt = pool.filter(x => !LEGENDARY[x.split("|")[0]]);
+    if (LEGENDARY[name] && alt.length && Math.random() < 0.5) name = pick(alt).split("|")[0];
+    if (LEGENDARY[name]) return legendaryPart(name, boss);
+    const q = ri && ri.size === 20 ? (Math.random() < 0.5 ? 3 : 4) : ri ? 4 : 3;
+    it = { name, slot: namedSlot(name), ilvl: ri ? ri.ilvl[0] + R(ri.ilvl[1] - ri.ilvl[0] + 1) : Math.round((d[1] + d[2]) / 2) + 3, q };
+  }
   if (!it) return;
   log(`${boss} dropped ${it.name}. Rolled Need: ${60 + R(41)}.`, "loot" + it.q);
   const de = dungeonEntry(dn); if (!de.loot.some(x => x.n === it.name)) de.loot.unshift({ n: it.name, q: it.q }); if (de.loot.length > 6) de.loot.length = 6;
   gain(it, "Won");
+}
+
+// legendary pieces: two Bindings make Thunderfury, the Eye of Sulfuras becomes Sulfuras
+function legendaryPart(part, boss) {
+  const L = LEGENDARY[part];
+  log(`${boss} dropped ${part}! The raid hands it to you.`, "loot5");
+  S.parts = S.parts || {}; S.parts[part] = (S.parts[part] || 0) + 1;
+  if (S.parts[part] < L.parts) { log(`That's ${S.parts[part]} of ${L.parts}. One more and something legendary can be made.`, "loot4"); return; }
+  if (S.legendaries && S.legendaries.includes(L.name)) return;
+  S.parts[part] = 0; (S.legendaries = S.legendaries || []).push(L.name);
+  gain({ name: L.name, slot: "Main Hand", ilvl: 80, q: 5 }, "LEGENDARY! Forged");
+}
+// casters may find Atiesh in Naxxramas
+function atiesh() {
+  if (!isCaster() || (S.legendaries || []).includes("Atiesh, Greatstaff of the Guardian")) return;
+  S.parts = S.parts || {}; S.parts.splinter = (S.parts.splinter || 0) + 2 + R(4);
+  if (S.parts.splinter < 40) { log(`Collected Splinters of Atiesh: ${S.parts.splinter} of 40.`, "loot4"); return; }
+  (S.legendaries = S.legendaries || []).push("Atiesh, Greatstaff of the Guardian");
+  gain({ name: "Atiesh, Greatstaff of the Guardian", slot: "Main Hand", ilvl: 90, q: 5 }, "LEGENDARY! Assembled");
 }
 
 function finish(t) {
@@ -1028,7 +1097,7 @@ function finish(t) {
     case "dtravel": S.loc = "dungeon"; log(`Entering ${t.dn}.`, "dung"); break;
     case "trash": if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); break;
     case "boss": {
-      if (Math.random() < (S.dg && S.dg.raid ? 0.12 : 0.06)) {
+      if (Math.random() < (RAID_INFO[t.dn] ? RAID_INFO[t.dn].wipe : 0.06)) {
         S.deaths++; S.repair += S.level * S.level * 5; loseBuffs();
         log(`Wiped on ${t.boss}. Corpse run…`, "death");
         S.queue.unshift({ k: "ghost", d: "Running back through the instance as a ghost", t: sec(60) }, { ...t, el: 0 });
@@ -1038,6 +1107,7 @@ function finish(t) {
       log(`${t.boss} has been defeated.`, "boss");
       gainXp(mobXp(S.level + 2) * 5);
       if (Math.random() < (S.dg && S.dg.raid ? 0.3 : 0.4)) lootDrop(t.dn, t.boss);
+      if (t.dn === "Naxxramas" && Math.random() < 0.1) atiesh();
       break;
     }
     case "buff": applyBuff(t.b); break;
@@ -1049,6 +1119,7 @@ function finish(t) {
       break;
     }
     case "dend": {
+      if (RAID_INFO[t.dn]) (S.lock = S.lock || {})[t.dn] = S.time;
       const de = dungeonEntry(t.dn); de.runs++; if (!de.at) { de.at = realNow(); de.L = S.level; de.p = S.time; }
       if (!S.dungeons.includes(t.dn)) S.dungeons.push(t.dn);
       S.runs = (S.runs || 0) + 1;
@@ -1334,7 +1405,7 @@ function renderJournal() {
   } else {
     h = dl.map(d => { const e = S.dstat[d[0]], raid = RAIDS.includes(d), done = S.dungeons.includes(d[0]) && e;
       const loot = done && e.loot.length ? `<span class="loot">${e.loot.map(x => `<i class="q${x.q}">${esc(x.n)}</i>`).join(", ")}</span>` : "";
-      return `<li class="${done ? "got" : "locked"}"><span class="ico">${done ? "✓" : "·"}</span><div><b>${esc(d[0])}${raid ? " (raid)" : ""}</b><span>${done ? `cleared ${e.runs}× · ${e.old ? "first clear before the journal" : "first at level " + e.L + " on " + fmtDate(e.at)}` : `levels ${d[1]}–${d[2]}`}</span>${loot}</div></li>`; }).join("");
+      return `<li class="${done ? "got" : "locked"}"><span class="ico">${done ? "✓" : "·"}</span><div><b>${esc(d[0])}${raid ? ` (${RAID_INFO[d[0]].size}-man raid)` : ""}</b><span>${done ? `cleared ${e.runs}× · ${e.old ? "first clear before the journal" : "first at level " + e.L + " on " + fmtDate(e.at)}${raid && raidLocked(d[0]) ? ` · saved, resets in ${Math.ceil((RAID_INFO[d[0]].lock * 864e5 - (S.time - S.lock[d[0]])) / 864e5)}d` : ""}` : `levels ${d[1]}–${d[2]}`}</span>${loot}</div></li>`; }).join("");
   }
   $("journal").innerHTML = h;
 }

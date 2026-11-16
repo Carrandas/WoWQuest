@@ -22,7 +22,7 @@ An idle tribute to levelling in classic World of Warcraft. Create a character, t
 3. **Milestones:**
    - Level 10: talent points
    - Level 40: your first mount, and plate or mail for some classes
-   - Level 60: Molten Core, Onyxia, and saving up 1000 gold for an epic mount
+   - Level 60: raiding from Molten Core to Naxxramas, chasing full tier sets, and saving up 1000 gold for an epic mount
 
 Your character keeps playing (at normal speed, for up to 12 hours) while the tab is closed.
 
@@ -30,7 +30,8 @@ Your character keeps playing (at normal speed, for up to 12 hours) while the tab
 
 - 43 classic zones with their quest hubs, monsters and quests, visited in the order of each race's real levelling route
 - Class spells learned at their real trainer levels, with ranks that go up as you level
-- 23 dungeons and 2 raids, with their bosses and signature loot
+- 23 dungeons and 7 raids in release order (Molten Core, Onyxia, Blackwing Lair, Zul'Gurub, both Ahn'Qiraj raids and Naxxramas), with their bosses, signature loot, raid lockouts and Tier 1 to Tier 3 sets
+- Legendaries for the lucky: Thunderfury, Sulfuras and Atiesh
 - Class buffs (Arcane Intellect, Power Word: Fortitude, auras, poisons and sharpening stones) plus potions, elixirs and raid flasks bought in the capital
 - Achievements, a zone-by-zone journal and a dungeon journal with the loot you won, each with the date it happened
 - Gear by item level and quality (grey, white, green, blue and purple), plus dungeon and tier sets
