@@ -763,6 +763,7 @@ const rationPrice = () => Math.round(5 + S.level * S.level * 0.15);
 // current health / mana (fractions, display only): fights drain, rests and walking refill
 const FIGHTS = ["kill", "trash", "boss"];
 function vitalEnd(t) {
+  const f = partyFight(t); if (f && f.hero) return [f.hero.end, f.hero.mpEnd];
   if (t.ve) return t.ve;
   const hp = S.hpF ?? 1, mp = S.mpF ?? 1, r = (a, b) => a + Math.random() * (b - a), lo = x => Math.max(0.04, x), up = x => Math.min(1, x);
   let e;
@@ -783,7 +784,7 @@ function poolProgress(t) {
 }
 function vitalsNow() {
   const t = S.task; let hp = S.hpF ?? 1, mp = S.mpF ?? 1;
-  if (t) { const p = poolProgress(t), e = vitalEnd(t); hp += (e[0] - hp) * p; mp += (e[1] - mp) * p; }
+  if (t) { const p = poolProgress(t), e = vitalEnd(t), f = partyFight(t); hp = f && f.hero ? hpAt(f.hero, Math.min(1, t.el / t.t)) : hp + (e[0] - hp) * p; mp += (e[1] - mp) * p; }
   return [hp, mp];
 }
 // rage builds during a fight and fades after; energy dips and ticks back
@@ -990,7 +991,7 @@ function knowsAt(c, L, spec) {
 }
 // as many casts as a normal fight of the same length would have
 const castCount = (base, L = S.level) => Math.max(4, Math.round(base / ((9 + 0.12 * L) / 5.5) * (0.85 + Math.random() * 0.3)));
-function rollRot(r, known, n, targets) {
+function rollRot(r, known, n) {
   const first = a => a.find(known) || "Auto Attack", extra = r.extra.filter(known);
   const out = [first(r.open)];
   for (let i = 0; i < n - 2; i++) {
@@ -999,16 +1000,13 @@ function rollRot(r, known, n, targets) {
     out.push(s);
   }
   const end = r.end.filter(known); out.push(end.length ? end[0] : first(r.fill));
-  // healers name who they're healing: mostly the tank
-  return targets ? out.map(s => HEALS.test(s) ? `${s} on ${Math.random() < 0.65 ? pick(targets.tanks) : pick(targets.all)}` : s) : out;
+  return out;
 }
-const healTargets = () => { const all = [{ name: S.name, role: heroRole() }, ...(S.party || [])], tanks = all.filter(m => m.role === "tank").map(m => m.name);
-  return { tanks: tanks.length ? tanks : [S.name], all: all.filter(m => m.role !== "heal").map(m => m.name) }; };
 // the hero's own casts in a group fight: role rotation if tank/healer, the normal one for dps
 function heroGroupCasts(base, boss) {
   const n = castCount(base), role = heroRole();
   if (role === "dps") return rotation(boss, n);
-  const out = rollRot(GROUP_ROT[role][S.cls], knowsAt(S.cls, S.level, S.spec), n, role === "heal" ? healTargets() : null);
+  const out = rollRot(GROUP_ROT[role][S.cls], knowsAt(S.cls, S.level, S.spec), n);
   if (boss) potionCasts(out);
   return out;
 }
@@ -1020,30 +1018,78 @@ function fightDrop(role, k, r = (a, b) => a + Math.random() * (b - a)) {
   if (role === "heal") return boss ? [r(0.02, 0.15), r(0.25, 0.42)] : [r(0, 0.05), r(0.08, 0.18)];
   return boss ? [r(0.05, 0.3), r(0.2, 0.38)] : [r(0, 0.1), r(0.07, 0.17)];
 }
-// companions' casts and pools for a task, made once when it starts
+const GROUP_HEALS = /^(Prayer of Healing|Tranquility)$/;
+const isHeal = s => HEALS.test(s) || GROUP_HEALS.test(s);
+// how much of the target's health a heal restores
+function healAmt(s) {
+  const r = (a, b) => a + Math.random() * (b - a);
+  if (/Lay on Hands/.test(s)) return 1;
+  if (/Renew|Rejuvenation|Power Word: Shield/.test(s)) return r(0.05, 0.09);
+  if (/Flash|Lesser|Regrowth|Holy Shock|Swiftmend/.test(s)) return r(0.08, 0.14);
+  return r(0.12, 0.22);
+}
+// play a pull out as a timeline: everyone takes a hit on each of their own casts, and every
+// finished heal lands on whoever is hurt most right then (a tank, if it's close)
+function simFight(t) {
+  const raid = S.dg && S.dg.raid, base = t.k === "boss" ? (raid ? 260 : 110) : (raid ? 70 : 40), lo = x => Math.max(0.05, x);
+  const P = [{ name: S.name, role: heroRole(), hp: S.hpF ?? 1, mp: S.mpF ?? 1, casts: (t.casts || []).map(s => s.replace(/ on .+$/, "")) },
+    ...S.party.map(m => ({ name: m.name, role: m.role, hp: m.hp, mp: m.mp, casts: rollRot(GROUP_ROT[m.role][m.cls], knowsAt(m.cls, m.L, m.spec), castCount(base, m.L)) }))];
+  // the damage each role soaks is the pull's usual cost plus its share of the healing on offer
+  let supply = 0;
+  P.forEach(p => { if (p.role === "heal") p.casts.forEach(s => { if (isHeal(s)) supply += 0.15; }); });
+  const W = { tank: 3, dps: 0.6, heal: 0.3 }, wsum = P.reduce((a, p) => a + W[p.role], 0);
+  P.forEach(p => { const d = fightDrop(p.role, t.k); p.mpEnd = lo(p.mp - d[1]); p.hit = (d[0] + supply * HEAL_EFF * W[p.role] / wsum) / (p.casts.length || 1); p.cur = p.hp; p.tl = [[0, p.hp]]; });
+  const ev = []; P.forEach((p, i) => p.casts.forEach((s, k) => ev.push([(k + 1) / p.casts.length, i, k])));
+  ev.sort((a, b) => a[0] - b[0]);
+  const put = (p, at, v) => { p.cur = Math.min(1, Math.max(0.05, v)); p.tl.push([at, p.cur]); };
+  for (const [at, i, k] of ev) {
+    const p = P[i], s = p.casts[k];
+    put(p, at, p.cur - p.hit * (0.6 + Math.random() * 0.8));
+    if (p.role !== "heal" || !isHeal(s)) continue;
+    const hurt = P.map((q, j) => [1 - q.cur + (q.role === "tank" ? 0.08 : 0), j]).sort((a, b) => b[0] - a[0]);
+    if (GROUP_HEALS.test(s)) { hurt.slice(0, 5).forEach(([, x]) => put(P[x], at, P[x].cur + 0.07)); continue; }
+    const q = P[Math.random() < 0.85 ? hurt[0][1] : hurt[R(Math.min(4, hurt.length))][1]];
+    put(q, at, q.cur + healAmt(s));
+    if (/Chain Heal/.test(s)) hurt.filter(([, x]) => P[x] !== q).slice(0, 2).forEach(([, x], n) => put(P[x], at, P[x].cur + (n ? 0.04 : 0.07)));
+    p.casts[k] = `${s} on ${q.name}`;
+  }
+  P.forEach(p => p.end = p.cur);
+  return P;
+}
+let HEAL_EFF = 1.05;
+// the group's side of a task, worked out once when it starts (kept in memory, not in the save)
+const PF = new WeakMap();
 function partyFight(t) {
-  if (t.pf || !S.party) return t.pf;
-  const fight = FIGHTS.includes(t.k), lo = x => Math.max(0.05, x), up = x => Math.min(1, x);
-  const base = t.k === "boss" ? (S.dg && S.dg.raid ? 260 : 110) : (S.dg && S.dg.raid ? 70 : 40);
-  t.pf = S.party.map(m => {
-    if (!fight) {
+  if (!S.party || !t) return null;
+  let f = PF.get(t); if (f) return f;
+  if (t.k === "trash" || t.k === "boss") {
+    const P = simFight(t);
+    if (P[0].role === "heal") t.casts = P[0].casts;
+    f = { hero: P[0], m: P.slice(1) };
+  } else {
+    const up = x => Math.min(1, x);
+    f = { hero: null, m: S.party.map(m => {
       const e = t.k === "ghost" ? [0, 0] : t.k === "regroup" || t.k === "dbuff" ? [1, 1] : [up(m.hp + 0.3), up(m.mp + 0.3)];
-      return { casts: [], e };
-    }
-    const d = fightDrop(m.role, t.k), n = castCount(base, m.L);
-    return { casts: rollRot(GROUP_ROT[m.role][m.cls], knowsAt(m.cls, m.L, m.spec), n, m.role === "heal" ? healTargets() : null), e: [lo(m.hp - d[0]), lo(m.mp - d[1])] };
-  });
-  return t.pf;
+      return { casts: [], tl: null, hp: m.hp, mp: m.mp, end: e[0], mpEnd: e[1] };
+    }) };
+  }
+  PF.set(t, f); return f;
+}
+// health at a point of the timeline: the last change at or before it
+function hpAt(p, raw) {
+  const tl = p.tl; let lo = 0, hi = tl.length - 1;
+  while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (tl[mid][0] <= raw + 1e-9) lo = mid; else hi = mid - 1; }
+  return tl[lo][1];
 }
 function memberNow(i) {
-  const m = S.party[i], t = S.task, f = t && partyFight(t);
-  if (!f || !f[i]) return { hp: m.hp, mp: m.mp, p: 0, fight: false, ci: -1, casts: [] };
-  const raw = Math.min(1, t.el / t.t), cs = f[i].casts, n = cs.length || 4, p = cs.length ? Math.floor(raw * n) / n : raw;
-  return { hp: m.hp + (f[i].e[0] - m.hp) * p, mp: m.mp + (f[i].e[1] - m.mp) * p, p, fight: cs.length > 0, ci: Math.min(cs.length - 1, Math.floor(raw * cs.length)), casts: cs };
+  const m = S.party[i], t = S.task, f = partyFight(t), g = f && f.m[i];
+  if (!g) return { hp: m.hp, mp: m.mp, p: 0, fight: false, ci: -1, casts: [] };
+  const raw = Math.min(1, t.el / t.t), cs = g.casts, n = cs.length, p = n ? Math.floor(raw * n) / n : raw;
+  return { hp: g.tl ? hpAt(g, raw) : g.hp + (g.end - g.hp) * p, mp: g.mp + (g.mpEnd - g.mp) * p, p, fight: n > 0, ci: n ? Math.min(n - 1, Math.floor(raw * n)) : -1, casts: cs };
 }
 function partyFinish(t) {
   const f = partyFight(t); if (!f) return;
-  S.party.forEach((m, i) => { if (f[i]) { m.hp = f[i].e[0]; m.mp = f[i].e[1]; } });
+  S.party.forEach((m, i) => { const g = f.m[i]; if (g) { m.hp = g.end; m.mp = g.mpEnd; } });
 }
 // rage builds through a pull, energy dips and ticks back
 const pool2 = (res, fight, p) => res === "Rage" ? (fight ? Math.round(15 + 70 * p) : 0) : (fight ? Math.round(100 - 65 * Math.abs(Math.sin(p * Math.PI * 3))) : 100);
@@ -1362,7 +1408,7 @@ function finish(t) {
       if (Math.random() < (RAID_INFO[t.dn] ? RAID_INFO[t.dn].wipe : 0.06)) {
         S.deaths++; S.repair += S.level * S.level * 5; loseBuffs();
         log(`Wiped on ${t.boss}. Corpse run…`, "death"); S.hpF = 0; (S.party || []).forEach(m => m.hp = 0);
-        const again = { ...t, el: 0 }; delete again.ve; delete again.pf;
+        const again = { ...t, el: 0 }; delete again.ve;
         S.queue.unshift({ k: "ghost", d: "Running back through the instance as a ghost", t: sec(60) }, regroupTask(S.dg && S.dg.raid), again);
         break;
       }
