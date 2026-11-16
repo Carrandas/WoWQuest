@@ -144,6 +144,23 @@ button:disabled { cursor: not-allowed; }
 .gbar.thin > span { font-size: 9px; }
 .gcast { font-size: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.4em; }
 .gcast .cur { color: var(--gold); }
+.group.raid .gcards { display: block; }
+.rgroups { display: grid; grid-template-columns: repeat(var(--ng), minmax(0, 1fr)); gap: 8px; }
+.rgroup { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rgh { font-family: var(--label); font-weight: 700; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); padding-left: 2px; }
+.rcell { background: var(--panel); border: 1px solid var(--rim); border-left: 3px solid var(--rim); border-radius: 4px; padding: 3px 5px 2px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rcell.r-tank { border-left-color: #4a7bd8; }
+.rcell.r-heal { border-left-color: #3fbf3f; }
+.rcell.r-dps { border-left-color: #c8312b; }
+.rcell.me { border-color: var(--gold-dk); border-left-color: var(--gold); }
+.rname { font-weight: 700; font-size: 13px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rcell .gbar { height: 11px; }
+.rcell .gbar > span { font-size: 9px; }
+.rcell .gbar.thin { height: 5px; }
+.rcell .gbar.thin > span { display: none; }
+.rcell .gcast { font-size: 11px; min-height: 1.3em; line-height: 1.3; }
+.legend { display: inline-flex; gap: 10px; margin-left: auto; font-family: var(--body); font-size: 12px; color: var(--dim); }
+.legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; }
 .pools { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .pools .bar { height: 12px; }
 .pools .bar > i { transition: width .15s ease-out, background-color .3s; }
@@ -247,11 +264,13 @@ button:disabled { cursor: not-allowed; }
   .main { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .main .c-log { grid-column: 1 / -1; order: -1; }
   .gcards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .rgroups { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 @media (max-width: 720px) {
   .hero { grid-template-columns: minmax(0, 1fr); }
   .meters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .gcards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rgroups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .main { grid-template-columns: minmax(0, 1fr); }
   .classes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .log { max-height: 440px; }
@@ -915,16 +934,26 @@ function randName(taken) {
   }
   return pick(NAME_A) + pick(NAME_B) + R(9);
 }
+// 5-man: 1/1/3; 20-man: 3 tanks, 5 healers; 40-man: 5 tanks, 12 healers
+const RAID_ROLES = { 5: [1, 1], 20: [3, 5], 40: [5, 12] };
 function makeParty(raid) {
-  const mine = heroRole(), need = ["tank", "heal", "dps", "dps", "dps"];
-  need.splice(need.indexOf(mine), 1);
+  const size = raid && S.dg && RAID_INFO[S.dg.name] ? RAID_INFO[S.dg.name].size : 5, [nt, nh] = RAID_ROLES[size] || RAID_ROLES[5];
+  const roles = [...Array(nt).fill("tank"), ...Array(nh).fill("heal")]; while (roles.length < size) roles.push("dps");
+  roles.splice(roles.indexOf(heroRole()), 1);
   const taken = [S.name];
-  return need.map(role => {
+  const members = roles.map(role => {
     const c = pick(ROLE_CLASSES[role].filter(k => k !== "Paladin" || S.faction === "Alliance").filter(k => k !== "Shaman" || S.faction === "Horde"));
     const race = pick(Object.keys(ALLOWED).filter(r => RACES[r].f === S.faction && ALLOWED[r].includes(c)));
     const name = randName(taken); taken.push(name);
     return { name, race, cls: c, role, spec: ROLE_SPEC[role][c], L: raid ? 60 : clamp(S.level + R(5) - 2, 1, 60), hp: 1, mp: 1 };
   });
+  // spread tanks, then healers, round-robin over the groups; dps fill the gaps
+  const nG = Math.ceil(size / 5), groups = Array.from({ length: nG }, () => []);
+  groups[0].push(null);
+  let gi = 0;
+  const place = m => { for (let k = 0; k < nG; k++, gi++) { const g = groups[gi % nG]; if (g.length < 5) { g.push(m); gi++; return; } } };
+  ["tank", "heal", "dps"].forEach(role => members.filter(m => m.role === role).forEach(place));
+  return groups.flat().filter(Boolean);
 }
 
 // role rotations for the group fights (dps companions use these too)
@@ -970,9 +999,10 @@ function rollRot(r, known, n, targets) {
   }
   const end = r.end.filter(known); out.push(end.length ? end[0] : first(r.fill));
   // healers name who they're healing: mostly the tank
-  return targets ? out.map(s => HEALS.test(s) ? `${s} on ${Math.random() < 0.65 ? targets[0] : pick(targets)}` : s) : out;
+  return targets ? out.map(s => HEALS.test(s) ? `${s} on ${Math.random() < 0.65 ? pick(targets.tanks) : pick(targets.all)}` : s) : out;
 }
-const healTargets = () => { const all = [{ name: S.name, role: heroRole() }, ...(S.party || [])], t = all.find(m => m.role === "tank"); return [t ? t.name : S.name, ...all.filter(m => m.role !== "heal").map(m => m.name)]; };
+const healTargets = () => { const all = [{ name: S.name, role: heroRole() }, ...(S.party || [])], tanks = all.filter(m => m.role === "tank").map(m => m.name);
+  return { tanks: tanks.length ? tanks : [S.name], all: all.filter(m => m.role !== "heal").map(m => m.name) }; };
 // the hero's own casts in a group fight: role rotation if tank/healer, the normal one for dps
 function heroGroupCasts(base, boss) {
   const n = castCount(base), role = heroRole();
@@ -1322,7 +1352,8 @@ function finish(t) {
       break;
     }
     case "lfg": log(`[${pick(PLAYERS)}]: ${t.chat}`, "chat");
-      if (S.party) { if (S.dg) S.dg.formed = true; log(`Group formed: ${S.party.map(m => `${m.name} (${m.cls.toLowerCase()} ${ROLE_NAME[m.role].toLowerCase()})`).join(", ")}.`, "chat"); }
+      if (S.party && S.party.length > 4) { if (S.dg) S.dg.formed = true; const all = [{ name: S.name, role: heroRole() }, ...S.party], tanks = all.filter(m => m.role === "tank").map(m => m.name); log(`Raid assembled: ${all.length} players, ${tanks.length} tanks and ${all.filter(m => m.role === "heal").length} healers. Main tank: ${tanks[0]}.`, "chat"); }
+      else if (S.party) { if (S.dg) S.dg.formed = true; log(`Group formed: ${S.party.map(m => `${m.name} (${m.cls.toLowerCase()} ${ROLE_NAME[m.role].toLowerCase()})`).join(", ")}.`, "chat"); }
       break;
     case "dtravel": S.loc = "dungeon"; log(`Entering ${t.dn}.`, "dung"); break;
     case "trash": if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); break;
@@ -1554,16 +1585,26 @@ function renderBars() {
   if (uiTab === "log") $("elapsed").textContent = "/played " + fmtTime(S.time);
 }
 
-// party frames: the hero plus the four companions
+// party / raid frames: the hero plus the companions
+let gCache = {};
 function renderGroup(hf, mf) {
   const show = !!(S.party && S.dg && S.dg.formed), box = $("group");
   if (box.hidden === show) box.hidden = !show;
   if (!show) return;
   const sig = S.party.map(m => m.name).join() + S.level;
   if (box.dataset.sig !== sig) {
-    box.dataset.sig = sig;
-    $("gTitle").innerHTML = `${S.dg.raid ? "Raid group" : "Group"} <small>${esc(S.dg.name)}</small>`;
-    const all = [{ name: S.name, race: S.race, cls: S.cls, role: heroRole(), L: S.level, me: true }, ...S.party];
+    box.dataset.sig = sig; gCache = {};
+    const all = [{ name: S.name, race: S.race, cls: S.cls, role: heroRole(), L: S.level, me: true }, ...S.party], raid = all.length > 5;
+    $("gTitle").innerHTML = raid ? `Raid <small>${esc(S.dg.name)} · ${all.length} players · ${all.filter(m => m.role === "tank").length} tanks, ${all.filter(m => m.role === "heal").length} healers</small><span class="legend"><span><i style="background:#4a7bd8"></i>tank</span><span><i style="background:#3fbf3f"></i>healer</span><span><i style="background:#c8312b"></i>dps</span></span>` : `Group <small>${esc(S.dg.name)}</small>`;
+    box.classList.toggle("raid", raid);
+    if (raid) {
+      const groups = []; for (let g = 0; g * 5 < all.length; g++) groups.push(all.slice(g * 5, g * 5 + 5).map((m, k) => [m, g * 5 + k]));
+      $("gcards").innerHTML = `<div class="rgroups" style="--ng:${groups.length}">${groups.map((g, gi) => `<div class="rgroup"><div class="rgh">Group ${gi + 1}</div>${g.map(([m, i]) => `<div class="rcell r-${m.role}${m.me ? " me" : ""}" title="${esc(m.name)}: level ${m.L} ${esc(m.race)} ${m.cls} (${ROLE_NAME[m.role]})">
+        <div class="rname" style="color:${CLASSES[m.cls].color}">${esc(m.name)}</div>
+        <div class="gbar"><i id="gh${i}"></i><span id="ghv${i}"></span></div>
+        <div class="gbar thin"><i id="gm${i}"></i><span id="gmv${i}"></span></div>
+        <div class="gcast" id="gc${i}"></div></div>`).join("")}</div>`).join("")}</div>`;
+    } else
     $("gcards").innerHTML = all.map((m, i) => `<div class="gcard r-${m.role}${m.me ? " me" : ""}">
       <div class="gtop"><span class="gname" style="color:${CLASSES[m.cls].color}">${esc(m.name)}</span><span class="grole">${ROLE_NAME[m.role]}</span></div>
       <div class="gsub">Level ${m.L} ${esc(m.race)} ${m.cls}${m.me ? " · you" : ""}</div>
@@ -1573,13 +1614,13 @@ function renderGroup(hf, mf) {
   }
   const poolCol = f => f > 0.6 ? "var(--hp-ok)" : f > 0.35 ? "var(--hp-mid)" : f > 0.15 ? "var(--hp-low)" : "var(--hp-crit)";
   const paint = (i, c, hp, mp, fight, p, cast) => {
+    const C = CLASSES[c], v = C.mp ? Math.round(mp * 100) : pool2(C.res, fight, p), key = Math.round(hp * 1000) + "|" + v + "|" + cast;
+    if (gCache[i] === key) return; gCache[i] = key;
     $("gh" + i).style.width = (hp * 100).toFixed(1) + "%"; $("gh" + i).style.background = poolCol(hp); $("ghv" + i).textContent = Math.round(hp * 100) + "%";
-    const C = CLASSES[c];
-    if (C.mp) { $("gm" + i).style.width = (mp * 100).toFixed(1) + "%"; $("gm" + i).style.background = poolCol(mp); $("gmv" + i).textContent = Math.round(mp * 100) + "%"; }
-    else { const v = pool2(C.res, fight, p); $("gm" + i).style.width = v + "%"; $("gm" + i).style.background = C.res === "Rage" ? "var(--rage)" : "var(--energy)"; $("gmv" + i).textContent = v; }
+    $("gm" + i).style.width = v + "%"; $("gm" + i).style.background = C.mp ? poolCol(mp) : C.res === "Rage" ? "var(--rage)" : "var(--energy)"; $("gmv" + i).textContent = C.mp ? v + "%" : v;
     $("gc" + i).innerHTML = cast;
   };
-  const t = S.task, castHtml = (cs, ci) => ci < 0 ? "&nbsp;" : (ci > 0 ? `<span>${esc(cs[ci - 1])}</span> › ` : "") + `<span class="cur">${esc(cs[ci])}</span>`;
+  const raidUi = box.classList.contains("raid"), t = S.task, castHtml = (cs, ci) => ci < 0 ? "&nbsp;" : (ci > 0 && !raidUi ? `<span>${esc(cs[ci - 1])}</span> › ` : "") + `<span class="cur">${esc(cs[ci])}</span>`;
   const hc = t && t.casts && FIGHTS.includes(t.k) ? t.casts : [], hci = hc.length ? Math.min(hc.length - 1, Math.floor(Math.min(1, t.el / t.t) * hc.length)) : -1;
   paint(0, S.cls, hf, mf, hc.length > 0, t ? poolProgress(t) : 0, castHtml(hc, hci));
   S.party.forEach((m, i) => { const n = memberNow(i); paint(i + 1, m.cls, n.hp, n.mp, n.fight, n.p, castHtml(n.casts, n.ci)); });
