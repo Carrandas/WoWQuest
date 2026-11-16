@@ -31,6 +31,8 @@ Your character keeps playing (at normal speed, for up to 12 hours) while the tab
 - 43 classic zones with their quest hubs, monsters and quests, visited in the order of each race's real levelling route
 - Class spells learned at their real trainer levels, with ranks that go up as you level
 - 23 dungeons and 2 raids, with their bosses and signature loot
+- Class buffs (Arcane Intellect, Power Word: Fortitude, auras, poisons and sharpening stones) plus potions, elixirs and raid flasks bought in the capital
+- Achievements, a zone-by-zone journal and a dungeon journal with the loot you won, each with the date it happened
 - Gear by item level and quality (grey, white, green, blue and purple), plus dungeon and tier sets
 - No install or build step: the whole game is one `index.html` file
 - Progress saves automatically in your browser

@@ -149,9 +149,30 @@ button:disabled { cursor: not-allowed; }
 .log .death span { color: #ff6b6b; }
 .log .chat span { color: #f2a6ff; font-style: italic; }
 .log .gold span { color: #e3cf8f; }
+.log .ach span { color: #ffd34d; font-weight: 700; }
 .log li.fresh { animation: fadein .5s ease-out; }
 @keyframes fadein { from { background: #ffd10022; } to { background: transparent; } }
 @media (prefers-reduced-motion: reduce) { .log li.fresh { animation: none; } }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px 16px; border-bottom: 1px solid var(--rim); margin-bottom: 6px; }
+.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 2px 0 6px; font-family: var(--display); font-weight: 700; font-size: 17px; color: var(--dim); cursor: pointer; }
+.tabs button small { font-family: var(--body); font-weight: 400; font-size: 12.5px; color: #5d6578; }
+.tabs button[aria-selected="true"] { color: var(--gold); border-bottom-color: var(--gold); }
+.tabs button:focus-visible { outline: 2px solid var(--gold-dk); outline-offset: 2px; }
+.tabmeta { text-align: right; font-size: 13px; color: var(--dim); margin-bottom: 2px; min-height: 1.2em; }
+.log[hidden], .journal[hidden] { display: none; }
+.journal { list-style: none; margin: 0; padding: 0; max-height: 700px; overflow-y: auto; }
+.journal li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; padding: 8px 0; border-bottom: 1px solid #28314966; align-items: start; }
+.journal li:last-child { border-bottom: 0; }
+.journal .ico { color: var(--gold); text-align: center; font-size: 15px; padding-top: 1px; }
+.journal b { display: block; font-weight: 700; }
+.journal span, .journal time { display: block; font-size: 14px; color: var(--dim); overflow-wrap: anywhere; }
+.journal time { color: #c9b77a; font-size: 13px; font-variant-numeric: tabular-nums; }
+.journal .loot { margin-top: 2px; } .journal .loot i { font-style: normal; }
+.journal em { font-style: normal; font-family: var(--label); font-size: 12.5px; letter-spacing: .05em; color: var(--dim); padding-top: 2px; }
+.journal li.got b { color: var(--text); }
+.journal li.cur b, .journal li.cur em { color: var(--good); }
+.journal li.locked { opacity: .5; } .journal li.locked .ico { color: var(--dim); }
+.rows .buff { color: #8fd0ff; }
 .quests .done { color: var(--good); }
 .quests .cur::before { content: "▸ "; color: var(--gold); }
 
@@ -520,7 +541,7 @@ const SLOT_WORDS = [
 function namedSlot(n) { for (const [re, s] of SLOT_WORDS) if (re.test(n)) return s; return "Main Hand"; }
 function setPiece(tier, ilvl) {
   const slots = ["Head", "Shoulder", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet"], slot = pick(slots), set = SETS[S.cls][tier];
-  return { name: (SETSHORT[set] || set) + " " + ARMOR_BASE[armorType()][slot], ilvl, q: tier ? 4 : 3, slot };
+  return { name: (SETSHORT[set] || set) + " " + ARMOR_BASE[armorType()][slot], ilvl, q: tier ? 4 : 3, slot, set: tier };
 }
 // equip if better, otherwise into the bags as something to sell
 function gain(it, how) {
@@ -601,7 +622,149 @@ function newQuest() {
 }
 function questText(q) { return q.type === "col" ? `${plural(q.item)} ${q.prog}/${q.max}` : q.type === "elite" ? `${q.mob} slain ${q.prog}/1` : `${plural(q.mob)} slain ${q.prog}/${q.max}`; }
 const questDone = q => q.prog >= q.max;
-function plural(s) { return /[^aeiou]y$/.test(s) ? s.slice(0, -1) + "ies" : /(ss|x|ch|sh)$/.test(s) ? s + "es" : /s$/.test(s) ? s : /(Wolf|Thief)$/.test(s) ? s.slice(0, -1) + "ves" : s + "s"; }
+function plural(s) { return /Tooth$/.test(s) ? s.slice(0, -5) + "Teeth" : /[^aeiou]y$/.test(s) ? s.slice(0, -1) + "ies" : /(ss|x|ch|sh)$/.test(s) ? s + "es" : /s$/.test(s) ? s : /(Wolf|Thief)$/.test(s) ? s.slice(0, -1) + "ves" : s + "s"; }
+
+// ---------- buffs & supplies ----------
+const MIN = 60000, FOREVER = 1e15;
+const tierAt = (list, L = S.level) => { let r = null; for (const e of list) if (e[0] <= L) r = e; return r; };
+const ROMAN = ["", "", " II", " III", " IV", " V", " VI", " VII", " VIII"];
+const HP_POT = [[1, "Minor Healing Potion"], [3, "Lesser Healing Potion"], [12, "Healing Potion"], [21, "Greater Healing Potion"], [35, "Superior Healing Potion"], [45, "Major Healing Potion"]];
+const MP_POT = [[5, "Minor Mana Potion"], [14, "Lesser Mana Potion"], [22, "Mana Potion"], [31, "Greater Mana Potion"], [41, "Superior Mana Potion"], [49, "Major Mana Potion"]];
+const ELIXIR = {
+  STR: [[1, "Elixir of Lion's Strength"], [20, "Elixir of Ogre's Strength"], [46, "Elixir of Giants"]],
+  AGI: [[2, "Elixir of Minor Agility"], [27, "Elixir of Agility"], [38, "Elixir of Greater Agility"], [46, "Elixir of the Mongoose"]],
+  INT: [[10, "Elixir of Wisdom"], [37, "Elixir of Greater Intellect"], [47, "Greater Arcane Elixir"]],
+};
+const STONE = [[1, "Rough"], [15, "Coarse"], [25, "Heavy"], [35, "Solid"], [45, "Dense"]];
+// class buffs: each entry is a chain, best spell first; minutes, 0 = until death
+const CLASS_BUFFS = {
+  Mage: () => [[["Arcane Intellect"], 30], [["Ice Armor", "Frost Armor"], 30]],
+  Priest: () => [[["Power Word: Fortitude"], 30], [["Inner Fire"], 10]],
+  Druid: () => [[["Mark of the Wild"], 30], [["Thorns"], 10]],
+  Paladin: () => [[S.spec === 2 ? ["Retribution Aura", "Devotion Aura"] : ["Devotion Aura"], 0], [S.spec === 0 ? ["Blessing of Wisdom", "Blessing of Might"] : ["Blessing of Might"], 5]],
+  Hunter: () => [[["Aspect of the Hawk", "Aspect of the Monkey"], 0], [["Call Pet"], 0]],
+  Warlock: () => [[["Demon Armor", "Demon Skin"], 30], [["Summon Voidwalker", "Summon Imp"], 0]],
+  Shaman: () => [[["Lightning Shield"], 10], [S.spec === 1 ? ["Windfury Weapon", "Flametongue Weapon", "Rockbiter Weapon"] : ["Flametongue Weapon", "Rockbiter Weapon"], 5]],
+  Warrior: () => [[S.spec === 2 ? ["Defensive Stance", "Battle Stance"] : ["Battle Stance"], 0]],
+  Rogue: () => [],
+};
+const usesStone = () => S.cls === "Warrior" || S.cls === "Paladin" || (S.cls === "Rogue" && !("Instant Poison" in S.spells));
+const stoneName = () => tierAt(STONE)[1] + (S.cls === "Paladin" ? " Weightstone" : " Sharpening Stone");
+const hpPot = () => tierAt(HP_POT)[1], mpPot = () => (tierAt(MP_POT) || MP_POT[0])[1];
+const elixKey = () => isCaster() ? "INT" : cls().prime !== "INT" ? cls().prime : S.cls === "Shaman" ? "STR" : "AGI";
+function elixirName() { const e = tierAt(ELIXIR[elixKey()]); return e && e[1]; }
+function flaskName() { return S.cls === "Priest" || (S.cls === "Druid" && S.spec === 2) || (S.cls === "Paladin" && S.spec === 0) ? "Flask of Distilled Wisdom" : isCaster() ? "Flask of Supreme Power" : "Flask of the Titans"; }
+
+// buffs the hero wants up right now: [{name, min, item, cast}]
+function wantedBuffs() {
+  const out = [];
+  for (const [chain, min] of CLASS_BUFFS[S.cls]()) { const n = chain.find(x => x in S.spells); if (n) out.push({ name: n, min, cast: /^(Summon|Call)/.test(n) ? `${n.replace("Summon", "Summoning").replace("Call Pet", "Calling your pet")}` : `Casting ${n}` }); }
+  if (S.cls === "Rogue" && "Instant Poison" in S.spells) { const n = "Instant Poison" + ROMAN[S.spells["Instant Poison"]]; out.push({ name: n, min: 30, cast: `Applying ${n} to both daggers` }); }
+  else if (usesStone() && S.cons.stone > 0) out.push({ name: stoneName(), min: 30, item: "stone", cast: `Using ${article(stoneName())} on your weapon` });
+  return out;
+}
+const buffUp = n => (S.buffs[n] || 0) > S.time;
+function missingBuff() { return wantedBuffs().find(b => !buffUp(b.name)); }
+function applyBuff(b) {
+  if (b.item) { if (!(S.cons[b.item] > 0)) return; S.cons[b.item]--; }
+  S.buffs[b.name] = b.min ? S.time + b.min * MIN : FOREVER;
+}
+function activeBuffs() { return Object.keys(S.buffs).filter(buffUp); }
+// a fully buffed hero kills a little faster (up to 6%)
+const buffSpeed = () => 1 - 0.015 * Math.min(4, activeBuffs().length);
+function loseBuffs() { S.buffs = {}; }
+// elixir before an elite or a dungeon, a flask before a raid
+function drinkElixir(raid) {
+  if (raid) { S.buffs[flaskName()] = S.time + 120 * MIN; return flaskName(); }
+  const n = elixirName(); if (!n || !(S.cons.elix > 0)) return null;
+  S.cons.elix--; S.buffs[n] = S.time + 60 * MIN; return n;
+}
+// fold a potion into a hard fight's casts
+function potionCasts(out) {
+  const at = () => Math.max(2, out.length - 1 - R(2));
+  if (S.cons.hp > 0 && Math.random() < 0.3) { S.cons.hp--; out.splice(at(), 0, hpPot()); }
+  if (cls().mp && S.cons.mp > 0 && S.level >= 5 && Math.random() < 0.35) { S.cons.mp--; out.splice(at(), 0, mpPot()); }
+}
+// restock at the capital; returns the copper spent
+function buySupplies(budget) {
+  const L = S.level, price = tier => Math.round(tier * tier * 3 + 30), want = [["hp", 5, tierAt(HP_POT)[0]]];
+  if (cls().mp && L >= 5) want.push(["mp", 5, tierAt(MP_POT)[0]]);
+  if (elixirName()) want.push(["elix", 3, tierAt(ELIXIR[elixKey()])[0]]);
+  if (usesStone()) want.push(["stone", 4, tierAt(STONE)[0]]);
+  let spent = 0; const got = [];
+  for (const [k, n, tier] of want) {
+    const need = n - (S.cons[k] || 0), p = price(tier); let b = 0;
+    while (b < need && spent + p <= budget) { b++; spent += p; }
+    if (b) { S.cons[k] = (S.cons[k] || 0) + b; got.push(k); }
+  }
+  S.money -= spent;
+  if (spent) log(`Restocked supplies (${got.map(k => ({ hp: hpPot(), mp: mpPot(), elix: elixirName(), stone: stoneName() })[k]).map(plural).join(", ")}) for ${moneyTxt(spent)}.`, "gold");
+}
+
+// ---------- achievements, zones & dungeons journal ----------
+let simClock = null;                       // wall clock while catching up on offline time
+const realNow = () => simClock ?? Date.now();
+const stamp = () => ({ at: realNow(), p: S.time, L: S.level });
+const eq = f => SLOTS.some(s => S.equip[s] && f(S.equip[s]));
+const onRoute = z => route().some(l => l.z === z);
+const factionDungeons = () => DUNGEONS.filter(d => d[3] === "B" || d[3] === S.faction[0]);
+const ACH = [
+  ...[10, 20, 30, 40, 50].map(n => ({ id: "L" + n, name: `Level ${n}`, desc: `Reach level ${n}.`, test: () => S.level >= n })),
+  { id: "L60", name: "Level 60", desc: "Reach the level cap.", test: () => S.level >= 60 },
+  { id: "kill1", name: "First Blood", desc: "Win your first fight.", test: () => S.kills >= 1 },
+  { id: "kill1k", name: "Seasoned Fighter", desc: "Kill 1,000 enemies.", test: () => S.kills >= 1000 },
+  { id: "kill10k", name: "Exterminator", desc: "Kill 10,000 enemies.", test: () => S.kills >= 10000 },
+  { id: "q50", name: "Helping Hand", desc: "Complete 50 quests.", test: () => S.qdone >= 50 },
+  { id: "q250", name: "Errand Runner", desc: "Complete 250 quests.", test: () => S.qdone >= 250 },
+  { id: "q1000", name: "Loremaster", desc: "Complete 1,000 quests.", test: () => S.qdone >= 1000 },
+  { id: "hogger", name: "Hogger", desc: "Take down Hogger, the big bad gnoll of Elwynn Forest.", show: () => onRoute("Elwynn Forest"), test: () => S.elites.includes("Hogger") },
+  { id: "mankrik", name: "Mankrik's Wife", desc: "Find what became of Mankrik's wife in the Barrens.", show: () => onRoute("The Barrens"), test: () => S.feats.includes("Mankrik's Wife") },
+  { id: "wanted1", name: "Bounty Hunter", desc: "Slay a Wanted elite.", test: () => S.elites.length >= 1 },
+  { id: "wanted3", name: "Most Wanted", desc: "Slay three Wanted elites.", test: () => S.elites.length >= 3 },
+  { id: "green", name: "Fine Threads", desc: "Equip your first green item.", test: () => eq(it => it.q >= 2) },
+  { id: "blue", name: "Rare Find", desc: "Equip your first blue item.", test: () => eq(it => it.q >= 3) },
+  { id: "purple", name: "Epic!", desc: "Equip your first purple item.", test: () => eq(it => it.q >= 4) },
+  { id: "t0", name: "Dressed for Dungeons", desc: "Equip a piece of your dungeon set.", test: () => eq(it => it.set === 0) },
+  { id: "t1", name: "Tier 1", desc: "Equip a Molten Core set piece.", test: () => eq(it => it.set === 1) },
+  { id: "t2", name: "Tier 2", desc: "Equip a Tier 2 set piece.", test: () => eq(it => it.set === 2) },
+  { id: "bags", name: "Four Bags", desc: "Fill all four bag slots.", test: () => S.bagSlots.length >= 4 },
+  { id: "mount", name: "Giddy Up!", desc: "Get your first mount.", test: () => S.mount >= 1 },
+  { id: "epic", name: "Epic Steed", desc: "Ride an epic mount.", test: () => S.mount >= 2 },
+  { id: "deep", name: "Deep Specialization", desc: "Put 31 points into one talent tree.", test: () => S.level >= 40 },
+  { id: "g10", name: "Pocket Money", desc: "Hold 10 gold.", test: () => S.money >= 100000 },
+  { id: "g100", name: "Well Off", desc: "Hold 100 gold.", test: () => S.money >= 1000000 },
+  { id: "g1000", name: "Rolling in It", desc: "Hold 1,000 gold.", test: () => S.money >= 10000000 },
+  { id: "death", name: "Spirit Healer's Friend", desc: "Die for the first time.", test: () => S.deaths >= 1 },
+  { id: "close", name: "Close Call", desc: "Survive a deadly fight by drinking a healing potion.", test: () => S.feats.includes("close call") },
+  { id: "z10", name: "Explorer", desc: "Quest in 10 zones.", test: () => S.zones.length >= 10 },
+  { id: "z20", name: "World Traveler", desc: "Quest in 20 zones.", test: () => S.zones.length >= 20 },
+  { id: "d1", name: "Dungeon Delver", desc: "Clear your first dungeon.", test: () => S.dungeons.length >= 1 },
+  { id: "d10", name: "Seasoned Adventurer", desc: "Clear 10 different dungeons.", test: () => S.dungeons.filter(n => !RAIDS.some(r => r[0] === n)).length >= 10 },
+  { id: "dall", name: "Dungeon Master", desc: "Clear every dungeon open to your faction.", test: () => factionDungeons().every(d => S.dungeons.includes(d[0])) },
+  { id: "ony", name: "Onyxia's Lair", desc: "Defeat Onyxia.", test: () => S.dungeons.includes("Onyxia's Lair") },
+  { id: "mc", name: "Molten Core", desc: "Defeat Ragnaros in Molten Core.", test: () => S.dungeons.includes("Molten Core") },
+];
+function checkAch(quiet) {
+  for (const a of ACH) {
+    if (S.ach[a.id] || !a.test()) continue;
+    S.ach[a.id] = quiet ? { at: null, p: null, L: null } : stamp();
+    if (!quiet) log(`Achievement earned: [${a.name}]`, "ach");
+  }
+}
+function zoneEntry(z) {
+  let e = S.zones.find(x => x.z === z);
+  if (!e) { e = { z, L0: S.level, L1: S.level, q: 0, k: 0, t0: realNow(), p0: S.time }; S.zones.push(e); }
+  return e;
+}
+function dungeonEntry(n) { return S.dstat[n] || (S.dstat[n] = { runs: 0, at: null, L: null, loot: [] }); }
+// saves from before the journal existed: fill in what we can
+function migrate() {
+  S.buffs = S.buffs || {}; S.cons = S.cons || { hp: 0, mp: 0, elix: 0, stone: 0 };
+  S.elites = S.elites || []; S.feats = S.feats || []; S.dstat = S.dstat || {};
+  if (!S.zones) { S.zones = route().slice(0, S.leg + (S.arrived ? 1 : 0)).map(l => ({ z: l.z, old: 1, q: 0, k: 0 })); }
+  S.dungeons.forEach(n => { const e = dungeonEntry(n); if (!e.runs) { e.runs = 1; e.old = 1; } });
+  if (!S.ach) { S.ach = {}; checkAch(true); }
+}
 
 // ---------- new character ----------
 function newHero(f) {
@@ -610,6 +773,7 @@ function newHero(f) {
   S = { v: 1, name: (f.name || "").trim() || randomName(), race: f.race, cls: f.cls, spec: f.spec, faction: r.f,
     level: 1, xp: 0, money: 0, stats, equip: {}, bags: [], bagSlots: [], spells: {}, leg: 0, endZone: "Eastern Plaguelands",
     loc: "start", arrived: null, quests: [], zq: {}, done: [], dungeons: [], nextCity: 2, cycleQ: 0, mount: 0,
+    buffs: {}, cons: { hp: 0, mp: 0, elix: 0, stone: 0 }, elites: [], feats: [], zones: [], dstat: {}, ach: {},
     kills: 0, deaths: 0, qdone: 0, qid: 0, since: 0, curQ: 0, repair: 0, dg: null, time: 0, log: [], logId: 0, task: null, queue: [], speed: 1, savedAt: Date.now() };
   SLOTS.forEach(s => S.equip[s] = null);
   S.equip["Main Hand"] = { name: c.start, ilvl: 2, q: 1, slot: "Main Hand" };
@@ -639,9 +803,11 @@ function plan() {
       q.push({ k: "hub", d: S.bags.length >= bagCap() ? `Bags full. ${travelVerb()} back to ${h}` : `${travelVerb()} back to ${h} to turn in`, t: sec(35 * mountF()) });
       return;
     }
+    const mb = missingBuff();
+    if (mb) { q.push({ k: "buff", d: mb.cast, t: sec(2.5), b: mb }); return; }
     if (S.since > 3 + R(6)) { S.since = 0; const tier = Math.min(5, Math.floor(S.level / 10)); q.push({ k: "rest", d: cls().mp ? `Drinking ${DRINK[tier]}` : `Eating ${FOOD[tier]}`, t: sec(14) }); return; }
     let quest = S.quests.find(x => x.id === S.curQ && !questDone(x)) || open[0];
-    if (quest.id !== S.curQ) { S.curQ = quest.id; q.push({ k: "move", d: quest.type === "elite" ? `Looking for a group to kill ${quest.mob}` : `Heading out to find ${plural(quest.mob)} for "${quest.name}"`, t: sec((quest.type === "elite" ? 40 : 20) * mountF()) }); return; }
+    if (quest.id !== S.curQ) { S.curQ = quest.id; if (quest.type === "elite" && elixirName() && S.cons.elix > 0) q.push({ k: "elixir", d: `Drinking ${article(elixirName())} before the fight`, t: sec(3) }); q.push({ k: "move", d: quest.type === "elite" ? `Looking for a group to kill ${quest.mob}` : `Heading out to find ${plural(quest.mob)} for "${quest.name}"`, t: sec((quest.type === "elite" ? 40 : 20) * mountF()) }); return; }
     q.push(killTask(quest));
     return;
   }
@@ -666,7 +832,7 @@ function killTask(quest) {
   const mob = elite ? quest.mob : quest.type === "col" && Math.random() < 0.15 ? pick(zoneMobs(quest.zone)) : quest.mob;
   const d = elite ? `Fighting ${mob} (elite) with a pickup group` : `${pick(c.verbs)} ${article(mob)}`;
   const gear = clamp(gearScore() / Math.max(1, S.level), 0.5, 1.4);
-  const t = sec((9 + S.level * 0.12) * (elite ? 5 : 1) * clamp(1.35 - gear * 0.35, 0.8, 1.2));
+  const t = sec((9 + S.level * 0.12) * (elite ? 5 : 1) * clamp(1.35 - gear * 0.35, 0.8, 1.2) * buffSpeed());
   return { k: "kill", d, t, mob, mobL, qid: quest.id, elite, casts: rotation(elite) };
 }
 
@@ -698,6 +864,7 @@ function rotation(elite) {
   }
   const end = r.end.filter(known);
   if (end.length && Math.random() < 0.7) out.push(end[0]);
+  if (elite) potionCasts(out);
   return out;
 }
 
@@ -726,10 +893,11 @@ function queueDungeon(d) {
   S.dg = { name: d[0], killed: 0, total: bosses.length, raid };
   q.push({ k: "lfg", d: raid ? `Waiting on the raid invite for ${d[0]}` : `Looking for group: "${chat}"`, t: sec(raid ? 120 : 60 + R(120)), chat: raid ? `[Raid] ${d[4]} invites going out, 40 man, be on time!` : chat, dn: d[0] });
   q.push({ k: "dtravel", d: `Traveling to ${d[0]} with the group`, t: sec(raid ? 180 : 120), dn: d[0] });
+  q.push({ k: "dbuff", d: raid ? "Buffing up and drinking a flask at the instance portal" : "Buffing up at the instance entrance", t: sec(8), raid });
   bosses.forEach(b => {
     const n = raid ? 2 + R(2) : 1 + R(3);
-    for (let i = 0; i < n; i++) q.push({ k: "trash", d: `Clearing a pack of ${plural(pick(trash))}`, t: sec(raid ? 70 : 40) });
-    q.push({ k: "boss", d: `Fighting ${b}`, t: sec(raid ? 260 : 110), boss: b, dn: d[0] });
+    for (let i = 0; i < n; i++) q.push({ k: "trash", d: `Clearing a pack of ${plural(pick(trash))}`, t: sec(raid ? 70 : 40), casts: rotation(false) });
+    q.push({ k: "boss", d: `Fighting ${b}`, t: sec(raid ? 260 : 110), boss: b, dn: d[0], casts: rotation(true) });
   });
   q.push({ k: "dend", d: `Leaving ${d[0]}`, t: sec(10), dn: d[0] });
 }
@@ -756,6 +924,7 @@ function lootDrop(dn, boss) {
   else if (pool.length) { const name = pick(pool).split("|")[0]; it = { name, slot: namedSlot(name), ilvl: raid ? 68 + R(8) : Math.round((d[1] + d[2]) / 2) + 3, q: raid ? 4 : 3 }; }
   if (!it) return;
   log(`${boss} dropped ${it.name}. Rolled Need: ${60 + R(41)}.`, "loot" + it.q);
+  const de = dungeonEntry(dn); if (!de.loot.some(x => x.n === it.name)) de.loot.unshift({ n: it.name, q: it.q }); if (de.loot.length > 6) de.loot.length = 6;
   gain(it, "Won");
 }
 
@@ -765,7 +934,7 @@ function finish(t) {
       S.arrived = t.zone; S.loc = "hub"; S.curQ = 0;
       const before = S.quests.length; S.quests = S.quests.filter(x => x.zone === t.zone);
       if (before > S.quests.length) log(`Abandoned ${before - S.quests.length} unfinished quest${before - S.quests.length > 1 ? "s" : ""} from the last zone.`);
-      const z = ZONES[t.zone];
+      const z = ZONES[t.zone]; zoneEntry(t.zone);
       log(`Entered ${t.zone} (levels ${z[0]}–${z[1]}).`, "zone");
       break;
     }
@@ -774,10 +943,15 @@ function finish(t) {
     case "kill": {
       S.since = (S.since || 0) + 1;
       if (Math.random() < (t.elite ? 0.06 : 0.003)) {
-        S.deaths++; S.repair += S.level * S.level * 4 + 20;
+        if (S.cons.hp > 0 && Math.random() < 0.7) {
+          S.cons.hp--; if (!S.feats.includes("close call")) S.feats.push("close call");
+          log(`Close call! Nearly died to ${article(t.mob)}, but ${article(hpPot())} saved the day.`, "death");
+        } else {
+        S.deaths++; loseBuffs(); S.repair += S.level * S.level * 4 + 20;
         log(`Died to ${article(t.mob)}. Releasing spirit…`, "death");
         S.queue.unshift({ k: "ghost", d: "Running back to your corpse as a ghost", t: sec(45) }, { k: "rez", d: "Resurrecting and drinking up", t: sec(10) });
         break;
+        }
       }
       S.kills++; S.repair += Math.round(S.level * 0.6);
       gainXp(mobXp(t.mobL) * (t.elite ? 6 : 1));
@@ -786,7 +960,8 @@ function finish(t) {
         q.prog++;
         if (questDone(q)) log(`Objective complete: ${questText(q)}.`, "quest");
       }
-      if (t.elite) log(`${t.mob} has been slain.`, "boss");
+      if (t.elite) { log(`${t.mob} has been slain.`, "boss"); if (!S.elites.includes(t.mob)) S.elites.push(t.mob); }
+      if (S.arrived) { const ze = zoneEntry(S.arrived); ze.k++; ze.L1 = S.level; ze.t1 = realNow(); }
       const L = S.level;
       if (Math.random() < 0.55) addBag({ name: Math.random() < 0.4 ? CLOTH[clamp(Math.floor(L / 12), 0, 4)] : pick(GREYS), val: Math.round((L * L * 0.6 + 4) * (0.5 + Math.random())), q: 0 });
       const r = Math.random();
@@ -803,6 +978,8 @@ function finish(t) {
       const q = findQuest(t.qid); if (!q) break;
       S.quests = S.quests.filter(x => x !== q);
       S.money += q.money; S.qdone++; S.cycleQ++;
+      if (q.name === "Mankrik's Wife" && !S.feats.includes(q.name)) S.feats.push(q.name);
+      if (S.zones.find(x => x.z === q.zone)) zoneEntry(q.zone).q++;
       S.done.unshift(q.name); if (S.done.length > 10) S.done.length = 10;
       log(`Quest complete: "${q.name}". ${S.level < 60 ? "+" + q.xp.toLocaleString() + " XP, " : ""}${moneyTxt(q.money)}.`, "quest");
       gainXp(q.xp);
@@ -815,6 +992,7 @@ function finish(t) {
     case "repair": { const c = Math.min(S.repair, S.money); S.money -= c; S.repair = 0; if (c) log(`Repaired everything for ${moneyTxt(c)}.`, "gold"); break; }
     case "shop": {
       const L = S.level, reserve = L >= 34 && S.mount < 1 ? 900000 : L >= 56 && S.mount < 2 ? 10000000 : 0;
+      buySupplies(Math.max(0, S.money - reserve) * 0.25);
       const bag = BAGS.filter(b => b[0] <= L).pop();
       if (bag && S.money - bag[3] >= 0) {
         if (S.bagSlots.length < 4) { S.bagSlots.push(bag[2]); S.money -= bag[3]; log(`Bought ${article(bag[1])} (${bag[2]} slots).`, "gold"); }
@@ -851,7 +1029,7 @@ function finish(t) {
     case "trash": if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); break;
     case "boss": {
       if (Math.random() < (S.dg && S.dg.raid ? 0.12 : 0.06)) {
-        S.deaths++; S.repair += S.level * S.level * 5;
+        S.deaths++; S.repair += S.level * S.level * 5; loseBuffs();
         log(`Wiped on ${t.boss}. Corpse run…`, "death");
         S.queue.unshift({ k: "ghost", d: "Running back through the instance as a ghost", t: sec(60) }, { ...t, el: 0 });
         break;
@@ -862,12 +1040,22 @@ function finish(t) {
       if (Math.random() < (S.dg && S.dg.raid ? 0.3 : 0.4)) lootDrop(t.dn, t.boss);
       break;
     }
+    case "buff": applyBuff(t.b); break;
+    case "elixir": drinkElixir(false); break;
+    case "dbuff": {
+      const got = []; wantedBuffs().forEach(b => { if (!b.item || S.cons[b.item] > 0) { applyBuff(b); got.push(b.name); } });
+      const ex = drinkElixir(t.raid); if (ex) got.push(ex);
+      if (got.length) log(`Buffed up: ${got.join(", ")}.`, "spell");
+      break;
+    }
     case "dend": {
+      const de = dungeonEntry(t.dn); de.runs++; if (!de.at) { de.at = realNow(); de.L = S.level; de.p = S.time; }
       if (!S.dungeons.includes(t.dn)) S.dungeons.push(t.dn);
       S.runs = (S.runs || 0) + 1;
       log(`${t.dn} cleared!`, "dung"); S.dg = null; S.loc = "city"; break;
     }
   }
+  checkAch();
   dirty = true;
 }
 
@@ -886,7 +1074,9 @@ function catchUp(ms) {
   ms = Math.min(ms, 12 * 3600 * 1000);
   if (ms < 60000) return;
   const L0 = S.level, q0 = S.qdone;
-  for (let left = ms; left > 0; left -= 30000) advance(Math.min(30000, left));
+  simClock = Date.now() - ms;
+  for (let left = ms; left > 0; left -= 30000) { advance(Math.min(30000, left)); simClock += Math.min(30000, left); }
+  simClock = null;
   log(`While you were away (${fmtTime(ms)}): ${S.level > L0 ? `gained ${S.level - L0} level${S.level - L0 > 1 ? "s" : ""}, ` : ""}finished ${S.qdone - q0} quests.`, "lvl");
 }
 
@@ -930,18 +1120,24 @@ function gameShell() {
       <div class="sec"><h2>Equipment <small id="gs"></small></h2><ul class="rows" id="equip"></ul></div>
     </div>
     <div class="col c-log">
-      <div class="chron sec"><h2>Chronicle <small id="elapsed"></small></h2><ul class="log" id="log"></ul></div>
+      <div class="chron sec">
+        <div class="tabs" role="tablist" id="tabs">${TABS.map(([k, n]) => `<button type="button" role="tab" data-t="${k}" aria-selected="${k === uiTab}">${n}<small id="tab-${k}"></small></button>`).join("")}</div>
+        <div class="tabmeta"><small id="elapsed"></small></div>
+        <ul class="log" id="log"></ul><ul class="journal" id="journal" hidden></ul>
+      </div>
     </div>
     <div class="col">
       <div class="sec quests"><h2>Quest Log <small id="qCount"></small></h2><ul class="rows" id="quests"></ul></div>
+      <div class="sec"><h2>Buffs <small id="bCount"></small></h2><ul class="rows" id="buffs"></ul></div>
+      <div class="sec"><h2>Supplies</h2><ul class="rows" id="supplies"></ul></div>
       <div class="sec"><h2>Talents <small id="talPts"></small></h2><div class="tal" id="tal"></div></div>
       <div class="sec"><h2>Spellbook <small id="spCount"></small></h2><ul class="rows" id="spells"></ul></div>
       <div class="sec"><h2>Bags <small id="money"></small></h2><ul class="rows" id="bags"></ul></div>
-      <div class="sec"><h2>Dungeons <small id="dCount"></small></h2><ul class="rows" id="dungeons"></ul></div>
     </div>
   </section>`;
   $("speed").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; speed = S.speed = +b.dataset.s; renderSpeed(); });
   $("retire").addEventListener("click", confirmRetire);
+  $("tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; uiTab = b.dataset.t; document.querySelectorAll("#tabs button").forEach(x => x.setAttribute("aria-selected", String(x === b))); dirty = true; });
   $("brand").addEventListener("click", brandTap);
   renderSpeed();
 }
@@ -1006,8 +1202,12 @@ function renderLists() {
   $("qCount").textContent = `${S.quests.length} active`;
   const qs = S.quests.map(q => `<li><span class="l ${q.id === S.curQ && !questDone(q) ? "cur" : ""}">${esc(q.name)}<br><small style="color:var(--dim)">${esc(questText(q))}</small></span>${questDone(q) ? '<span class="done">✓</span>' : ""}</li>`);
   $("quests").innerHTML = qs.join("") || `<li><span class="empty">no quests right now</span></li>`;
-  $("dCount").textContent = `${S.dungeons.length} cleared`;
-  $("dungeons").innerHTML = S.dungeons.slice().reverse().map(d => `<li><span class="l">${esc(d)}</span><span class="done">✓</span></li>`).join("") || `<li><span class="empty">the first one opens around level 13–17</span></li>`;
+  const act = activeBuffs();
+  $("bCount").textContent = `${act.length} active`;
+  $("buffs").innerHTML = act.map(n => { const left = S.buffs[n] - S.time; return `<li><span class="l buff">${esc(n)}</span><span class="rank">${left > 1e13 ? "" : Math.max(1, Math.ceil(left / MIN)) + " min"}</span></li>`; }).join("") || `<li><span class="empty">none right now</span></li>`;
+  const sup = [["hp", hpPot()], ["mp", cls().mp && S.level >= 5 ? mpPot() : null], ["elix", elixirName()], ["stone", usesStone() ? stoneName() : null]].filter(x => x[1] && S.cons[x[0]] > 0);
+  $("supplies").innerHTML = sup.map(([k, n]) => `<li><span class="l">${esc(n)}</span><span class="rank">×${S.cons[k]}</span></li>`).join("") || `<li><span class="empty">restocks in the capital</span></li>`;
+  renderJournal();
   $("log").innerHTML = S.log.map(l => `<li class="${l.k}${l.id > lastLogId && lastLogId ? " fresh" : ""}"><time>${fmtTime(l.t)}</time><span>${esc(l.txt)}</span></li>`).join("");
   lastLogId = S.log.length ? S.log[0].id : 0;
   $("xpN").textContent = S.level >= 60 ? "Level 60 · max level" : `Level ${S.level} → ${S.level + 1}`;
@@ -1032,7 +1232,7 @@ function renderBars() {
   if (cq) { $("qV").textContent = `${cq.prog} / ${cq.max}`; $("qB").style.width = (cq.prog / cq.max * 100) + "%"; } else { $("qV").textContent = ""; $("qB").style.width = "0%"; }
   if (S.dg) { $("zV").textContent = `${S.dg.killed} / ${S.dg.total} bosses`; $("zB").style.width = (S.dg.killed / S.dg.total * 100) + "%"; }
   else { const li = legInfo(); $("zV").textContent = li.val; $("zB").style.width = (li.p * 100) + "%"; }
-  $("elapsed").textContent = "/played " + fmtTime(S.time);
+  if (uiTab === "log") $("elapsed").textContent = "/played " + fmtTime(S.time);
 }
 
 let rafId = 0, lastNow = 0, saveTimer = 0;
@@ -1103,10 +1303,47 @@ function drawCreate() {
 document.addEventListener("visibilitychange", () => { if (document.hidden) save(); });
 window.addEventListener("beforeunload", save);
 try { const h = window.claude && window.claude.hot; if (h && typeof h.snapshot === "function") h.snapshot(() => ({ S, draft })); } catch (e) {}
+// ---------- journal tabs: achievements, zones, dungeons ----------
+const TABS = [["log", "Chronicle"], ["ach", "Achievements"], ["zones", "Zones"], ["dung", "Dungeons"]];
+let uiTab = "log";
+const fmtDate = t => new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+const shortPlayed = ms => { const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor(m / 60) % 24; return d ? `${d}d ${h}h` : h ? `${h}h ${m % 60}m` : `${m % 60}m`; };
+const when = (at, L, p) => at ? `${fmtDate(at)}${L ? " · level " + L : ""}${p != null ? " · " + shortPlayed(p) + " played" : ""}` : "earned before the journal existed";
+function renderJournal() {
+  const shown = ACH.filter(a => !a.show || a.show()), got = shown.filter(a => S.ach[a.id]);
+  const r = route(), legs = [...new Set(r.map(l => l.z))], extra = S.zones.filter(e => !legs.includes(e.z));
+  const doneZ = S.zones.filter(e => e.z !== S.arrived || S.leg >= r.length).length;
+  const dl = factionDungeons().concat(RAIDS).sort((a, b) => a[1] - b[1]);
+  $("tab-ach").textContent = ` ${got.length}/${shown.length}`;
+  $("tab-zones").textContent = ` ${S.zones.length}`;
+  $("tab-dung").textContent = ` ${dl.filter(d => S.dungeons.includes(d[0])).length}/${dl.length}`;
+  $("log").hidden = uiTab !== "log"; $("journal").hidden = uiTab === "log";
+  $("elapsed").textContent = uiTab === "log" ? "/played " + fmtTime(S.time) : uiTab === "ach" ? `${got.length} of ${shown.length} earned` : uiTab === "zones" ? `${doneZ} zones done` : `${S.dungeons.length} cleared`;
+  if (uiTab === "log") return;
+  let h = "";
+  if (uiTab === "ach") {
+    const order = got.slice().sort((a, b) => (S.ach[b.id].p ?? -1) - (S.ach[a.id].p ?? -1)).concat(shown.filter(a => !S.ach[a.id]));
+    h = order.map(a => { const e = S.ach[a.id]; return `<li class="${e ? "got" : "locked"}"><span class="ico">${e ? "★" : "☆"}</span><div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span>${e ? `<time>${when(e.at, e.L, e.p)}</time>` : ""}</div></li>`; }).join("");
+  } else if (uiTab === "zones") {
+    const row = (z, e, cur) => { const [a, b] = ZONES[z] || [0, 0];
+      const st = cur ? "in progress" : e ? "done" : "ahead";
+      const det = e ? (e.old ? "visited before the journal existed" : `level ${e.L0}${e.L1 > e.L0 ? "–" + e.L1 : ""} · ${e.q} quests · ${e.k.toLocaleString()} kills${e.t0 ? " · from " + fmtDate(e.t0) : ""}`) : `levels ${a}–${b}`;
+      return `<li class="${st === "ahead" ? "locked" : st === "in progress" ? "cur" : "got"}"><span class="ico">${st === "done" ? "✓" : st === "in progress" ? "▸" : "·"}</span><div><b>${esc(z)}</b><span>${det}</span></div><em>${st}</em></li>`; };
+    h = legs.map(z => row(z, S.zones.find(x => x.z === z), z === curZone() && S.leg < r.length)).join("")
+      + extra.map(e => row(e.z, e, e.z === curZone())).join("");
+  } else {
+    h = dl.map(d => { const e = S.dstat[d[0]], raid = RAIDS.includes(d), done = S.dungeons.includes(d[0]) && e;
+      const loot = done && e.loot.length ? `<span class="loot">${e.loot.map(x => `<i class="q${x.q}">${esc(x.n)}</i>`).join(", ")}</span>` : "";
+      return `<li class="${done ? "got" : "locked"}"><span class="ico">${done ? "✓" : "·"}</span><div><b>${esc(d[0])}${raid ? " (raid)" : ""}</b><span>${done ? `cleared ${e.runs}× · ${e.old ? "first clear before the journal" : "first at level " + e.L + " on " + fmtDate(e.at)}` : `levels ${d[1]}–${d[2]}`}</span>${loot}</div></li>`; }).join("");
+  }
+  $("journal").innerHTML = h;
+}
+
 function boot(data) {
   data = data || {};
   S = data.S || load();
   draft = data.draft || null;
+  if (S) migrate();
   if (S && !data.S && S.savedAt) catchUp(Date.now() - S.savedAt);
   if (S) startGame(); else showCreate();
 }
