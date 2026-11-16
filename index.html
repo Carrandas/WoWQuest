@@ -125,7 +125,7 @@ button:disabled { cursor: not-allowed; }
 .vitals { margin-top: 10px; }
 .pools { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .pools .bar { height: 12px; }
-.pools .bar > i { transition: width .25s linear, background-color .4s; }
+.pools .bar > i { transition: width .15s ease-out, background-color .3s; }
 .pools .val { color: var(--text); }
 .ilvl { font-size: 12px; color: var(--dim); margin-left: 6px; font-variant-numeric: tabular-nums; }
 .q0 { color: var(--poor); } .q1 { color: var(--common); } .q2 { color: var(--uncommon); } .q3 { color: var(--rare); } .q4 { color: var(--epic); } .q5 { color: var(--legend); }
@@ -732,14 +732,21 @@ function vitalEnd(t) {
   else e = [up(hp + 0.25), up(mp + 0.15)];
   return (t.ve = e);
 }
+// fights drop in blocks, one per finished cast; everything else moves smoothly
+function poolProgress(t) {
+  const p = Math.min(1, t.el / t.t);
+  if (!FIGHTS.includes(t.k)) return p;
+  const n = (t.casts && t.casts.length) || 4;
+  return Math.floor(p * n) / n;
+}
 function vitalsNow() {
   const t = S.task; let hp = S.hpF ?? 1, mp = S.mpF ?? 1;
-  if (t) { const p = Math.min(1, t.el / t.t), e = vitalEnd(t); hp += (e[0] - hp) * p; mp += (e[1] - mp) * p; }
+  if (t) { const p = poolProgress(t), e = vitalEnd(t); hp += (e[0] - hp) * p; mp += (e[1] - mp) * p; }
   return [hp, mp];
 }
 // rage builds during a fight and fades after; energy dips and ticks back
 function secondPool() {
-  const t = S.task, fight = t && FIGHTS.includes(t.k), p = t ? Math.min(1, t.el / t.t) : 0;
+  const t = S.task, fight = t && FIGHTS.includes(t.k), p = t ? poolProgress(t) : 0;
   if (cls().res === "Rage") return fight ? Math.round(15 + 70 * p) : 0;
   return fight ? Math.round(100 - 65 * Math.abs(Math.sin(p * Math.PI * 3))) : 100;
 }
