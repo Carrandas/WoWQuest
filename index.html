@@ -81,6 +81,8 @@ button:disabled { cursor: not-allowed; }
 .now .lbl { color: var(--gold); }
 .now .desc { font-size: clamp(19px, 2.2vw, 24px); margin: 4px 0 10px; min-height: 1.42em; overflow-wrap: anywhere; }
 .now .desc::after { content: "…"; color: var(--dim); }
+.now .casts { min-height: 1.4em; margin: -6px 0 8px; color: var(--dim); font-size: 15px; overflow-wrap: anywhere; }
+.now .casts .cur { color: var(--gold); }
 .bigbar { position: relative; height: 22px; border-radius: 3px; background: #05070c; border: 1px solid #5a4a12; overflow: hidden; box-shadow: inset 0 2px 6px #000a; }
 .bigbar .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(180deg, #ffe066, #e0b100 55%, #9a7a00); }
 .bigbar .fill::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, #fff5 50%, transparent 70%); background-size: 200% 100%; animation: sheen 2.2s linear infinite; }
@@ -662,12 +664,41 @@ function killTask(quest) {
   const elite = quest.type === "elite";
   const mobL = elite ? Math.min(S.level + 2, zmax + 2) : clamp(S.level + R(3) - 1, Math.max(1, zmin - 1), zmax + 2);
   const mob = elite ? quest.mob : quest.type === "col" && Math.random() < 0.15 ? pick(zoneMobs(quest.zone)) : quest.mob;
-  const atk = c.list.filter(s => s.atk && spellName(s.name) in S.spells).map(s => spellName(s.name));
-  let d = elite ? `Fighting ${mob} (elite) with a pickup group` : `${pick(c.verbs)} ${article(mob)}`;
-  if (atk.length) { const sp = pick(atk); d += ` · ${sp}${S.spells[sp] > 1 && Math.random() < 0.3 ? " (Rank " + S.spells[sp] + ")" : ""}`; }
+  const d = elite ? `Fighting ${mob} (elite) with a pickup group` : `${pick(c.verbs)} ${article(mob)}`;
   const gear = clamp(gearScore() / Math.max(1, S.level), 0.5, 1.4);
   const t = sec((9 + S.level * 0.12) * (elite ? 5 : 1) * clamp(1.35 - gear * 0.35, 0.8, 1.2));
-  return { k: "kill", d, t, mob, mobL, qid: quest.id, elite };
+  return { k: "kill", d, t, mob, mobL, qid: quest.id, elite, casts: rotation(elite) };
+}
+
+// a believable fight: opener, filler casts with the odd extra ability, then a finisher
+const ROT = {
+  Warrior: () => ({ open: ["Charge"], fill: ["Heroic Strike", "Auto Attack"], extra: ["Rend", "Thunder Clap", "Overpower", "Sunder Armor", "Hamstring", "Revenge", "Cleave", "Slam", "Whirlwind", "Bloodrage", "Battle Shout"], end: ["Execute"] }),
+  Paladin: () => ({ open: ["Seal of the Crusader", "Seal of Righteousness"], fill: ["Auto Attack"], extra: ["Judgement", "Seal of Righteousness", "Hammer of Justice", "Exorcism", "Holy Light", "Flash of Light"], end: ["Hammer of Wrath"] }),
+  Hunter: () => ({ open: ["Hunter's Mark", "Auto Shot"], fill: ["Auto Shot"], extra: ["Serpent Sting", "Arcane Shot", "Concussive Shot", "Multi-Shot", "Scorpid Sting", "Wing Clip", "Raptor Strike", "Mongoose Bite"], end: ["Arcane Shot", "Raptor Strike"] }),
+  Rogue: () => ({ open: ["Cheap Shot", "Ambush", "Garrote", "Sinister Strike"], fill: ["Sinister Strike"], extra: ["Slice and Dice", "Gouge", "Backstab", "Kick", "Rupture"], end: ["Eviscerate"] }),
+  Priest: () => ({ open: ["Power Word: Shield", "Smite"], fill: S.spec === 2 && "Mind Flay" in S.spells ? ["Mind Flay"] : ["Smite"], extra: ["Shadow Word: Pain", "Mind Blast", "Holy Fire", "Renew", "Shoot"], end: ["Shoot"] }),
+  Shaman: () => ({ open: ["Lightning Bolt"], fill: S.spec === 1 ? ["Auto Attack"] : ["Lightning Bolt", "Auto Attack"], extra: ["Earth Shock", "Flame Shock", "Frost Shock", "Searing Totem", "Lightning Shield", "Healing Wave"], end: ["Earth Shock", "Auto Attack"] }),
+  Mage: () => ({ open: S.spec === 1 ? ["Fireball"] : ["Frostbolt", "Fireball"], fill: S.spec === 1 ? ["Fireball"] : ["Frostbolt", "Fireball"], extra: ["Frost Nova", "Fire Blast", "Cone of Cold", "Arcane Missiles", "Arcane Explosion", "Scorch"], end: ["Fire Blast", "Shoot"] }),
+  Warlock: () => ({ open: ["Corruption", "Immolate", "Shadow Bolt"], fill: ["Shadow Bolt"], extra: ["Immolate", "Curse of Agony", "Life Tap", "Drain Life", "Searing Pain", "Death Coil"], end: ["Drain Soul", "Shoot"] }),
+  Druid: () => S.spec === 1 && "Cat Form" in S.spells ? { open: ["Prowl"], fill: ["Claw"], extra: ["Rake", "Shred", "Faerie Fire", "Rip"], end: ["Ferocious Bite", "Rip"] }
+    : S.spec === 1 && "Bear Form" in S.spells ? { open: ["Bear Form"], fill: ["Maul", "Auto Attack"], extra: ["Demoralizing Roar", "Bash", "Growl"], end: ["Maul"] }
+    : { open: ["Moonfire", "Wrath"], fill: ["Wrath"], extra: ["Moonfire", "Entangling Roots", "Faerie Fire", "Rejuvenation", "Healing Touch"], end: ["Moonfire", "Wrath"] },
+};
+const ULT_ATK = { Warrior: [0, 1, 2], Paladin: [0], Shaman: [1], Warlock: [2] };
+function rotation(elite) {
+  const c = cls(), r = ROT[S.cls](), free = /^(Auto Attack|Auto Shot|Shoot)$/;
+  const known = n => (free.test(n) && (n !== "Shoot" || S.level >= 8)) || n in S.spells, first = a => a.find(known) || "Auto Attack";
+  const extra = r.extra.filter(known);
+  if (S.level >= 40 && (ULT_ATK[S.cls] || []).includes(S.spec)) extra.push(c.ult[S.spec], c.ult[S.spec]);
+  const out = [first(r.open)], n = (elite ? 6 : 3) + R(3);
+  for (let i = 0; i < n; i++) {
+    let s = extra.length && Math.random() < 0.4 ? pick(extra) : first(r.fill);
+    if (s === out[out.length - 1] && extra.includes(s)) s = first(r.fill);
+    out.push(s);
+  }
+  const end = r.end.filter(known);
+  if (end.length && Math.random() < 0.7) out.push(end[0]);
+  return out;
 }
 
 function queueCity() {
@@ -883,6 +914,7 @@ function gameShell() {
     <div class="now">
       <div class="lbl">now</div>
       <div class="desc" id="tDesc"></div>
+      <div class="casts" id="tCasts"></div>
       <div class="bigbar"><div class="fill" id="tFill"></div><div class="pct" id="tPct"></div></div>
     </div>
   </section>
@@ -988,7 +1020,9 @@ function renderLists() {
 
 function renderBars() {
   const t = S.task;
-  if (t) { const p = Math.min(1, t.el / t.t); $("tDesc").textContent = t.d; $("tFill").style.width = (p * 100).toFixed(1) + "%"; $("tPct").textContent = Math.floor(p * 100) + "%"; }
+  if (t) { const p = Math.min(1, t.el / t.t); $("tDesc").textContent = t.d;
+    const cs = t.casts || [], ci = Math.min(cs.length - 1, Math.floor(p * cs.length));
+    $("tCasts").innerHTML = cs.slice(0, ci + 1).map((s, i) => `<span${i === ci ? ' class="cur"' : ""}>${esc(s)}</span>`).join(" › "); $("tFill").style.width = (p * 100).toFixed(1) + "%"; $("tPct").textContent = Math.floor(p * 100) + "%"; }
   const need = xpNeed(S.level);
   if (S.level >= 60) { $("xpV").textContent = "max"; $("xpB").style.width = "100%"; }
   else { $("xpV").textContent = `${S.xp.toLocaleString()} / ${need.toLocaleString()}`; $("xpB").style.width = (S.xp / need * 100) + "%"; }
