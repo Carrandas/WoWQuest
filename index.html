@@ -123,6 +123,27 @@ button:disabled { cursor: not-allowed; }
 .stat.prime { border-color: var(--gold-dk); background: #ffd10010; }
 .stat.prime .lbl { color: var(--gold); }
 .vitals { margin-top: 10px; }
+.group { border-bottom: 1px solid var(--rim); padding-bottom: 16px; }
+.group[hidden] { display: none; }
+.group h2 { margin: 0 0 10px; font-family: var(--display); font-weight: 700; font-size: 18px; color: var(--gold); display: flex; gap: 10px; align-items: baseline; }
+.group h2 small { font-family: var(--body); font-weight: 400; font-size: 13px; color: var(--dim); }
+.gcards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.gcard { background: var(--panel); border: 1px solid var(--rim); border-radius: 6px; padding: 9px 11px; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.gcard.me { border-color: var(--gold-dk); }
+.gtop { display: flex; justify-content: space-between; gap: 6px; align-items: baseline; }
+.gname { font-weight: 700; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.grole { font-family: var(--label); font-weight: 700; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); border: 1px solid var(--rim); border-radius: 999px; padding: 1px 7px; flex: none; }
+.r-tank .grole { color: #8fb0f0; border-color: #2f4f8f; }
+.r-heal .grole { color: var(--good); border-color: #2f6f2a; }
+.r-dps .grole { color: #f08a80; border-color: #8f2f28; }
+.gsub { font-size: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gbar { position: relative; height: 14px; border-radius: 2px; background: #05070c; border: 1px solid var(--rim); overflow: hidden; }
+.gbar.thin { height: 10px; }
+.gbar > i { display: block; height: 100%; width: 0; transition: width .15s ease-out, background-color .3s; }
+.gbar > span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 11px; font-weight: 700; line-height: 1; color: var(--text); text-shadow: 0 1px 2px #000; font-variant-numeric: tabular-nums; }
+.gbar.thin > span { font-size: 9px; }
+.gcast { font-size: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.4em; }
+.gcast .cur { color: var(--gold); }
 .pools { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .pools .bar { height: 12px; }
 .pools .bar > i { transition: width .15s ease-out, background-color .3s; }
@@ -225,10 +246,12 @@ button:disabled { cursor: not-allowed; }
 @media (max-width: 1080px) {
   .main { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .main .c-log { grid-column: 1 / -1; order: -1; }
+  .gcards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 720px) {
   .hero { grid-template-columns: minmax(0, 1fr); }
   .meters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gcards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .main { grid-template-columns: minmax(0, 1fr); }
   .classes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .log { max-height: 440px; }
@@ -724,9 +747,8 @@ function vitalEnd(t) {
   const hp = S.hpF ?? 1, mp = S.mpF ?? 1, r = (a, b) => a + Math.random() * (b - a), lo = x => Math.max(0.04, x), up = x => Math.min(1, x);
   let e;
   if (t.k === "kill") e = t.elite ? [lo(hp - r(0.35, 0.6)), lo(mp - r(0.3, 0.5))] : [lo(hp - r(0.07, 0.17)), lo(mp - r(0.08, 0.18))];
-  else if (t.k === "trash") e = [r(0.4, 0.9), r(0.25, 0.85)];
-  else if (t.k === "boss") e = [r(0.2, 0.7), r(0.1, 0.5)];
-  else if (t.k === "rest" || t.k === "rez") e = [1, 1];
+  else if (t.k === "trash" || t.k === "boss") { const d = fightDrop(heroRole(), t.k); e = [lo(hp - d[0]), lo(mp - d[1])]; }
+  else if (t.k === "rest" || t.k === "rez" || t.k === "regroup") e = [1, 1];
   else if (t.k === "ghost") e = [0, 0];
   else if (t.k === "buff" || t.k === "conjure" || t.k === "dbuff") e = [up(hp + 0.05), lo(mp - 0.08)];
   else e = [up(hp + 0.25), up(mp + 0.15)];
@@ -747,8 +769,7 @@ function vitalsNow() {
 // rage builds during a fight and fades after; energy dips and ticks back
 function secondPool() {
   const t = S.task, fight = t && FIGHTS.includes(t.k), p = t ? poolProgress(t) : 0;
-  if (cls().res === "Rage") return fight ? Math.round(15 + 70 * p) : 0;
-  return fight ? Math.round(100 - 65 * Math.abs(Math.sin(p * Math.PI * 3))) : 100;
+  return pool2(cls().res, fight, p);
 }
 
 // buffs the hero wants up right now: [{name, min, item, cast}]
@@ -872,6 +893,130 @@ function migrate() {
   if (!S.ach) { S.ach = {}; checkAch(true); }
 }
 
+// ---------- dungeon groups: one tank, one healer, three dps; the hero fills their own slot ----------
+const ROLE_SPECS = { Warrior: { 2: "tank" }, Paladin: { 0: "heal", 1: "tank" }, Priest: { 0: "heal", 1: "heal" }, Shaman: { 2: "heal" }, Druid: { 1: "tank", 2: "heal" } };
+const ROLE_NAME = { tank: "Tank", heal: "Healer", dps: "DPS" };
+const heroRole = () => (ROLE_SPECS[S.cls] || {})[S.spec] || "dps";
+const ROLE_CLASSES = {
+  tank: ["Warrior", "Warrior", "Warrior", "Druid", "Paladin"],
+  heal: ["Priest", "Priest", "Druid", "Paladin", "Shaman"],
+  dps: ["Mage", "Rogue", "Hunter", "Warlock", "Warrior", "Mage", "Rogue", "Priest", "Shaman", "Druid"],
+};
+// the spec a companion plays, so ultimates line up with their role
+const ROLE_SPEC = { tank: { Warrior: 2, Druid: 1, Paladin: 1 }, heal: { Priest: 1, Druid: 2, Paladin: 0, Shaman: 2 },
+  dps: { Mage: 2, Rogue: 1, Hunter: 1, Warlock: 0, Warrior: 1, Priest: 2, Shaman: 0, Druid: 0, Paladin: 2 } };
+const NAME_A = ["Thra", "Gor", "Bel", "Kal", "Mor", "Zul", "Ael", "Dra", "Fen", "Grim", "Hal", "Jor", "Ky", "Lor", "Mal", "Nar", "Or", "Rag", "Syl", "Tor", "Vel", "Xan", "Yri", "Bro", "Shae", "Ula", "Eli", "Kor", "Tha", "Va", "Bru", "Ish", "Dal", "Ner"];
+const NAME_B = ["dan", "gar", "rik", "wyn", "thas", "ra", "nok", "dor", "eth", "ia", "mir", "grom", "lyn", "zar", "ius", "ak", "osh", "elle", "ric", "una", "ven", "dil", "rok", "ana", "ix", "orn", "ael", "us"];
+const NAME_FUN = ["Healsplz", "Stabbington", "Tankmeister", "Dotsalot", "Bubbleboy", "Frostbyte", "Pewpew", "Moonbeam", "Critz", "Shieldwall", "Mendalot", "Boomkinz", "Totemtom", "Lockjaw", "Arcanix"];
+function randName(taken) {
+  for (let i = 0; i < 20; i++) {
+    const n = Math.random() < 0.15 ? pick(NAME_FUN) : pick(NAME_A) + pick(NAME_B);
+    if (!taken.includes(n)) return n;
+  }
+  return pick(NAME_A) + pick(NAME_B) + R(9);
+}
+function makeParty(raid) {
+  const mine = heroRole(), need = ["tank", "heal", "dps", "dps", "dps"];
+  need.splice(need.indexOf(mine), 1);
+  const taken = [S.name];
+  return need.map(role => {
+    const c = pick(ROLE_CLASSES[role].filter(k => k !== "Paladin" || S.faction === "Alliance").filter(k => k !== "Shaman" || S.faction === "Horde"));
+    const race = pick(Object.keys(ALLOWED).filter(r => RACES[r].f === S.faction && ALLOWED[r].includes(c)));
+    const name = randName(taken); taken.push(name);
+    return { name, race, cls: c, role, spec: ROLE_SPEC[role][c], L: raid ? 60 : clamp(S.level + R(5) - 2, 1, 60), hp: 1, mp: 1 };
+  });
+}
+
+// role rotations for the group fights (dps companions use these too)
+const GROUP_ROT = {
+  tank: {
+    Warrior: { open: ["Charge"], fill: ["Sunder Armor", "Heroic Strike"], extra: ["Revenge", "Shield Block", "Thunder Clap", "Demoralizing Shout", "Taunt", "Shield Bash", "Cleave", "Shield Slam", "Heroic Strike"], end: ["Shield Wall", "Sunder Armor"] },
+    Druid: { open: ["Bear Form"], fill: ["Maul", "Auto Attack"], extra: ["Growl", "Demoralizing Roar", "Bash", "Faerie Fire", "Maul"], end: ["Maul"] },
+    Paladin: { open: ["Righteous Fury", "Seal of Righteousness"], fill: ["Auto Attack"], extra: ["Judgement", "Seal of Righteousness", "Holy Shield", "Hammer of Justice", "Blessing of Sanctuary"], end: ["Lay on Hands", "Judgement"] },
+  },
+  heal: {
+    Priest: { open: ["Power Word: Shield"], fill: ["Heal", "Lesser Heal"], extra: ["Renew", "Flash Heal", "Power Word: Shield", "Greater Heal", "Prayer of Healing", "Dispel Magic"], end: ["Renew"] },
+    Druid: { open: ["Rejuvenation"], fill: ["Healing Touch"], extra: ["Regrowth", "Rejuvenation", "Swiftmend", "Tranquility", "Remove Curse"], end: ["Rejuvenation"] },
+    Paladin: { open: ["Blessing of Wisdom", "Blessing of Might"], fill: ["Holy Light"], extra: ["Flash of Light", "Holy Light", "Purify", "Holy Shock"], end: ["Flash of Light", "Holy Light"] },
+    Shaman: { open: ["Healing Stream Totem", "Stoneskin Totem"], fill: ["Healing Wave"], extra: ["Lesser Healing Wave", "Chain Heal", "Mana Spring Totem", "Healing Wave", "Mana Tide Totem"], end: ["Lesser Healing Wave", "Healing Wave"] },
+  },
+  dps: {
+    Warrior: { open: ["Charge"], fill: ["Heroic Strike", "Auto Attack"], extra: ["Whirlwind", "Bloodthirst", "Cleave", "Hamstring", "Battle Shout", "Overpower", "Slam"], end: ["Execute"] },
+    Rogue: { open: ["Sinister Strike"], fill: ["Sinister Strike"], extra: ["Slice and Dice", "Backstab", "Kick", "Rupture", "Adrenaline Rush", "Expose Armor"], end: ["Eviscerate"] },
+    Hunter: { open: ["Hunter's Mark", "Auto Shot"], fill: ["Auto Shot"], extra: ["Serpent Sting", "Arcane Shot", "Multi-Shot", "Rapid Fire", "Trueshot Aura"], end: ["Arcane Shot", "Auto Shot"] },
+    Mage: { open: ["Frostbolt", "Fireball"], fill: ["Frostbolt", "Fireball"], extra: ["Arcane Missiles", "Fire Blast", "Cone of Cold", "Arcane Explosion", "Blizzard", "Frost Nova", "Scorch"], end: ["Fire Blast", "Shoot"] },
+    Warlock: { open: ["Corruption", "Immolate"], fill: ["Shadow Bolt"], extra: ["Curse of Agony", "Immolate", "Life Tap", "Searing Pain", "Rain of Fire", "Drain Life"], end: ["Drain Soul", "Shoot"] },
+    Priest: { open: ["Shadow Word: Pain"], fill: ["Mind Flay", "Smite"], extra: ["Mind Blast", "Shadow Word: Pain", "Holy Fire", "Shadowform"], end: ["Shoot"] },
+    Shaman: { open: ["Flame Shock", "Lightning Bolt"], fill: ["Lightning Bolt"], extra: ["Chain Lightning", "Earth Shock", "Searing Totem", "Elemental Mastery", "Frost Shock"], end: ["Earth Shock"] },
+    Druid: { open: ["Moonfire"], fill: ["Wrath"], extra: ["Moonfire", "Insect Swarm", "Hurricane", "Faerie Fire", "Moonkin Form"], end: ["Moonfire", "Wrath"] },
+    Paladin: { open: ["Seal of the Crusader", "Seal of Righteousness"], fill: ["Auto Attack"], extra: ["Judgement", "Seal of Righteousness", "Exorcism", "Hammer of Justice"], end: ["Hammer of Wrath", "Judgement"] },
+  },
+};
+const FREE_ATK = /^(Auto Attack|Auto Shot|Shoot)$/;
+const HEALS = /^(?!.*(Totem|Prayer)).*(Heal|Light$|Wave|Renew|Rejuvenation|Regrowth|Swiftmend|Holy Shock|Power Word: Shield|Lay on Hands)/;
+function knowsAt(c, L, spec) {
+  const C = CLASSES[c];
+  return n => (FREE_ATK.test(n) && (n !== "Shoot" || L >= 8)) || C.list.some(sp => sp.name === n && sp.lvl <= L) || (L >= 40 && C.ult[spec] === n);
+}
+// as many casts as a normal fight of the same length would have
+const castCount = (base, L = S.level) => Math.max(4, Math.round(base / ((9 + 0.12 * L) / 5.5) * (0.85 + Math.random() * 0.3)));
+function rollRot(r, known, n, targets) {
+  const first = a => a.find(known) || "Auto Attack", extra = r.extra.filter(known);
+  const out = [first(r.open)];
+  for (let i = 0; i < n - 2; i++) {
+    let s = extra.length && Math.random() < 0.4 ? pick(extra) : first(r.fill);
+    if (s === out[out.length - 1] && extra.includes(s)) s = first(r.fill);
+    out.push(s);
+  }
+  const end = r.end.filter(known); out.push(end.length ? end[0] : first(r.fill));
+  // healers name who they're healing: mostly the tank
+  return targets ? out.map(s => HEALS.test(s) ? `${s} on ${Math.random() < 0.65 ? targets[0] : pick(targets)}` : s) : out;
+}
+const healTargets = () => { const all = [{ name: S.name, role: heroRole() }, ...(S.party || [])], t = all.find(m => m.role === "tank"); return [t ? t.name : S.name, ...all.filter(m => m.role !== "heal").map(m => m.name)]; };
+// the hero's own casts in a group fight: role rotation if tank/healer, the normal one for dps
+function heroGroupCasts(base, boss) {
+  const n = castCount(base), role = heroRole();
+  if (role === "dps") return rotation(boss, n);
+  const out = rollRot(GROUP_ROT[role][S.cls], knowsAt(S.cls, S.level, S.spec), n, role === "heal" ? healTargets() : null);
+  if (boss) potionCasts(out);
+  return out;
+}
+
+// how much a pull costs each role (health, mana) as a fraction of the pool
+function fightDrop(role, k, r = (a, b) => a + Math.random() * (b - a)) {
+  const boss = k === "boss";
+  if (role === "tank") return boss ? [r(0.3, 0.55), r(0.1, 0.25)] : [r(0.1, 0.22), r(0.04, 0.12)];
+  if (role === "heal") return boss ? [r(0.02, 0.15), r(0.25, 0.42)] : [r(0, 0.05), r(0.08, 0.18)];
+  return boss ? [r(0.05, 0.3), r(0.2, 0.38)] : [r(0, 0.1), r(0.07, 0.17)];
+}
+// companions' casts and pools for a task, made once when it starts
+function partyFight(t) {
+  if (t.pf || !S.party) return t.pf;
+  const fight = FIGHTS.includes(t.k), lo = x => Math.max(0.05, x), up = x => Math.min(1, x);
+  const base = t.k === "boss" ? (S.dg && S.dg.raid ? 260 : 110) : (S.dg && S.dg.raid ? 70 : 40);
+  t.pf = S.party.map(m => {
+    if (!fight) {
+      const e = t.k === "ghost" ? [0, 0] : t.k === "regroup" || t.k === "dbuff" ? [1, 1] : [up(m.hp + 0.3), up(m.mp + 0.3)];
+      return { casts: [], e };
+    }
+    const d = fightDrop(m.role, t.k), n = castCount(base, m.L);
+    return { casts: rollRot(GROUP_ROT[m.role][m.cls], knowsAt(m.cls, m.L, m.spec), n, m.role === "heal" ? healTargets() : null), e: [lo(m.hp - d[0]), lo(m.mp - d[1])] };
+  });
+  return t.pf;
+}
+function memberNow(i) {
+  const m = S.party[i], t = S.task, f = t && partyFight(t);
+  if (!f || !f[i]) return { hp: m.hp, mp: m.mp, p: 0, fight: false, ci: -1, casts: [] };
+  const raw = Math.min(1, t.el / t.t), cs = f[i].casts, n = cs.length || 4, p = cs.length ? Math.floor(raw * n) / n : raw;
+  return { hp: m.hp + (f[i].e[0] - m.hp) * p, mp: m.mp + (f[i].e[1] - m.mp) * p, p, fight: cs.length > 0, ci: Math.min(cs.length - 1, Math.floor(raw * cs.length)), casts: cs };
+}
+function partyFinish(t) {
+  const f = partyFight(t); if (!f) return;
+  S.party.forEach((m, i) => { if (f[i]) { m.hp = f[i].e[0]; m.mp = f[i].e[1]; } });
+}
+// rage builds through a pull, energy dips and ticks back
+const pool2 = (res, fight, p) => res === "Rage" ? (fight ? Math.round(15 + 70 * p) : 0) : (fight ? Math.round(100 - 65 * Math.abs(Math.sin(p * Math.PI * 3))) : 100);
+
 // ---------- new character ----------
 function newHero(f) {
   const r = RACES[f.race], c = CLASSES[f.cls], stats = {};
@@ -962,12 +1107,12 @@ const ROT = {
     : { open: ["Moonfire", "Wrath"], fill: ["Wrath"], extra: ["Moonfire", "Entangling Roots", "Faerie Fire", "Rejuvenation", "Healing Touch"], end: ["Moonfire", "Wrath"] },
 };
 const ULT_ATK = { Warrior: [0, 1, 2], Paladin: [0], Shaman: [1], Warlock: [2] };
-function rotation(elite) {
+function rotation(elite, count) {
   const c = cls(), r = ROT[S.cls](), free = /^(Auto Attack|Auto Shot|Shoot)$/;
   const known = n => (free.test(n) && (n !== "Shoot" || S.level >= 8)) || n in S.spells, first = a => a.find(known) || "Auto Attack";
   const extra = r.extra.filter(known);
   if (S.level >= 40 && (ULT_ATK[S.cls] || []).includes(S.spec)) extra.push(c.ult[S.spec], c.ult[S.spec]);
-  const out = [first(r.open)], n = (elite ? 6 : 3) + R(3);
+  const out = [first(r.open)], n = count ? count - 2 : (elite ? 6 : 3) + R(3);
   for (let i = 0; i < n; i++) {
     let s = extra.length && Math.random() < 0.4 ? pick(extra) : first(r.fill);
     if (s === out[out.length - 1] && extra.includes(s)) s = first(r.fill);
@@ -1002,17 +1147,20 @@ function pickDungeon() {
   }
   return DUNGEONS.find(d => ok(d) && !S.dungeons.includes(d[0]) && S.level >= d[1] && S.level <= d[1] + 6);
 }
+const regroupTask = raid => ({ k: "regroup", d: pick(["Waiting for the healer to drink", "Drinking up before the next pull", "Regrouping and drinking", "Looting and drinking up"]), t: sec(raid ? 12 : 8) });
 function queueDungeon(d) {
   const q = S.queue, raid = RAIDS.includes(d), bosses = d[6].split(","), trash = d[5].split(",");
   const chat = pick([`LFM ${d[4]}, need heals`, `LF1M ${d[4]}, have summon`, `LFG ${d[4]}, ${S.cls.toLowerCase()} lvl ${S.level}`, `LF tank for ${d[4]} then GO`, `${d[4]} run, LF2M, PST`]);
   S.dg = { name: d[0], killed: 0, total: bosses.length, raid };
+  S.party = makeParty(raid);
   q.push({ k: "lfg", d: raid ? `Waiting on the raid invite for ${d[0]}` : `Looking for group: "${chat}"`, t: sec(raid ? 120 : 60 + R(120)), chat: raid ? `[Raid] ${d[4]} invites going out, ${RAID_INFO[d[0]].size} man, be on time!` : chat, dn: d[0] });
   q.push({ k: "dtravel", d: `Traveling to ${d[0]} with the group`, t: sec(raid ? 180 : 120), dn: d[0] });
   q.push({ k: "dbuff", d: raid ? "Buffing up and drinking a flask at the instance portal" : "Buffing up at the instance entrance", t: sec(8), raid });
   bosses.forEach(b => {
     const n = raid ? 2 + R(2) : 1 + R(3);
-    for (let i = 0; i < n; i++) q.push({ k: "trash", d: `Clearing a pack of ${plural(pick(trash))}`, t: sec(raid ? 70 : 40), casts: rotation(false) });
-    q.push({ k: "boss", d: `Fighting ${b}`, t: sec(raid ? 260 : 110), boss: b, dn: d[0], casts: rotation(true) });
+    for (let i = 0; i < n; i++) q.push({ k: "trash", d: `Clearing a pack of ${plural(pick(trash))}`, t: sec(raid ? 70 : 40), casts: heroGroupCasts(raid ? 70 : 40, false) });
+    q.push({ k: "boss", d: `Fighting ${b}`, t: sec(raid ? 260 : 110), boss: b, dn: d[0], casts: heroGroupCasts(raid ? 260 : 110, true) });
+    q.push(regroupTask(raid));
   });
   q.push({ k: "dend", d: `Leaving ${d[0]}`, t: sec(10), dn: d[0] });
 }
@@ -1077,7 +1225,7 @@ function atiesh() {
 }
 
 function finish(t) {
-  const ve = vitalEnd(t); S.hpF = ve[0]; S.mpF = ve[1];
+  const ve = vitalEnd(t); S.hpF = ve[0]; S.mpF = ve[1]; partyFinish(t);
   switch (t.k) {
     case "arrive": {
       S.arrived = t.zone; S.loc = "hub"; S.curQ = 0;
@@ -1173,14 +1321,17 @@ function finish(t) {
       const d = pickDungeon(); if (d) queueDungeon(d);
       break;
     }
-    case "lfg": log(`[${pick(PLAYERS)}]: ${t.chat}`, "chat"); break;
+    case "lfg": log(`[${pick(PLAYERS)}]: ${t.chat}`, "chat");
+      if (S.party) { if (S.dg) S.dg.formed = true; log(`Group formed: ${S.party.map(m => `${m.name} (${m.cls.toLowerCase()} ${ROLE_NAME[m.role].toLowerCase()})`).join(", ")}.`, "chat"); }
+      break;
     case "dtravel": S.loc = "dungeon"; log(`Entering ${t.dn}.`, "dung"); break;
     case "trash": if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); break;
     case "boss": {
       if (Math.random() < (RAID_INFO[t.dn] ? RAID_INFO[t.dn].wipe : 0.06)) {
         S.deaths++; S.repair += S.level * S.level * 5; loseBuffs();
-        log(`Wiped on ${t.boss}. Corpse run…`, "death"); S.hpF = 0;
-        S.queue.unshift({ k: "ghost", d: "Running back through the instance as a ghost", t: sec(60) }, { ...t, el: 0 });
+        log(`Wiped on ${t.boss}. Corpse run…`, "death"); S.hpF = 0; (S.party || []).forEach(m => m.hp = 0);
+        const again = { ...t, el: 0 }; delete again.ve; delete again.pf;
+        S.queue.unshift({ k: "ghost", d: "Running back through the instance as a ghost", t: sec(60) }, regroupTask(S.dg && S.dg.raid), again);
         break;
       }
       if (S.dg) S.dg.killed++;
@@ -1209,7 +1360,7 @@ function finish(t) {
       const de = dungeonEntry(t.dn); de.runs++; if (!de.at) { de.at = realNow(); de.L = S.level; de.p = S.time; }
       if (!S.dungeons.includes(t.dn)) S.dungeons.push(t.dn);
       S.runs = (S.runs || 0) + 1;
-      log(`${t.dn} cleared!`, "dung"); S.dg = null; S.loc = "city"; break;
+      log(`${t.dn} cleared!`, "dung"); S.dg = null; S.party = null; S.loc = "city"; break;
     }
   }
   checkAch();
@@ -1271,6 +1422,7 @@ function gameShell() {
     <div class="meter m-quest"><div class="top"><span class="lbl">quest</span><span class="val" id="qV"></span></div><div class="name" id="qN"></div><div class="bar"><i id="qB"></i></div></div>
     <div class="meter m-zone"><div class="top"><span class="lbl" id="zL">zone</span><span class="val" id="zV"></span></div><div class="name" id="zN"></div><div class="bar"><i id="zB"></i></div></div>
   </section>
+  <section class="group" id="group" hidden><h2 id="gTitle">Group</h2><div class="gcards" id="gcards"></div></section>
   <section class="main">
     <div class="col">
       <div class="sec"><h2>Character</h2><div class="stats" id="stats"></div>
@@ -1382,7 +1534,7 @@ function renderBars() {
   const t = S.task;
   if (t) { const p = Math.min(1, t.el / t.t); $("tDesc").textContent = t.d;
     const cs = t.casts || [], ci = Math.min(cs.length - 1, Math.floor(p * cs.length));
-    $("tCasts").innerHTML = cs.slice(0, ci + 1).map((s, i) => `<span${i === ci ? ' class="cur"' : ""}>${esc(s)}</span>`).join(" › "); $("tFill").style.width = (p * 100).toFixed(1) + "%"; $("tPct").textContent = Math.floor(p * 100) + "%"; }
+    const from = Math.max(0, ci - 5); $("tCasts").innerHTML = (from ? "… › " : "") + cs.slice(from, ci + 1).map((s, i) => `<span${i + from === ci ? ' class="cur"' : ""}>${esc(s)}</span>`).join(" › "); $("tFill").style.width = (p * 100).toFixed(1) + "%"; $("tPct").textContent = Math.floor(p * 100) + "%"; }
   const [hf, mf] = vitalsNow(), hm = hpMax(), poolCol = f => f > 0.6 ? "var(--hp-ok)" : f > 0.35 ? "var(--hp-mid)" : f > 0.15 ? "var(--hp-low)" : "var(--hp-crit)";
   $("hpV").textContent = `${Math.round(hf * hm).toLocaleString()} / ${hm.toLocaleString()}`;
   $("hpB").style.width = (hf * 100).toFixed(1) + "%"; $("hpB").style.background = poolCol(hf);
@@ -1398,7 +1550,39 @@ function renderBars() {
   if (cq) { $("qV").textContent = `${cq.prog} / ${cq.max}`; $("qB").style.width = (cq.prog / cq.max * 100) + "%"; } else { $("qV").textContent = ""; $("qB").style.width = "0%"; }
   if (S.dg) { $("zV").textContent = `${S.dg.killed} / ${S.dg.total} bosses`; $("zB").style.width = (S.dg.killed / S.dg.total * 100) + "%"; }
   else { const li = legInfo(); $("zV").textContent = li.val; $("zB").style.width = (li.p * 100) + "%"; }
+  renderGroup(hf, mf);
   if (uiTab === "log") $("elapsed").textContent = "/played " + fmtTime(S.time);
+}
+
+// party frames: the hero plus the four companions
+function renderGroup(hf, mf) {
+  const show = !!(S.party && S.dg && S.dg.formed), box = $("group");
+  if (box.hidden === show) box.hidden = !show;
+  if (!show) return;
+  const sig = S.party.map(m => m.name).join() + S.level;
+  if (box.dataset.sig !== sig) {
+    box.dataset.sig = sig;
+    $("gTitle").innerHTML = `${S.dg.raid ? "Raid group" : "Group"} <small>${esc(S.dg.name)}</small>`;
+    const all = [{ name: S.name, race: S.race, cls: S.cls, role: heroRole(), L: S.level, me: true }, ...S.party];
+    $("gcards").innerHTML = all.map((m, i) => `<div class="gcard r-${m.role}${m.me ? " me" : ""}">
+      <div class="gtop"><span class="gname" style="color:${CLASSES[m.cls].color}">${esc(m.name)}</span><span class="grole">${ROLE_NAME[m.role]}</span></div>
+      <div class="gsub">Level ${m.L} ${esc(m.race)} ${m.cls}${m.me ? " · you" : ""}</div>
+      <div class="gbar"><i id="gh${i}"></i><span id="ghv${i}"></span></div>
+      <div class="gbar thin"><i id="gm${i}"></i><span id="gmv${i}"></span></div>
+      <div class="gcast" id="gc${i}"></div></div>`).join("");
+  }
+  const poolCol = f => f > 0.6 ? "var(--hp-ok)" : f > 0.35 ? "var(--hp-mid)" : f > 0.15 ? "var(--hp-low)" : "var(--hp-crit)";
+  const paint = (i, c, hp, mp, fight, p, cast) => {
+    $("gh" + i).style.width = (hp * 100).toFixed(1) + "%"; $("gh" + i).style.background = poolCol(hp); $("ghv" + i).textContent = Math.round(hp * 100) + "%";
+    const C = CLASSES[c];
+    if (C.mp) { $("gm" + i).style.width = (mp * 100).toFixed(1) + "%"; $("gm" + i).style.background = poolCol(mp); $("gmv" + i).textContent = Math.round(mp * 100) + "%"; }
+    else { const v = pool2(C.res, fight, p); $("gm" + i).style.width = v + "%"; $("gm" + i).style.background = C.res === "Rage" ? "var(--rage)" : "var(--energy)"; $("gmv" + i).textContent = v; }
+    $("gc" + i).innerHTML = cast;
+  };
+  const t = S.task, castHtml = (cs, ci) => ci < 0 ? "&nbsp;" : (ci > 0 ? `<span>${esc(cs[ci - 1])}</span> › ` : "") + `<span class="cur">${esc(cs[ci])}</span>`;
+  const hc = t && t.casts && FIGHTS.includes(t.k) ? t.casts : [], hci = hc.length ? Math.min(hc.length - 1, Math.floor(Math.min(1, t.el / t.t) * hc.length)) : -1;
+  paint(0, S.cls, hf, mf, hc.length > 0, t ? poolProgress(t) : 0, castHtml(hc, hci));
+  S.party.forEach((m, i) => { const n = memberNow(i); paint(i + 1, m.cls, n.hp, n.mp, n.fight, n.p, castHtml(n.casts, n.ci)); });
 }
 
 let rafId = 0, lastNow = 0, saveTimer = 0;
