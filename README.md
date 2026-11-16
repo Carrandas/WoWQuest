@@ -28,7 +28,7 @@ Your character keeps playing (at normal speed, for up to 12 hours) while the tab
 
 ## Features
 
-- About 40 classic zones along each race's real levelling route, with their quest hubs, monsters and quests
+- 43 classic zones with their quest hubs, monsters and quests, visited in the order of each race's real levelling route
 - Class spells learned at their real trainer levels, with ranks that go up as you level
 - 23 dungeons and 2 raids, with their bosses and signature loot
 - Gear by item level and quality (grey, white, green, blue and purple), plus dungeon and tier sets
