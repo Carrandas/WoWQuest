@@ -1,0 +1,1082 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WoWQuest</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Alegreya+Sans+SC:wght@500;700&display=swap">
+<style>
+/* Layout: a dark tooltip-style adventurer's sheet. Hero banner + live task, meters row, then character | chronicle | spellbook & bags. Single dark theme by choice. */
+:root {
+  --ink: #07090f;
+  --panel: #0e1320;
+  --panel-2: #141b2c;
+  --rim: #283149;
+  --text: #e9e4d6;
+  --dim: #9097a8;
+  --gold: #ffd100;
+  --gold-dk: #9a7d14;
+  --poor: #9d9d9d;
+  --common: #f2f2f2;
+  --uncommon: #1eff00;
+  --rare: #4a9cf0;
+  --epic: #b65cf5;
+  --legend: #ff8000;
+  --alli: #4a7bd8;
+  --horde: #d43b30;
+  --xp: #a64fd9;
+  --rest: #3a78d4;
+  --good: #63d64a;
+  --display: "Cinzel", "Trajan Pro", Georgia, serif;
+  --body: "Alegreya Sans", system-ui, sans-serif;
+  --label: "Alegreya Sans SC", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0;
+  background: radial-gradient(ellipse at 50% -10%, #1a2340 0%, var(--ink) 62%) fixed, var(--ink);
+  color: var(--text); font-family: var(--body); font-size: 16px; line-height: 1.42;
+}
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 14px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 16px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+button:disabled { cursor: not-allowed; }
+.lbl { font-family: var(--label); font-weight: 700; letter-spacing: .08em; font-size: 12.5px; color: var(--dim); text-transform: lowercase; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* top bar */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand { font-family: var(--display); font-weight: 800; font-size: 24px; color: var(--gold); letter-spacing: .04em; line-height: 1; user-select: none; -webkit-user-select: none; cursor: default;
+  text-shadow: 0 0 12px #ffd10033, 0 2px 0 #000; }
+.controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.seg { display: inline-flex; border: 1px solid var(--rim); border-radius: 999px; overflow: hidden; }
+.seg button { background: transparent; border: 0; padding: 4px 11px; font-size: 13px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.seg button[aria-pressed="true"] { background: var(--gold); color: var(--ink); font-weight: 700; }
+.speedbox { display: inline-flex; gap: 8px; align-items: center; }
+.speedbox[hidden] { display: none; }
+.ghost { background: transparent; border: 1px solid var(--rim); border-radius: 999px; padding: 4px 12px; font-family: var(--label); font-weight: 700; font-size: 13px; letter-spacing: .05em; color: var(--dim); }
+.ghost:hover { color: var(--text); border-color: var(--gold-dk); }
+.saved { font-size: 12px; color: var(--dim); min-width: 48px; text-align: right; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--panel-2); border: 1px solid var(--gold-dk); color: var(--gold);
+  padding: 8px 16px; border-radius: 8px; font-family: var(--label); font-weight: 700; letter-spacing: .05em; z-index: 30; box-shadow: 0 6px 24px #000a; }
+
+/* hero banner */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); gap: 20px; align-items: end; border-bottom: 1px solid var(--rim); padding-bottom: 18px; }
+.who h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(32px, 5vw, 50px); line-height: 1; overflow-wrap: anywhere; }
+.who .sub { margin-top: 6px; font-size: 18px; color: var(--dim); }
+.who .sub b { color: var(--text); font-weight: 700; }
+.tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.tag { display: inline-flex; gap: 6px; align-items: center; font-family: var(--label); font-weight: 700; font-size: 13px; letter-spacing: .06em; border: 1px solid var(--rim); border-radius: 999px; padding: 3px 12px 3px 9px; color: var(--dim); }
+.tag.zone { color: var(--good); }
+.tag.zone::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 8px var(--good); }
+.tag.Alliance { color: #8fb0f0; border-color: #2f4f8f; background: #4a7bd81a; }
+.tag.Horde { color: #f08a80; border-color: #8f2f28; background: #d43b301a; }
+.now { min-width: 0; }
+.now .lbl { color: var(--gold); }
+.now .desc { font-size: clamp(19px, 2.2vw, 24px); margin: 4px 0 10px; min-height: 1.42em; overflow-wrap: anywhere; }
+.now .desc::after { content: "…"; color: var(--dim); }
+.bigbar { position: relative; height: 22px; border-radius: 3px; background: #05070c; border: 1px solid #5a4a12; overflow: hidden; box-shadow: inset 0 2px 6px #000a; }
+.bigbar .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(180deg, #ffe066, #e0b100 55%, #9a7a00); }
+.bigbar .fill::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, #fff5 50%, transparent 70%); background-size: 200% 100%; animation: sheen 2.2s linear infinite; }
+.bigbar .pct { position: absolute; inset: 0; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: var(--text); text-shadow: 0 1px 2px #000; font-variant-numeric: tabular-nums; }
+@keyframes sheen { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .bigbar .fill::after { animation: none; } }
+
+/* meters */
+.meters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.meter { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.meter .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.meter .val { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--dim); white-space: nowrap; }
+.meter .name { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.4em; }
+.bar { height: 9px; border-radius: 2px; background: #05070c; border: 1px solid var(--rim); overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; transition: width .25s linear; }
+.m-xp i { background: linear-gradient(90deg, #7a2fb0, var(--xp)); }
+.m-bag i { background: #b07a43; }
+.m-quest i { background: var(--gold); }
+.m-zone i { background: var(--good); }
+
+/* main grid */
+.main { display: grid; grid-template-columns: 310px minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+.col { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.sec h2 { margin: 0 0 8px; font-family: var(--display); font-weight: 700; font-size: 18px; letter-spacing: .03em; color: var(--gold); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.sec h2 small { font-family: var(--body); font-weight: 400; font-size: 13px; color: var(--dim); letter-spacing: 0; }
+.rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.rows li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 4px 0; border-bottom: 1px dashed #28314999; min-width: 0; }
+.rows li:last-child { border-bottom: 0; }
+.rows .k { color: var(--dim); font-family: var(--label); font-weight: 700; font-size: 13px; letter-spacing: .05em; flex: 0 0 auto; }
+.rows .v { text-align: right; min-width: 0; overflow-wrap: anywhere; }
+.rows .l { text-align: left; min-width: 0; overflow-wrap: anywhere; }
+.rows .empty { color: #5a6275; font-style: italic; }
+.stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.stat { border: 1px solid var(--rim); border-radius: 5px; padding: 5px 6px; display: flex; flex-direction: column; align-items: center; gap: 0; }
+.stat b { font-variant-numeric: tabular-nums; font-size: 18px; font-weight: 700; }
+.stat.prime { border-color: var(--gold-dk); background: #ffd10010; }
+.stat.prime .lbl { color: var(--gold); }
+.vitals { margin-top: 10px; }
+.ilvl { font-size: 12px; color: var(--dim); margin-left: 6px; font-variant-numeric: tabular-nums; }
+.q0 { color: var(--poor); } .q1 { color: var(--common); } .q2 { color: var(--uncommon); } .q3 { color: var(--rare); } .q4 { color: var(--epic); } .q5 { color: var(--legend); }
+.rank { font-size: 13px; color: var(--dim); white-space: nowrap; }
+.money { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.money .g { color: #ffd34d; } .money .s { color: #c7c7cf; } .money .c { color: #d0874a; }
+.tal { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.tal div { border: 1px solid var(--rim); border-radius: 5px; padding: 5px 6px; text-align: center; font-size: 13px; color: var(--dim); }
+.tal div b { display: block; font-size: 18px; color: var(--text); font-variant-numeric: tabular-nums; }
+.tal div.main-spec { border-color: var(--gold-dk); background: #ffd10010; }
+
+/* chronicle */
+.chron { background: var(--panel); border: 1px solid var(--rim); border-radius: 6px; padding: 14px 16px 6px; box-shadow: inset 0 0 0 1px #000; }
+.log { list-style: none; margin: 0; padding: 0; max-height: 700px; overflow-y: auto; display: flex; flex-direction: column; }
+.log li { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 10px; padding: 6px 0; border-bottom: 1px solid #28314966; }
+.log li:last-child { border-bottom: 0; }
+.log time { font-variant-numeric: tabular-nums; font-size: 12.5px; color: #5d6578; padding-top: 2px; }
+.log span { overflow-wrap: anywhere; }
+.log .lvl span { color: var(--gold); font-weight: 700; }
+.log .ding span { font-family: var(--display); font-size: 20px; color: var(--gold); }
+.log .quest span { color: #ffe680; }
+.log .spell span { color: #8fd0ff; }
+.log .loot2 span { color: var(--uncommon); } .log .loot3 span { color: var(--rare); } .log .loot4 span { color: var(--epic); }
+.log .dung span { color: #ff9a5c; font-weight: 700; }
+.log .boss span { color: #ffb07a; }
+.log .zone span { color: var(--good); font-weight: 700; }
+.log .death span { color: #ff6b6b; }
+.log .chat span { color: #f2a6ff; font-style: italic; }
+.log .gold span { color: #e3cf8f; }
+.log li.fresh { animation: fadein .5s ease-out; }
+@keyframes fadein { from { background: #ffd10022; } to { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .log li.fresh { animation: none; } }
+.quests .done { color: var(--good); }
+.quests .cur::before { content: "▸ "; color: var(--gold); }
+
+/* creation */
+.create { max-width: 940px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 22px; padding-top: 8px; }
+.create header h1 { margin: 0; font-family: var(--display); font-weight: 800; font-size: clamp(40px, 8vw, 68px); color: var(--gold); line-height: 1; text-shadow: 0 0 22px #ffd10033, 0 3px 0 #000; }
+.create header p { margin: 8px 0 0; color: var(--dim); max-width: 62ch; font-size: 17px; }
+.field { display: flex; flex-direction: column; gap: 8px; }
+.namebox { display: flex; gap: 8px; }
+.namebox input { flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--rim); border-radius: 6px; color: var(--text); font-family: var(--display); font-weight: 700; font-size: 26px; padding: 6px 12px; }
+.die { background: var(--panel-2); border: 1px solid var(--rim); border-radius: 6px; padding: 0 14px; font-family: var(--label); font-weight: 700; letter-spacing: .05em; color: var(--gold); }
+.factions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fbtn { text-align: left; background: var(--panel); border: 1px solid var(--rim); border-radius: 8px; padding: 12px 14px; }
+.fbtn h3 { margin: 0; font-family: var(--display); font-size: 24px; }
+.fbtn p { margin: 2px 0 0; color: var(--dim); font-size: 14px; }
+.fbtn.Alliance[aria-pressed="true"] { border-color: var(--alli); background: linear-gradient(180deg, #4a7bd826, var(--panel) 80%); }
+.fbtn.Alliance[aria-pressed="true"] h3 { color: #8fb0f0; }
+.fbtn.Horde[aria-pressed="true"] { border-color: var(--horde); background: linear-gradient(180deg, #d43b3026, var(--panel) 80%); }
+.fbtn.Horde[aria-pressed="true"] h3 { color: #f08a80; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { background: transparent; border: 1px solid var(--rim); border-radius: 999px; padding: 5px 14px; color: var(--dim); }
+.chip small { font-size: 12px; color: #6a7286; margin-left: 4px; }
+.chip[aria-pressed="true"] { border-color: var(--gold); color: var(--text); background: #ffd10014; }
+.chip[aria-pressed="true"] small { color: var(--gold); }
+.classes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.ccard { text-align: left; background: var(--panel); border: 1px solid var(--rim); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.ccard h3 { margin: 0; font-family: var(--display); font-size: 21px; line-height: 1.1; }
+.ccard p { margin: 0; color: var(--dim); font-size: 14px; }
+.ccard[aria-pressed="true"] { border-color: var(--gold); background: linear-gradient(180deg, #ffd1001a, var(--panel) 70%); }
+.ccard:disabled { opacity: .32; }
+.begin { align-self: flex-start; background: linear-gradient(180deg, #c8251b, #8a140d); color: var(--gold); border: 1px solid #e0b100; border-radius: 6px; padding: 10px 26px;
+  font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: .04em; line-height: 1; box-shadow: 0 3px 0 #4a0905, 0 0 18px #c8251b44; text-shadow: 0 1px 0 #000; }
+.begin:active { transform: translateY(2px); box-shadow: 0 1px 0 #4a0905; }
+.note { color: #5d6578; font-size: 13px; }
+
+/* modal */
+.modal { position: fixed; inset: 0; background: #03050acc; display: grid; place-items: center; z-index: 20; padding: 16px; }
+.modal .box { background: var(--panel); border: 1px solid var(--gold-dk); border-radius: 8px; padding: 20px; max-width: 380px; width: 100%; display: flex; flex-direction: column; gap: 14px; }
+.modal h3 { margin: 0; font-family: var(--display); font-size: 24px; color: var(--gold); }
+.modal p { margin: 0; color: var(--dim); }
+.modal .acts { display: flex; gap: 10px; justify-content: flex-end; }
+.danger { background: #a3241b; border: 0; color: var(--text); border-radius: 6px; padding: 6px 14px; font-family: var(--label); font-weight: 700; letter-spacing: .05em; }
+
+@media (max-width: 1080px) {
+  .main { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .main .c-log { grid-column: 1 / -1; order: -1; }
+}
+@media (max-width: 720px) {
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .meters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .main { grid-template-columns: minmax(0, 1fr); }
+  .classes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .log { max-height: 440px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+"use strict";
+// ---------- tiny helpers ----------
+const R = n => Math.floor(Math.random() * n);
+const pick = a => a[R(a.length)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const article = s => (/^[aeiou]/i.test(s) ? "an " : "a ") + s;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const fmtTime = ms => { const s = Math.floor(ms / 1000), d = Math.floor(s / 86400), h = Math.floor(s / 3600) % 24, m = Math.floor(s / 60) % 60, x = s % 60;
+  return (d ? d + "d " : "") + (d || h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); };
+const fmtPlayed = ms => { const s = Math.floor(ms / 1000), d = Math.floor(s / 86400), h = Math.floor(s / 3600) % 24, m = Math.floor(s / 60) % 60;
+  return `${d} days, ${h} hours, ${m} minutes`; };
+const money = c => { c = Math.max(0, Math.floor(c)); const g = Math.floor(c / 10000), s = Math.floor(c / 100) % 100, k = c % 100;
+  return `<span class="money">${g ? `<span class="g">${g.toLocaleString()}g</span> ` : ""}${g || s ? `<span class="s">${s}s</span> ` : ""}<span class="c">${k}c</span></span>`; };
+const moneyTxt = c => { c = Math.max(0, Math.floor(c)); const g = Math.floor(c / 10000), s = Math.floor(c / 100) % 100, k = c % 100;
+  return [g ? g + "g" : "", s ? s + "s" : "", k || (!g && !s) ? k + "c" : ""].filter(Boolean).join(" "); };
+
+// ---------- races & classes ----------
+const STATS = ["STR", "AGI", "STA", "INT", "SPI"];
+const RACES = {
+  Human:      { f: "Alliance", base: [20, 20, 20, 20, 21], start: "Human", city: "Stormwind", mount: "Brown Horse", epic: "Swift Palomino", note: "Perception, Diplomacy" },
+  Dwarf:      { f: "Alliance", base: [22, 16, 23, 19, 19], start: "Dwarf", city: "Ironforge", mount: "Gray Ram", epic: "Swift Brown Ram", note: "Stoneform, Gun Specialization" },
+  "Night Elf":{ f: "Alliance", base: [17, 25, 19, 20, 20], start: "Night Elf", city: "Darnassus", mount: "Striped Nightsaber", epic: "Swift Frostsaber", note: "Shadowmeld, Quickness" },
+  Gnome:      { f: "Alliance", base: [15, 23, 19, 24, 20], start: "Dwarf", city: "Ironforge", mount: "Red Mechanostrider", epic: "Swift Yellow Mechanostrider", note: "Escape Artist, Expansive Mind" },
+  Orc:        { f: "Horde", base: [23, 17, 22, 17, 23], start: "Orc", city: "Orgrimmar", mount: "Timber Wolf", epic: "Swift Brown Wolf", note: "Blood Fury, Hardiness" },
+  Undead:     { f: "Horde", base: [19, 18, 21, 18, 25], start: "Undead", city: "Undercity", mount: "Red Skeletal Horse", epic: "Purple Skeletal Warhorse", note: "Will of the Forsaken, Cannibalize" },
+  Tauren:     { f: "Horde", base: [25, 15, 22, 15, 22], start: "Tauren", city: "Thunder Bluff", mount: "Brown Kodo", epic: "Great White Kodo", note: "War Stomp, Endurance" },
+  Troll:      { f: "Horde", base: [21, 22, 21, 16, 21], start: "Orc", city: "Orgrimmar", mount: "Emerald Raptor", epic: "Swift Blue Raptor", note: "Berserking, Regeneration" },
+};
+const ALLOWED = {
+  Human: ["Warrior", "Paladin", "Rogue", "Priest", "Mage", "Warlock"],
+  Dwarf: ["Warrior", "Paladin", "Hunter", "Rogue", "Priest"],
+  "Night Elf": ["Warrior", "Hunter", "Rogue", "Priest", "Druid"],
+  Gnome: ["Warrior", "Rogue", "Mage", "Warlock"],
+  Orc: ["Warrior", "Hunter", "Rogue", "Shaman", "Warlock"],
+  Undead: ["Warrior", "Rogue", "Priest", "Mage", "Warlock"],
+  Tauren: ["Warrior", "Hunter", "Shaman", "Druid"],
+  Troll: ["Warrior", "Hunter", "Rogue", "Priest", "Shaman", "Mage"],
+};
+// spells: "level Name[*=attack] [maxRank]"; {city} is replaced by the hero's capital
+const CLASSES = {
+  Warrior: { color: "#c79c6e", res: "Rage", armor: ["Mail", "Plate"], prime: "STR", w: [3, 1, 2, 0, 0], hp: 22, mp: 0,
+    start: "Worn Shortsword", blurb: "Charges in, shouts, hits things very hard.",
+    main: ["Shortsword", "Battle Axe", "Warhammer", "Claymore", "Greataxe"], off: ["Buckler", "Shield", "Kite Shield"], ranged: ["Throwing Axe", "Shortbow", "Blunderbuss"],
+    sfx: ["Bear", "Tiger", "Strength", "Gorilla"],
+    trees: ["Arms", "Fury", "Protection"], ult: ["Mortal Strike", "Bloodthirst", "Shield Slam"],
+    verbs: ["Hacking at", "Cleaving", "Bashing", "Hamstringing"],
+    spells: "1 Battle Stance|1 Heroic Strike* 9|1 Battle Shout 7|4 Charge* 3|4 Rend* 7|6 Thunder Clap* 6|8 Hamstring* 3|10 Defensive Stance|10 Sunder Armor* 5|10 Taunt|10 Bloodrage|12 Overpower* 4|12 Shield Bash* 3|14 Demoralizing Shout 5|14 Revenge* 6|16 Shield Block|16 Mocking Blow 5|18 Disarm|20 Cleave* 5|20 Retaliation|22 Intimidating Shout|24 Execute* 5|26 Challenging Shout|28 Shield Wall|30 Berserker Stance|30 Intercept* 3|30 Slam* 4|32 Berserker Rage|36 Whirlwind*|38 Pummel* 2|40 Plate Mail|50 Recklessness" },
+  Paladin: { color: "#f58cba", res: "Mana", armor: ["Mail", "Plate"], prime: "STR", w: [3, 0, 2, 2, 1], hp: 20, mp: 14,
+    start: "Battleworn Hammer", blurb: "Plate, a hammer, and a blessing for everyone.",
+    main: ["Mace", "Warhammer", "Greatsword", "Maul"], off: ["Shield", "Heater Shield", "Kite Shield"], ranged: ["Libram"],
+    sfx: ["Bear", "Gorilla", "Strength", "Eagle"],
+    trees: ["Holy", "Protection", "Retribution"], ult: ["Holy Shock", "Holy Shield", "Repentance"],
+    verbs: ["Smiting", "Hammering", "Judging", "Crusading against"],
+    spells: "1 Holy Light 9|1 Seal of Righteousness* 8|1 Devotion Aura 7|4 Judgement*|4 Blessing of Might 7|6 Divine Protection 2|6 Seal of the Crusader 6|8 Hammer of Justice* 4|8 Purify|10 Lay on Hands 3|10 Blessing of Protection 3|12 Redemption 5|14 Blessing of Wisdom 6|16 Righteous Fury|16 Retribution Aura 5|20 Exorcism* 6|20 Flash of Light 6|20 Sense Undead|22 Concentration Aura|22 Seal of Justice|24 Turn Undead 3|26 Blessing of Salvation|28 Shadow Resistance Aura 3|30 Divine Intervention|30 Seal of Light 4|32 Frost Resistance Aura 3|34 Divine Shield 2|36 Fire Resistance Aura 3|38 Seal of Wisdom 3|40 Plate Mail|40 Summon Warhorse|44 Hammer of Wrath* 3|46 Blessing of Sacrifice 2|50 Holy Wrath* 2|60 Summon Charger" },
+  Hunter: { color: "#abd473", res: "Mana", armor: ["Leather", "Mail"], prime: "AGI", w: [0, 3, 2, 1, 1], hp: 18, mp: 10,
+    start: "Worn Axe", blurb: "A bow, a pet, and an endless supply of arrows.",
+    main: ["Axe", "Polearm", "Sword"], off: ["Hatchet", "Sword"], ranged: ["Shortbow", "Longbow", "Rifle", "Crossbow"],
+    sfx: ["Monkey", "Falcon", "Agility", "Tiger"],
+    trees: ["Beast Mastery", "Marksmanship", "Survival"], ult: ["Bestial Wrath", "Trueshot Aura", "Wyvern Sting"],
+    verbs: ["Shooting", "Kiting", "Sending the pet at", "Pinning down"],
+    spells: "1 Raptor Strike* 8|1 Track Beasts|4 Serpent Sting* 9|4 Aspect of the Monkey|6 Arcane Shot* 8|6 Hunter's Mark 4|8 Concussive Shot*|10 Aspect of the Hawk 7|10 Tame Beast|10 Call Pet|12 Mend Pet 7|12 Wing Clip* 3|12 Distracting Shot 6|14 Scare Beast 3|14 Eyes of the Beast|16 Immolation Trap* 5|16 Mongoose Bite* 4|18 Multi-Shot* 5|20 Aspect of the Cheetah|20 Freezing Trap 3|22 Scorpid Sting* 5|24 Beast Lore|26 Rapid Fire|28 Frost Trap|30 Feign Death|32 Flare|34 Explosive Trap* 3|36 Viper Sting* 3|40 Volley* 3|40 Aspect of the Pack|40 Mail|46 Aspect of the Wild 2|60 Tranquilizing Shot" },
+  Rogue: { color: "#fff569", res: "Energy", armor: ["Leather", "Leather"], prime: "AGI", w: [1, 3, 2, 0, 0], hp: 19, mp: 0,
+    start: "Worn Dagger", blurb: "Stealth, poison, and a knife in the kidney.",
+    main: ["Dagger", "Shortsword", "Stiletto", "Kris"], off: ["Dirk", "Shortsword", "Dagger"], ranged: ["Throwing Knife", "Shortbow", "Crossbow"],
+    sfx: ["Monkey", "Tiger", "Agility", "Falcon"],
+    trees: ["Assassination", "Combat", "Subtlety"], ult: ["Cold Blood", "Adrenaline Rush", "Preparation"],
+    verbs: ["Backstabbing", "Ambushing", "Sapping", "Stabbing"],
+    spells: "1 Sinister Strike* 8|1 Eviscerate* 8|1 Stealth 4|4 Backstab* 9|4 Pick Pocket|6 Gouge* 5|8 Evasion|10 Sap 3|10 Slice and Dice 2|10 Sprint 3|12 Kick* 5|14 Garrote* 6|14 Expose Armor 5|16 Feint 4|18 Ambush* 6|20 Rupture* 6|20 Instant Poison 6|22 Distract|22 Vanish 2|24 Detect Traps|26 Cheap Shot*|30 Kidney Shot* 2|30 Deadly Poison 5|34 Blind|40 Safe Fall|50 Crippling Poison 2" },
+  Priest: { color: "#ffffff", res: "Mana", armor: ["Cloth", "Cloth"], prime: "INT", w: [0, 0, 1, 3, 3], hp: 15, mp: 18,
+    start: "Worn Mace", blurb: "Heals the party, melts faces in Shadowform.",
+    main: ["Staff", "Mace", "Scepter"], off: ["Orb", "Tome"], ranged: ["Wand"],
+    sfx: ["Owl", "Whale", "Intellect", "Spirit"],
+    trees: ["Discipline", "Holy", "Shadow"], ult: ["Power Infusion", "Lightwell", "Shadowform"],
+    verbs: ["Smiting", "Mind Blasting", "Wanding", "Shadow Wording"],
+    spells: "1 Lesser Heal 3|1 Smite* 8|1 Power Word: Fortitude 6|4 Shadow Word: Pain* 8|6 Power Word: Shield 10|8 Fade 6|8 Renew 10|10 Mind Blast* 9|10 Resurrection 5|12 Inner Fire 6|14 Psychic Scream* 4|16 Heal 4|18 Dispel Magic 2|20 Flash Heal 7|20 Shackle Undead 3|20 Holy Fire* 8|22 Mind Vision 2|24 Mana Burn* 5|28 Mind Flay* 6|30 Mind Control 3|30 Prayer of Healing 4|32 Abolish Disease|40 Greater Heal 5|42 Prayer of Fortitude 2" },
+  Shaman: { color: "#2b8ee6", res: "Mana", armor: ["Leather", "Mail"], prime: "INT", w: [2, 1, 2, 2, 1], hp: 19, mp: 15,
+    start: "Worn Mace", blurb: "Totems on the ground, lightning in the hands.",
+    main: ["Mace", "Axe", "Staff", "Hammer"], off: ["Shield", "Buckler"], ranged: ["Totem"],
+    sfx: ["Eagle", "Owl", "Monkey", "Tiger"],
+    trees: ["Elemental", "Enhancement", "Restoration"], ult: ["Elemental Mastery", "Stormstrike", "Mana Tide Totem"],
+    verbs: ["Shocking", "Lightning Bolting", "Totem-dropping on", "Smacking"],
+    spells: "1 Lightning Bolt* 10|1 Rockbiter Weapon 7|1 Healing Wave 10|4 Earth Shock* 7|4 Stoneskin Totem 6|6 Earthbind Totem|8 Lightning Shield 7|10 Searing Totem* 6|10 Stoneclaw Totem 6|10 Flame Shock* 6|10 Flametongue Weapon 6|12 Purge 2|12 Fire Nova Totem* 5|14 Frost Shock* 4|16 Cure Poison|18 Tremor Totem|20 Ghost Wolf|20 Lesser Healing Wave 6|20 Frostbrand Weapon 5|20 Healing Stream Totem 5|22 Water Breathing|26 Mana Spring Totem 4|28 Water Walking|30 Astral Recall|30 Reincarnation|30 Windfury Weapon 4|32 Chain Lightning* 4|40 Chain Heal 3|40 Mail" },
+  Mage: { color: "#69ccf0", res: "Mana", armor: ["Cloth", "Cloth"], prime: "INT", w: [0, 0, 1, 4, 2], hp: 15, mp: 18,
+    start: "Bent Staff", blurb: "Fireballs, Frost Nova, and a fridge full of water.",
+    main: ["Staff", "Dagger", "Spellblade"], off: ["Orb", "Tome", "Focus"], ranged: ["Wand"],
+    sfx: ["Owl", "Eagle", "Intellect", "Whale"],
+    trees: ["Arcane", "Fire", "Frost"], ult: ["Arcane Power", "Combustion", "Ice Barrier"],
+    verbs: ["Fireballing", "Frostbolting", "Polymorphing", "Kiting"],
+    spells: "1 Fireball* 12|1 Frost Armor 3|1 Arcane Intellect 5|4 Frostbolt* 11|4 Conjure Water 7|6 Conjure Food 7|6 Fire Blast* 7|8 Polymorph 4|8 Arcane Missiles* 8|10 Frost Nova* 4|12 Dampen Magic 5|14 Arcane Explosion* 6|16 Flamestrike* 6|18 Remove Lesser Curse|20 Blink|20 Evocation|20 Blizzard* 6|20 Mana Shield 6|20 Teleport: {city}|22 Scorch* 7|24 Counterspell|26 Cone of Cold* 5|28 Conjure Mana Agate|30 Ice Armor 4|40 Portal: {city}|56 Arcane Brilliance" },
+  Warlock: { color: "#9482c9", res: "Mana", armor: ["Cloth", "Cloth"], prime: "INT", w: [0, 0, 2, 3, 2], hp: 16, mp: 17,
+    start: "Worn Dagger", blurb: "DoTs, demons, and borrowed souls.",
+    main: ["Staff", "Dagger", "Kris"], off: ["Orb", "Skull", "Tome"], ranged: ["Wand"],
+    sfx: ["Owl", "Eagle", "Intellect", "Whale"],
+    trees: ["Affliction", "Demonology", "Destruction"], ult: ["Dark Pact", "Soul Link", "Conflagrate"],
+    verbs: ["Cursing", "Dotting up", "Fearing", "Draining"],
+    spells: "1 Shadow Bolt* 10|1 Demon Skin 2|1 Summon Imp|1 Immolate* 8|4 Corruption* 7|4 Curse of Weakness 6|6 Life Tap 6|8 Curse of Agony* 6|8 Fear 3|10 Summon Voidwalker|10 Create Healthstone 5|10 Drain Soul* 4|12 Health Funnel 7|14 Drain Life* 6|18 Create Soulstone 5|18 Searing Pain* 6|20 Summon Succubus|20 Rain of Fire* 4|20 Demon Armor 5|20 Ritual of Summoning|22 Eye of Kilrogg|24 Drain Mana* 4|26 Curse of Tongues 2|28 Banish 2|30 Summon Felhunter|30 Hellfire* 3|32 Curse of the Elements 3|40 Summon Felsteed|40 Howl of Terror 2|42 Death Coil* 3|48 Soul Fire* 2|50 Inferno|60 Summon Dreadsteed|60 Ritual of Doom" },
+  Druid: { color: "#ff7d0a", res: "Mana", armor: ["Leather", "Leather"], prime: "INT", w: [1, 1, 2, 2, 2], hp: 17, mp: 16,
+    start: "Bent Staff", blurb: "Bear, cat, tree or boomkin. Sometimes all four.",
+    main: ["Staff", "Mace", "Maul"], off: ["Orb", "Tome"], ranged: ["Idol"],
+    sfx: ["Monkey", "Eagle", "Owl", "Bear"],
+    trees: ["Balance", "Feral Combat", "Restoration"], ult: ["Moonkin Form", "Leader of the Pack", "Swiftmend"],
+    verbs: ["Wrathing", "Mauling", "Rooting", "Moonfiring"],
+    spells: "1 Wrath* 8|1 Healing Touch 11|1 Mark of the Wild 7|4 Moonfire* 10|4 Rejuvenation 11|6 Thorns 6|8 Entangling Roots* 6|10 Bear Form|10 Growl|10 Demoralizing Roar 5|10 Maul* 7|10 Teleport: Moonglade|12 Regrowth 9|14 Bash* 3|16 Aquatic Form|18 Faerie Fire 4|18 Hibernate 3|20 Cat Form|20 Claw* 5|20 Prowl 3|20 Rebirth 5|20 Rip* 6|22 Shred* 5|24 Rake* 4|24 Remove Curse|26 Dash 3|30 Travel Form|30 Tranquility 4|32 Ferocious Bite* 5|40 Dire Bear Form|40 Hurricane* 3" },
+};
+for (const c of Object.values(CLASSES)) {
+  c.list = c.spells.split("|").map(s => { const m = s.match(/^(\d+) (.+?)(\*)?(?: (\d+))?$/); return { lvl: +m[1], name: m[2], atk: !!m[3], max: +(m[4] || 1) }; });
+}
+const RANK_SPELL = (sp, L) => sp.max <= 1 ? 1 : clamp(1 + Math.floor((L - sp.lvl) * (sp.max - 1) / Math.max(1, 60 - sp.lvl)), 1, sp.max);
+
+const SLOTS = ["Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet", "Finger", "Trinket", "Main Hand", "Off Hand", "Ranged"];
+const ARMOR_BASE = {
+  Cloth:   { Head: "Cowl", Shoulder: "Mantle", Chest: "Robe", Wrist: "Cuffs", Hands: "Gloves", Waist: "Sash", Legs: "Pants", Feet: "Slippers" },
+  Leather: { Head: "Cap", Shoulder: "Shoulders", Chest: "Tunic", Wrist: "Bracers", Hands: "Gloves", Waist: "Belt", Legs: "Leggings", Feet: "Boots" },
+  Mail:    { Head: "Coif", Shoulder: "Pauldrons", Chest: "Hauberk", Wrist: "Bracers", Hands: "Gauntlets", Waist: "Girdle", Legs: "Legguards", Feet: "Sabatons" },
+  Plate:   { Head: "Helm", Shoulder: "Spaulders", Chest: "Breastplate", Wrist: "Vambraces", Hands: "Gauntlets", Waist: "Waistband", Legs: "Legplates", Feet: "Greaves" },
+};
+const TIERS = {
+  Cloth:   ["Frayed", "Disciple's", "Spellbinder", "Sage's", "Durable", "Conjurer's", "Mystical", "Councillor's", "Master's", "Celestial"],
+  Leather: ["Rugged", "Rawhide", "Scouting", "Ranger", "Superior", "Huntsman's", "Nocturnal", "Wanderer's", "Swashbuckler's", "Ghostwalker"],
+  Mail:    ["Ragged", "Raider's", "Battleforge", "Banded", "Renegade", "Jade", "Lofty", "Merciless", "Triumphant", "Warmonger's"],
+  Plate:   ["Rusted", "Heavy", "Bulky", "Thick", "Hardened", "Crusader's", "Templar", "Engraved", "Bloodforged", "Exalted"],
+  Metal:   ["Worn", "Crude", "Bronze", "Iron", "Heavy", "Steel", "Mithril", "Truesilver", "Thorium", "Arcanite"],
+  Mystic:  ["Worn", "Faded", "Etched", "Glowing", "Runed", "Gleaming", "Ancient", "Sacred", "Blessed", "Exalted"],
+  Gem:     ["Copper", "Silver", "Moss Agate", "Jade", "Citrine", "Aquamarine", "Star Ruby", "Black Pearl", "Azerothian", "Huge Emerald"],
+};
+const MYSTIC = /Wand|Orb|Tome|Focus|Skull|Libram|Totem|Idol|Staff/;
+const JEWEL = { Neck: ["Pendant", "Choker", "Necklace"], Finger: ["Band", "Ring", "Signet"], Trinket: ["Talisman", "Charm", "Medallion"], Back: ["Cloak", "Cape", "Shroud"] };
+const QMULT = [0.5, 0.85, 1, 1.18, 1.4, 1.7];
+const SETS = {
+  Warrior: ["Valor", "Battlegear of Might", "Battlegear of Wrath"], Paladin: ["Lightforge", "Lawbringer", "Judgement"],
+  Hunter: ["Beaststalker", "Giantstalker", "Dragonstalker"], Rogue: ["Shadowcraft", "Nightslayer", "Bloodfang"],
+  Priest: ["Devout", "Vestments of Prophecy", "Vestments of Transcendence"], Shaman: ["The Elements", "The Earthfury", "The Ten Storms"],
+  Mage: ["Magister's", "Arcanist", "Netherwind"], Warlock: ["Dreadmist", "Felheart", "Nemesis"], Druid: ["Wildheart", "Cenarion", "Stormrage"],
+};
+const SETSHORT = { "Battlegear of Might": "Might", "Battlegear of Wrath": "Wrath", "Vestments of Prophecy": "Prophecy", "Vestments of Transcendence": "Transcendence", "The Elements": "Elements", "The Earthfury": "Earthfury", "The Ten Storms": "Ten Storms" };
+const FOOD = ["Tough Jerky", "Haunch of Meat", "Mutton Chop", "Wild Hog Shank", "Cured Ham Steak", "Roasted Quail"];
+const DRINK = ["Refreshing Spring Water", "Ice Cold Milk", "Melon Juice", "Sweet Nectar", "Moonberry Juice", "Morning Glory Dew"];
+const CLOTH = ["Linen Cloth", "Wool Cloth", "Silk Cloth", "Mageweave Cloth", "Runecloth"];
+const BAGS = [[10, "Linen Bag", 6, 300], [16, "Woolen Bag", 8, 1200], [24, "Silk Bag", 10, 4000], [34, "Mageweave Bag", 12, 12000], [48, "Runecloth Bag", 14, 40000]];
+
+// ---------- zones: [min, max, Alliance hub, Horde hub, mobs, quests] ----------
+const ZONES = {
+  "Northshire Valley": [1, 5, "Northshire Abbey", "", "Young Wolf,Kobold Vermin,Kobold Worker,Defias Thug,Kobold Laborer", "A Threat Within;Kobold Camp Cleanup;Wolves Across the Border;Investigate Echo Ridge;Brotherhood of Thieves;Bounty on Garrick Padfoot;Skirmish at Echo Ridge"],
+  "Elwynn Forest": [5, 11, "Goldshire", "", "Stonetusk Boar,Murloc Streamfin,Prowler,Riverpaw Gnoll,Defias Bandit,Kobold Miner,Forest Spider", "Kobold Candles;The Fargodeep Mine;Gold Dust Exchange;Princess Must Die!;Bounty on Murlocs;Wanted: \"Hogger\";The Jasperlode Mine;Protect the Frontier;Lost Necklace;Red Linen Goods"],
+  "Coldridge Valley": [1, 5, "Anvilmar", "", "Rockjaw Trogg,Burly Rockjaw Trogg,Frostmane Troll Whelp,Ragged Young Wolf,Small Crag Boar", "Dwarven Outfitters;Coldridge Valley Mail Delivery;The Troll Cave;The Stolen Journal;Scalding Mornbrew Delivery;A New Threat;Senir's Observations"],
+  "Dun Morogh": [5, 11, "Kharanos", "", "Frostmane Seer,Ice Claw Bear,Leper Gnome,Wendigo,Elder Crag Boar,Snow Leopard,Rockjaw Bonesnapper", "Beer Basted Boar Ribs;The Grizzled Den;Operation Recombobulation;Tools for Steelgrill;Frostmane Hold;Bitter Rivals;The Perfect Stout;Ammo for Rumbleshot;A Favor for Evershine;Wanted: Vagash"],
+  "Shadowglen": [1, 5, "Aldrassil", "", "Young Nightsaber,Grellkin,Young Thistle Boar,Webwood Spider,Grell", "The Balance of Nature;Etched Sigil;Webwood Venom;A Good Friend;Seek Redemption!;The Woodland Protector;Lessons Anew"],
+  "Teldrassil": [5, 11, "Dolanaar", "", "Gnarlpine Ursa,Timberling,Strigid Owl,Bloodfeather Harpy,Elder Nightsaber,Gnarlpine Mystic,Lunar Moth", "Denalan's Earth;Timberling Seeds;The Glowing Fruit;Zenn's Bidding;The Relics of Wakening;Mist;The Enchanted Glade;Ferocitas the Dream Eater;Twisted Hatred"],
+  "Valley of Trials": [1, 5, "", "Den", "Mottled Boar,Scorpid Worker,Vile Familiar,Sarkoth,Burning Blade Cultist", "Your Place In The World;Cutting Teeth;Sarkoth;Vile Familiars;Galgar's Cactus Apple Surprise;Lazy Peons;Burning Blade Medallion"],
+  "Durotar": [5, 11, "", "Razor Hill", "Dire Mottled Boar,Bloodtalon Scythemaw,Kul Tiras Sailor,Razormane Quilboar,Durotar Tiger,Voodoo Troll,Burning Blade Neophyte", "Vanquish the Betrayers;Encroachment;Thwarting Kolkar Aggression;Dark Storms;Carry Your Weight;Securing the Lines;Report to Sen'jin Village;Lost But Not Forgotten;Break a Few Eggs"],
+  "Camp Narache": [1, 5, "", "Camp Narache", "Plainstrider,Mountain Cougar,Battleboar,Bristleback Shaman,Bristleback Quilboar", "The Hunt Begins;The Hunt Continues;Break Sharptusk!;Rites of the Earthmother;Etched Note"],
+  "Mulgore": [5, 11, "", "Bloodhoof Village", "Prairie Wolf,Flatland Cougar,Windfury Harpy,Palemane Tanner,Venture Co. Laborer,Kodo Calf,Adult Plainstrider", "Dangers of the Windfury;Swoop Hunting;Mazzranache;Poison Water;Winterhoof Cleansing;Thunderhorn Totem;Rite of Strength;The Ravaged Caravan;Wildmane Totem"],
+  "Deathknell": [1, 5, "", "Deathknell", "Rattlecage Skeleton,Mindless Zombie,Young Night Web Spider,Scarlet Convert,Wretched Zombie", "Rude Awakening;The Mindless Ones;Rattling the Rattlecages;Marla's Last Wish;Night Web's Hollow;The Scarlet Crusade;Scavenging Deathknell"],
+  "Tirisfal Glades": [5, 11, "", "Brill", "Scarlet Warrior,Rot Hide Gnoll,Vampiric Duskbat,Darkhound,Rotting Dead,Scarlet Missionary", "Fields of Grief;Graverobbers;Doom Weed;Gordo's Task;A Putrid Task;The Prodigal Lich;Wanted: Maggot Eye;Proof of Demise;Deaths in the Family"],
+  "Westfall": [10, 20, "Sentinel Hill", "", "Harvest Watcher,Defias Trapper,Riverpaw Mongrel,Murloc Raider,Fleshripper,Dust Devil,Defias Pathstalker,Goretusk", "The People's Militia;Westfall Stew;Patrolling Westfall;The Defias Brotherhood;Red Leather Bandanas;The Coast Isn't Clear;Poor Old Blanchy;Goretusk Liver Pie;The Forgotten Heirloom;The Killing Fields;Keeper of the Flame"],
+  "Loch Modan": [10, 20, "Thelsamar", "", "Stonesplinter Trogg,Mountain Boar,Elder Black Bear,Tunnel Rat Scout,Mo'grosh Ogre,Dark Iron Saboteur,Forest Lurker", "In Defense of the King's Lands;The Trogg Threat;Rat Catching;Bingles' Missing Supplies;Thelsamar Blood Sausages;Stonegear's Search;Mo'grosh Stronghold;Excavation Progress Report;Ironband's Excavation"],
+  "Darkshore": [10, 20, "Auberdine", "", "Moonkin Oracle,Greymist Hunter,Blackwood Warrior,Rabid Thistle Bear,Darkshore Thresher,Foreststrider,Encrusted Tide Crawler", "Washed Ashore;Bashal'Aran;The Tower of Althalaxx;Beached Sea Creature;Plagued Lands;Cave Mushrooms;The Absent Minded Prospector;Buzzbox 827;Grove of the Ancients"],
+  "Silverpine Forest": [10, 20, "", "The Sepulcher", "Moonrage Whitescalp,Ravenclaw Raider,Mottled Worg,Dalaran Apprentice,Giant Rabid Bear,Moss Stalker,Rot Hide Mongrel", "The Dead Fields;Prove Your Worth;Arugal's Folly;Border Crossings;Lost Deathstalkers;Speak with Renferrel;Ivar the Foul;Pyrewood Ambush;Wand over Fist"],
+  "The Barrens": [10, 25, "", "The Crossroads", "Kolkar Drudge,Zhevra Runner,Savannah Huntress,Razormane Thornweaver,Sunscale Scytheclaw,Southsea Brigand,Harpy Matriarch,Bristleback Geomancer", "Plainstrider Menace;Raptor Thieves;Fungal Spores;The Zhevra;Kolkar Leaders;Harpy Raiders;Mankrik's Wife;Wenikee Boltbucket;The Angry Scytheclaws;Samophlange;Disrupt the Attacks;Southsea Freebooters;The Escape;Consumed by Hatred"],
+  "Redridge Mountains": [15, 25, "Lakeshire", "", "Redridge Mongrel,Blackrock Grunt,Tarantula,Murloc Flesheater,Great Goretusk,Redridge Brute,Blackrock Outrunner", "Blackrock Menace;Selling Fish;Murloc Poachers;Underbelly Scales;An Unwelcome Guest;Shadow Magic;Messenger to Stormwind;Wanted: Gath'Ilzogg;Tharil'zun;Redridge Goulash;The Everstill Bridge"],
+  "Duskwood": [18, 30, "Darkshire", "", "Nightbane Dark Runner,Skeletal Warrior,Venom Web Spider,Rotted One,Defias Night Runner,Black Widow Hatchling,Plague Spreader,Nightbane Shadow Weaver", "The Night Watch;Raven Hill;Worgen in the Woods;The Totem of Infliction;Mor'Ladim;The Legend of Stalvan;Eight-Legged Menaces;The Hermit;Sven's Revenge;The Embalmer's Revenge;Look To The Stars"],
+  "Wetlands": [20, 30, "Menethil Harbor", "", "Mottled Raptor,Bluegill Murloc,Dragonmaw Raider,Mosshide Gnoll,Black Ooze,Young Wetlands Crocolisk,Dark Iron Dwarf", "Young Crocolisk Skins;The Third Fleet;Daily Delivery;Digging Through the Ooze;Claws from the Deep;Fall of Dun Modr;Ormer's Revenge;Apprentice's Duties;The Absent Minded Prospector;Defeat Nek'rosh"],
+  "Ashenvale": [18, 30, "Astranaar", "Splintertree Post", "Thistlefur Avenger,Foulweald Warrior,Ghostpaw Runner,Dark Strand Cultist,Ashenvale Bear,Wildthorn Stalker", "The Ruins of Stardust;Raene's Cleansing;Bathran's Hair;Fallen Sky Lake;Elune's Tear;The Ashenvale Hunt;Warsong Supplies;Ordanus;Velinde's Effects;Satyr Horns;Torek's Assault"],
+  "Stonetalon Mountains": [15, 27, "Stonetalon Peak", "Sun Rock Retreat", "Venture Co. Logger,Venture Co. Operator,Grimtotem Ruffian,Deepmoss Webspinner,Bloodfury Harpy,Pridewing Wyvern,Cliff Stormer", "Gerenzo's Orders;Arachnophobia;Super Reaper 6000;Cycle of Rebirth;Shredding Machines;Jin'Zil's Forest Magic;Blood Feeders;Pridewings;Goblin Invaders;Earthen Arise"],
+  "Hillsbrad Foothills": [20, 31, "Southshore", "Tarren Mill", "Hillsbrad Farmer,Syndicate Thief,Gray Bear,Mountain Lion,Torn Fin Tidehunter,Crushridge Ogre,Hillsbrad Footman", "Down the Coast;Bracers of Binding;Soothing Turtle Bisque;Crushridge Bounty;Elixir of Pain;Battle of Hillsbrad;Helcular's Revenge;Costly Menace;Syndicate Assassins;Dalaran Patrols;Hints of a New Plague?"],
+  "Thousand Needles": [25, 35, "Mirage Raceway", "Freewind Post", "Galak Scout,Grimtotem Bandit,Scorpid Reaver,Crag Coyote,Saltstone Basilisk,Highperch Wyvern,Steppe Cheetah", "Hypercapacitor Gizmo;Wanted - Arnak Grimtotem;The Swarm Grows;Load Lightening;A New Ore Sample;Rocket Car Parts;Free at Last;Homeward Bound;Sacred Fire"],
+  "Arathi Highlands": [30, 40, "Refuge Pointe", "Hammerfall", "Witherbark Troll,Boulderfist Ogre,Syndicate Highwayman,Highland Strider,Mountain Lion,Thundering Exile", "Hints of a New Plague?;Foul Magics;Northfold Manor;Worth Its Weight in Gold;Wand to Bethor;Call to Arms;Hammerfall;Trelane's Defenses;Stromgarde Badges;Guile of the Raptor"],
+  "Stranglethorn Vale": [30, 45, "Booty Bay", "Booty Bay", "Kurzen Jungle Fighter,Stranglethorn Tiger,Bloodscalp Headhunter,Bloodsail Swashbuckler,Jungle Stalker,Venture Co. Geologist,Skullsplitter Mystic,Elder Shadowmaw Panther", "Raptor Mastery;Tiger Mastery;Panther Mastery;Bloodscalp Ears;The Green Hills of Stranglethorn;Bloodsail Buccaneers;Hostile Takeover;The Bloodsail Buccaneers;Water Elementals;Tethis;Mok'thardin's Enchantment;Supply and Demand"],
+  "Desolace": [30, 40, "Nijel's Point", "Shadowprey Village", "Kolkar Centaur,Magram Scout,Gelkis Earthcaller,Burning Blade Felsworn,Scorpashi Venomlash,Aged Kodo,Hatefury Rogue", "Centaur Bounty;Kodo Roundup;Ghost-o-plasm Round Up;Clam Bait;Sceptre of Light;Bone Collector;Strange Alliance;Vengeance on the Northspring;Book of the Ancients;Hand of Iruxos"],
+  "Dustwallow Marsh": [35, 45, "Theramore Isle", "Brackenwall Village", "Darkfang Spider,Mirefin Murloc,Searing Whelp,Mudrock Tortoise,Bloodfen Raptor,Drywallow Crocolisk,Firemane Scout", "Hungry!;Mudrock Soup and Bugs;The Black Shield;Raptor Horns;Theramore Spies;Questioning Reethe;The Lost Report;Deserter Agitators;Tabetha's Task;Overlord Mok'Morokk's Concern"],
+  "Badlands": [35, 45, "Ironband's Camp", "Kargath", "Dustbelcher Brute,Shadowforge Surveyor,Scalding Whelp,Crag Coyote,Buzzard,Rock Elemental,Ridge Stalker", "Barbecued Buzzard Wings;Tremors of the Earth;Martek the Exiled;Solution to Doom;Uldaman Reagent Run;Coyote Thieves;Broken Alliances;Badlands Reagent Run;Scrounging;Power Stones"],
+  "Swamp of Sorrows": [35, 45, "The Harborage", "Stonard", "Sorrowscale Murloc,Marsh Flesheater,Lost One Fisherman,Deathstrike Tarantula,Sawtooth Crocolisk,Swamp Jaguar", "Ongeku;Lack of Surplus;Galen's Escape;Encroaching Wildlife;Fresh Meat;Cortello's Riddle;The Lost Ones;Noboru the Cudgel;Look Before You Leap;Neeka Bloodscar"],
+  "Tanaris": [40, 50, "Gadgetzan", "Gadgetzan", "Wastewander Bandit,Sandfury Hideskinner,Scorpid Dunestalker,Glasshide Basilisk,Dune Smuggler,Searing Roc,Thistleshrub Rootshaper", "WANTED: Andre Firebeard;Wastewander Justice;Water Pouch Bounty;Thistleshrub Valley;Pirate Hats Ahoy!;Southsea Shakedown;The Thirsty Goblin;Tooga's Quest;Gadgetzan Water Survey;Super Sticky;Screecher Spirits"],
+  "Feralas": [40, 50, "Feathermoon Stronghold", "Camp Mojache", "Gordunni Ogre,Grimtotem Raider,Frayfeather Hippogryph,Groddoc Ape,Sprite Darter,Wildpaw Gnoll,Northspring Harpy", "The Mark of Quality;Gordunni Cobalt;The Ogres of Feralas;Wild Hearts;The Ruins of Solarsal;The Giant Guardian;Improved Quality;Zukk'ash Infestation;Fuel for the Zapping;Woodpaw Investigation"],
+  "The Hinterlands": [40, 50, "Aerie Peak", "Revantusk Village", "Witherbark Scalper,Highvale Ranger,Vilebranch Raiding Wolf,Silvermane Stalker,Saltwater Snapjaw,Green Sludge,Jade Ooze", "Troll Necklace Bounty;Skulk Rock Clean-up;Whiskey Slim's Lost Grog;Featherbeard's Endorsement;Vilebranch Hooligans;Stalking the Stalkers;Hunt the Savages;Gryphon Master Talonaxe;Cannibalistic Cousins;Snapjaws, Mon!"],
+  "Searing Gorge": [43, 50, "Thorium Point", "Thorium Point", "Dark Iron Taskmaster,Heavy War Golem,Magma Elemental,Glassweb Spider,Searing Lava Spider,Greater Lava Spider,Slave Worker", "WANTED: Overseer Maltorius;Divine Retribution;JOB OPPORTUNITY: Culling the Competition;What the Wind Carries;The Flawless Flame;Curse These Fat Fingers;Fiery Menace!;Incendosaurs? Whateverosaur is More Like It;Suntara Stones;Dark Iron Tainted Vengeance"],
+  "Un'Goro Crater": [48, 55, "Marshal's Refuge", "Marshal's Refuge", "Ravasaur Runner,Stegodon,Gorilla,Un'Goro Stomper,Tar Beast,Silithid Hive Drone,Bloodpetal Thresher,Frenzied Pterrordax", "Super Sticky;The Fare of Lar'korwi;Larion and Muigin;Bone-Bladed Weapons;Expedition Salvation;Roll the Bones;Lost!;Shizzle's Flyer;It's a Secret to Everybody;Crystals of Power;Making Sense of It"],
+  "Azshara": [45, 55, "Talrendis Point", "Valormok", "Haldarr Satyr,Thunderhead Hippogryph,Blood Elf Surveyor,Legashi Rogue,Spitelash Myrmidon,Timbermaw Ancient,Cliff Giant", "Kim'jael Indeed!;Spiritual Domination;Stealing Knowledge;Betrayed;Delivery for Andron Gant;Kim'jael's \"Missing\" Equipment"],
+  "Felwood": [48, 55, "Talonbranch Glade", "Bloodvenom Post", "Deadwood Shaman,Jadefire Satyr,Toxic Horror,Irontree Stomper,Warpwood Treant,Angerclaw Grizzly,Entropic Beast", "Cleansing Felwood;Forces of Jaedenar;Verifying the Corruption;Corrupted Sabers;Timbermaw Ally;Deadwood of the North;Speak to Nafien;Further Corruption;Wild Guardians;Mystery Goo"],
+  "Blasted Lands": [45, 55, "Nethergarde Keep", "Nethergarde Keep", "Snickerfang Hyena,Ashmane Boar,Redstone Basilisk,Felhound,Shadowsworn Cultist", "A Boar's Vitality;The Basilisk's Bite;Vulture's Vigor;Snickerfang Jowls;The Decisive Striker;Everything Counts In Large Amounts;Kum'isha's Endeavors;Petty Squabbles"],
+  "Burning Steppes": [50, 58, "Morgan's Vigil", "Flame Crest", "Blackrock Soldier,Black Dragonspawn,Firegut Ogre,Black Broodling,Thaurissan Agent,Giant Ember Worg", "Extinguish the Firegut;FIFTY! YEP!;Dragonkin Menace;The True Masters;Tablet of the Seven;Broodling Essence;Gor'tesh the Brute Lord;Yuka Screwspigot;Krom'Grul"],
+  "Western Plaguelands": [51, 58, "Chillwind Camp", "The Bulwark", "Scarlet Lumberjack,Diseased Wolf,Skeletal Flayer,Rotting Ghoul,Scarlet Medic,Cauldron Lord,Plague Lurker", "A Plague Upon Thee;Mission Accomplished!;All Along the Watchtowers;Skeletal Fragments;Unfinished Business;Andorhal;Better Late Than Never;Defenders of Darrowshire;Return to Chillwind Camp;Scholomance"],
+  "Eastern Plaguelands": [53, 60, "Light's Hope Chapel", "Light's Hope Chapel", "Plaguehound Runt,Ghoul Ravener,Cursed Mage,Crypt Horror,Plaguebat,Scourge Warder", "Demon Dogs;Blood Tinged Skies;Carrion Grubbage;Augustus' Receipt Book;Zaeldarr the Outcast;Of Forgotten Memories;Of Lost Honor;Of Love and Family;Defenders of Darrowshire;Sweet Serenity"],
+  "Winterspring": [53, 60, "Everlook", "Everlook", "Frostsaber Stalker,Winterfall Ursa,Ice Thistle Yeti,Chillwind Chimaera,Frostmaul Giant,Shardtooth Mauler,Cobalt Wyrmkin", "Are We There, Yeti?;Winterfall Activity;Wildkin of Elune;Enraged Wildkin;Threat of the Winterfall;Ursius of the Shardtooth;Brumeran of the Chillwind;Shy-Rotam;Luck Be With You;Strange Sources"],
+  "Silithus": [55, 60, "Cenarion Hold", "Cenarion Hold", "Hive'Ashi Worker,Twilight Geolord,Dune Smasher,Stonelash Scorpid,Sand Skitterer,Desert Rumbler,Twilight Avenger", "Securing the Supply Lines;Deadly Desert Venom;Dearest Natalia;Wanted - Deathclasp, Terror of the Sands;The Twilight Mystery;Noggle's Last Hope;Twilight Geolords;Stepping Up Security"],
+};
+const ZONE_HUB = (z, f) => { const d = ZONES[z]; return (f === "Alliance" ? d[2] : d[3]) || d[2] || d[3]; };
+
+// ---------- routes: each leg is "Zone:leave at level" ----------
+const ROUTES = {
+  Human:      "Northshire Valley:6,Elwynn Forest:11,Westfall:15,Redridge Mountains:19,Duskwood:22,Wetlands:24,Duskwood:26,Hillsbrad Foothills:28,Wetlands:30",
+  Dwarf:      "Coldridge Valley:6,Dun Morogh:11,Loch Modan:15,Westfall:18,Redridge Mountains:21,Wetlands:24,Duskwood:27,Hillsbrad Foothills:30",
+  "Night Elf":"Shadowglen:6,Teldrassil:11,Darkshore:16,Ashenvale:20,Wetlands:23,Ashenvale:26,Stonetalon Mountains:28,Duskwood:30",
+  Orc:        "Valley of Trials:6,Durotar:11,The Barrens:15,Stonetalon Mountains:18,The Barrens:21,Ashenvale:23,Hillsbrad Foothills:26,Thousand Needles:30",
+  Tauren:     "Camp Narache:6,Mulgore:11,The Barrens:16,Stonetalon Mountains:19,The Barrens:22,Ashenvale:24,Hillsbrad Foothills:27,Thousand Needles:30",
+  Undead:     "Deathknell:6,Tirisfal Glades:11,Silverpine Forest:15,The Barrens:18,Stonetalon Mountains:21,Hillsbrad Foothills:24,Ashenvale:27,Thousand Needles:30",
+  Alliance:   "Arathi Highlands:32,Stranglethorn Vale:34,Desolace:36,Stranglethorn Vale:38,Dustwallow Marsh:40,Badlands:42,Swamp of Sorrows:44,Tanaris:46,Feralas:48,The Hinterlands:50,Searing Gorge:51,Un'Goro Crater:53,Felwood:54,Blasted Lands:55,Burning Steppes:56,Western Plaguelands:57,Winterspring:58,Eastern Plaguelands:59,Silithus:60",
+  Horde:      "Arathi Highlands:32,Stranglethorn Vale:34,Desolace:36,Stranglethorn Vale:38,Dustwallow Marsh:40,Badlands:42,Swamp of Sorrows:44,Tanaris:46,Feralas:48,The Hinterlands:50,Searing Gorge:51,Un'Goro Crater:53,Azshara:54,Felwood:55,Burning Steppes:56,Western Plaguelands:57,Winterspring:58,Eastern Plaguelands:59,Silithus:60",
+};
+const ENDGAME_ZONES = ["Eastern Plaguelands", "Winterspring", "Silithus", "Burning Steppes", "Western Plaguelands"];
+function routeFor(race) {
+  const r = RACES[race];
+  return (ROUTES[r.start] + "," + ROUTES[r.f]).split(",").map(s => { const [z, l] = s.split(":"); return { z, until: +l }; });
+}
+
+// ---------- dungeons: [name, min, max, faction(A/H/B), abbr, trash, bosses, loot] ----------
+// loot tag: |c caster, |m melee/physical, no tag = anyone
+const DUNGEONS = [
+  ["Ragefire Chasm", 13, 18, "H", "RFC", "Ragefire Trogg,Searing Blade Cultist,Molten Elemental", "Oggleflint,Taragaman the Hungerer,Jergosh the Invoker,Bazzalan", "Cursed Felblade|m,Subterranean Cape,Robe of Evocation|c,Bloodfire Talons|m,Ghostly Mantle|c"],
+  ["The Deadmines", 17, 26, "A", "DM", "Defias Miner,Goblin Engineer,Defias Pirate,Defias Taskmaster", "Rhahk'Zor,Sneed's Shredder,Gilnid,Mr. Smite,Captain Greenskin,Edwin VanCleef,Cookie", "Rhahk'Zor's Hammer|m,Buzzer Blade|m,Smite's Mighty Hammer|m,Cruel Barb|m,Cape of the Brotherhood,Blackened Defias Belt|m,Blackened Defias Leggings|m,Corsair's Overshirt|c,Emberstone Staff|c,Cookie's Tenderizer|m,Thief's Blade|m,Gold-flecked Gloves|c"],
+  ["Wailing Caverns", 17, 24, "B", "WC", "Druid of the Fang,Deviate Ravager,Deviate Venomwing,Evolving Ectoplasm", "Lady Anacondra,Lord Cobrahn,Kresh,Lord Pythas,Skum,Lord Serpentis,Verdan the Everliving,Mutanus the Devourer", "Armor of the Fang|m,Boots of the Fang|m,Crescent Staff|c,Living Root|c,Venomstrike|m,Sporid Cape,Glowing Lizardscale Cloak,Serpent's Shoulders|c,Footpads of the Fang|m"],
+  ["Shadowfang Keep", 22, 30, "B", "SFK", "Shadowfang Moonwalker,Haunted Servitor,Wailing Guardsman,Fel Steed", "Rethilgore,Razorclaw the Butcher,Baron Silverlaine,Commander Springvale,Odo the Blindwatcher,Fenrus the Devourer,Wolf Master Nandos,Archmage Arugal", "Butcher's Cleaver|m,Shadowfang|m,Robes of Arugal|c,Meteor Shard|m,Belt of Arugal|c,Wolfmaster Cape,Hand of Righteousness|c,Seal of Silverlaine"],
+  ["The Stockade", 24, 32, "A", "Stocks", "Defias Inmate,Defias Convict,Defias Captive", "Targorr the Dread,Kam Deepfury,Hamhock,Bazil Thredd,Dextren Ward", "Iron Knuckles|m,Kam's Walking Stick|c,Headbasher|m"],
+  ["Blackfathom Deeps", 24, 32, "B", "BFD", "Blackfathom Myrmidon,Twilight Acolyte,Aku'mai Fisher,Murkshallow Snapclaw", "Ghamoo-ra,Lady Sarevess,Gelihast,Lorgus Jett,Baron Aquanis,Twilight Lord Kelris,Old Serra'kis,Aku'mai", "Tortoise Armor|m,Naga Battle Gloves|m,Strike of the Hydra|m,Gravestone Scepter|c,Rod of the Sleepwalker|c,Ancient Moonstone Seal,Embrace of the Lycan|m,Sparkleshell Mantle|m"],
+  ["Gnomeregan", 29, 38, "B", "Gnomer", "Leprous Technician,Mechano-Tank,Irradiated Pillager,Caverndeep Burrower", "Grubbis,Viscous Fallout,Electrocutioner 6000,Crowd Pummeler 9-60,Mekgineer Thermaplugg", "Electrocutioner Leg|m,Electrocutioner Lagnut,Manual Crowd Pummeler|m,Hydrocane|c,Oscillating Power Hammer|m,Triprunner Dungarees|m,Toxic Revenger|m,Thermaplugg's Left Arm|m"],
+  ["Razorfen Kraul", 29, 38, "B", "RFK", "Razorfen Quilguard,Death's Head Acolyte,Razorfen Beastmaster,Kraul Bat", "Roogug,Aggem Thorncurse,Death Speaker Jargba,Overlord Ramtusk,Agathelos the Raging,Charlga Razorflank", "Corpsemaker|m,Pugilist Bracers|m,Swine Fists|m,Heart of Agamaggan,Mutant Scale Breastplate|m,Glowing Magical Bracelets|c"],
+  ["Scarlet Monastery: Graveyard", 30, 38, "B", "SM GY", "Haunting Phantasm,Scarlet Torturer,Unfettered Spirit", "Interrogator Vishas,Bloodmage Thalnos,Ironspine,Azshir the Sleepless", "Bloodmage Mantle|c,Ghostshroud|m,Dusty Mail Boots|m"],
+  ["Scarlet Monastery: Library", 33, 40, "B", "SM Lib", "Scarlet Adept,Scarlet Monk,Scarlet Gallant,Scarlet Diviner", "Houndmaster Loksey,Arcanist Doan", "Dog Training Gloves|m,Robe of Doan|c,Mantle of Doan|c,Hypnotic Blade|c,Illusionary Rod|c"],
+  ["Scarlet Monastery: Armory", 36, 42, "B", "SM Arm", "Scarlet Myrmidon,Scarlet Defender,Scarlet Sorcerer", "Herod", "Ravager|m,Herod's Shoulder|m,Raging Berserker's Helm|m,Scarlet Leggings|m"],
+  ["Scarlet Monastery: Cathedral", 38, 45, "B", "SM Cath", "Scarlet Champion,Scarlet Abbot,Scarlet Wizard,Scarlet Chaplain", "High Inquisitor Fairbanks,Scarlet Commander Mograine,High Inquisitor Whitemane", "Mograine's Might|m,Whitemane's Chapeau|c,Triune Amulet,Aegis of the Scarlet Commander|m,Gauntlets of Divinity|c"],
+  ["Razorfen Downs", 37, 46, "B", "RFD", "Skeletal Summoner,Death's Head Necromancer,Splinterbone Centurion", "Tuten'kash,Mordresh Fire Eye,Glutton,Ragglesnout,Amnennar the Coldbringer", "Coldrage Dagger|m,Deathmage Sash|c,Glutton's Cleaver|m,Icemetal Barbute|m,Necklace of Fanged Skulls,Robe of the Moccasin|c"],
+  ["Uldaman", 41, 51, "B", "Ulda", "Stonevault Brawler,Shadowforge Ambusher,Earthen Guardian,Venomlash Scorpid", "Revelosh,The Lost Dwarves,Ironaya,Ancient Stone Keeper,Galgann Firehammer,Grimlok,Archaedas", "Ironaya's Bracers|m,Grimlok's Charge|m,Galgann's Firehammer|m,Baelog's Shortbow|m,Stoneslayer|m,The Rockpounder|m,Archaedic Shard|c,Revelosh's Gloves|c"],
+  ["Zul'Farrak", 44, 54, "B", "ZF", "Sandfury Shadowcaster,Sandfury Blood Drinker,Zul'Farrak Zombie,Sul'lithuz Abomination", "Antu'sul,Theka the Martyr,Witch Doctor Zum'rah,Sandfury Executioner,Hydromancer Velratha,Gahz'rilla,Chief Ukorz Sandscalp,Nekrum Gutchewer", "Jang'thraze the Protector|m,Sang'thraze the Deflector|m,Executioner's Cleaver|m,Big Bad Pauldrons|m,Ripsaw|m,Zum'rah's Vexing Cane|c,Gahz'rilla Fang|m,Carrot on a Stick,Sandstalker Ankleguards|m,Jinxed Hoodoo Skin|c"],
+  ["Maraudon", 46, 55, "B", "Mara", "Constrictor Vine,Theradrim Shardling,Putridus Shadowstalker,Celebrian Dryad", "Noxxion,Razorlash,Lord Vyletongue,Celebras the Cursed,Landslide,Tinkerer Gizlock,Rotgrip,Princess Theradras", "Princess Theradras' Scepter|c,Eye of Theradras|c,Blackstone Ring|m,Noxxion's Shackles|m,Bracers of the Stone Princess|m,Landslide Buckler|m,Rotgrip Mantle|c"],
+  ["Sunken Temple", 50, 60, "B", "ST", "Atal'ai Witch Doctor,Nightmare Wyrmkin,Hukku's Voidwalker,Saturated Ooze", "Atal'alarion,Dreamscythe,Weaver,Jammal'an the Prophet,Ogom the Wretched,Morphaz,Hazzas,Shade of Eranikus", "Atal'ai Breastplate|m,Darkwater Talwar|m,Dragon's Eye,Jammal'an's Cane|c,Rod of Corrosion|c,Gloves of the Atal'ai Prophet|c,Ancient Cornerstone Grimoire|c"],
+  ["Blackrock Depths", 52, 60, "B", "BRD", "Anvilrage Guardsman,Doomforge Craftsman,Fireguard Destroyer,Shadowforge Senator", "Lord Roccor,High Interrogator Gerstahn,Houndmaster Grebmar,Bael'Gar,Lord Incendius,Fineous Darkvire,General Angerforge,Golem Lord Argelmach,Ambassador Flamelash,Magmus,Emperor Dagran Thaurissan", "Ironfoe|m,Hand of Justice|m,Savage Gladiator Chain|m,Fiery Chain Girdle|m,Angerforge's Battle Axe|m,Thaurissan's Royal Scepter|c,Lord General's Sword|m,Robes of the Royal Crown|c"],
+  ["Lower Blackrock Spire", 55, 60, "B", "LBRS", "Spirestone Ogre,Smolderthorn Mystic,Bloodaxe Veteran,Scarshield Raider", "Highlord Omokk,Shadow Hunter Vosh'gajin,War Master Voone,Mother Smolderweb,Quartermaster Zigris,Gizrul the Slavener,Halycon,Overlord Wyrmthalak", "Painweaver Band|m,Briarwood Reed|c,Blackhand's Breadth|m,Wyrmthalak's Shackles|c,Voone's Twitchbow|m,Truestrike Shoulders|m,Mark of Fordring|m"],
+  ["Upper Blackrock Spire", 57, 60, "B", "UBRS", "Blackhand Dragon Handler,Rage Talon Fire Tongue,Chromatic Whelp,Blackhand Elite", "Pyroguard Emberseer,Solakar Flamewreath,Warchief Rend Blackhand,The Beast,General Drakkisath", "Dal'Rend's Sacred Charge|m,Dal'Rend's Tribal Guardian|m,Draconian Deflector|m,Rune Band of Wizardry|c"],
+  ["Dire Maul", 56, 60, "B", "DM:N", "Gordok Brute,Wildspawn Imp,Highborne Summoner,Warpwood Crusher", "Alzzin the Wildshaper,Immol'thar,Prince Tortheldrin,King Gordok,Captain Kromcrush", "Royal Seal of Eldre'Thalas,Mindtap Talisman|c,Barbarous Blade|m,Tarnished Elven Ring|m,Ogre Forged Hauberk|m,Insightful Hood|c"],
+  ["Scholomance", 58, 60, "B", "Scholo", "Scholomance Necromancer,Risen Guard,Spectral Researcher,Reanimated Corpse", "Kirtonos the Herald,Jandice Barov,Rattlegore,Ras Frostwhisper,Instructor Malicia,Doctor Theolen Krastinov,Lord Alexei Barov,Darkmaster Gandling", "Headmaster's Charge|c,Bone Ring Helm|c,Witchblade|c,Ghoul Skin Tunic|m,Barov Peasant Caller,Necropile Robe|c,Cadaverous Armor|m"],
+  ["Stratholme", 58, 60, "B", "Strat", "Crimson Defender,Thuzadin Necromancer,Skeletal Berserker,Bile Spewer", "The Unforgiven,Timmy the Cruel,Malor the Zealous,Balnazzar,Baroness Anastari,Nerub'enkan,Maleki the Pallid,Magistrate Barthilas,Ramstein the Gorger,Baron Rivendare", "Runeblade of Baron Rivendare|m,Deathcharger's Reins,Hammer of the Grand Crusader|m,Timmy's Galoshes|m,Crimson Hammersmith's Apron|m,Skull of Burning Shadows|c"],
+];
+const RAIDS = [
+  ["Onyxia's Lair", 60, 60, "B", "Ony", "Onyxian Warder,Onyxian Whelp", "Onyxia", "Deathbringer|m,Vis'kag the Bloodletter|m,Ring of Binding,Onyxia Hide Backpack,Head of Onyxia,Sapphiron Drape|c"],
+  ["Molten Core", 60, 60, "B", "MC", "Molten Giant,Firelord,Core Hound,Lava Surger,Flamewaker Elite", "Lucifron,Magmadar,Gehennas,Garr,Shazzrah,Baron Geddon,Golemagg the Incinerator,Sulfuron Harbinger,Majordomo Executus,Ragnaros", "Bindings of the Windseeker,Eye of Sulfuras|m,Band of Accuria|m,Perdition's Blade|m,Choker of the Fire Lord|c,Striker's Mark|m,Talisman of Ephemeral Power|c,Onslaught Girdle|m,Crimson Shocker|c,Azuresong Mageblade|c,Medallion of Steadfast Might|m"],
+];
+for (const d of DUNGEONS.concat(RAIDS)) d[7] = d[7].split(",");
+
+// ---------- tuning ----------
+const XP_TABLE = [0, 400, 900, 1400, 2100, 2800, 3600, 4500, 5400, 6500, 7600, 8800, 10100, 11400, 12900, 14400, 16000, 17700, 19400, 21300, 23200, 25200, 27300, 29400, 31700, 34000, 36400, 38900, 41400, 44300, 47400,
+  50800, 54500, 58600, 62800, 67100, 71600, 76100, 80800, 85700, 90700, 95800, 101000, 106300, 111800, 117500, 123200, 129100, 135100, 141200, 147500, 153900, 160400, 167100, 173900, 180800, 187900, 195000, 202300, 209800];
+let TF = 1;                        // global time factor, tuned by simulation
+const SPAN = L => TF * (0.45 + L / 22); // durations stretch as you level: the first levels fly by, the 50s crawl
+const sec = (s, L = S.level) => Math.round(s * 1000 * SPAN(L) * (0.8 + Math.random() * 0.4));
+const mountF = () => S.mount >= 2 ? 0.5 : S.mount ? 0.65 : 1;
+
+// ---------- state ----------
+let S = null, dirty = true, speed = 1;
+const SAVE_KEY = "wowquest-v1", DEV_KEY = "wowquest-dev";
+let dev = false;
+try { dev = localStorage.getItem(DEV_KEY) === "1"; } catch (e) {}
+
+const SYL1 = ["Thal", "Bran", "Kor", "Gar", "Ael", "Mor", "Dra", "Vel", "Tor", "Gri", "Zul", "Ker", "Ash", "Fen", "Bel", "Ul", "Rok", "Sha"];
+const SYL2 = ["a", "e", "i", "o", "u", "ar", "or", "en", "ae", "ra", ""];
+const SYL3 = ["dris", "mok", "thas", "gar", "win", "nor", "dil", "rath", "zek", "ius", "ka", "lyn", "grim", "dor", "ash"];
+function randomName() { return pick(SYL1) + pick(SYL2) + pick(SYL3); }
+
+function load() { try { const t = localStorage.getItem(SAVE_KEY); return t ? JSON.parse(t) : null; } catch (e) { return null; } }
+function save() { if (!S) return; S.savedAt = Date.now(); try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); const el = document.getElementById("saved"); if (el) el.textContent = "saved"; } catch (e) {} }
+function wipe() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
+
+const cls = () => CLASSES[S.cls];
+const race = () => RACES[S.race];
+const xpNeed = L => XP_TABLE[L] || 1;
+const mobXp = (mobL, L = S.level) => Math.round((45 + 5 * mobL) * clamp(1 + 0.05 * (mobL - L), 0.4, 1.2));
+const isCaster = () => cls().prime === "INT" && !(S.cls === "Shaman" && S.spec === 1) && !(S.cls === "Druid" && S.spec === 1);
+const bagCap = () => 16 + S.bagSlots.reduce((a, b) => a + b, 0);
+const city = () => race().city;
+function log(txt, kind = "") { S.log.unshift({ t: S.time, txt, k: kind, id: ++S.logId }); if (S.log.length > 220) S.log.length = 220; dirty = true; }
+const spellName = n => n.replace("{city}", city());
+
+function route() { return routeFor(S.race); }
+function curZone() { const r = route(); return S.leg < r.length ? r[S.leg].z : S.endZone; }
+function hub() { return ZONE_HUB(curZone(), S.faction); }
+function hpMax() { return cls().hp * S.level + S.stats.STA * 10; }
+function resMax() { return cls().mp ? cls().mp * S.level + S.stats.INT * 15 : 100; }
+function talents() {
+  const pts = Math.max(0, S.level - 9), t = [0, 0, 0], second = (S.spec + 1) % 3;
+  t[S.spec] = Math.min(pts, 31); t[second] = Math.min(pts - t[S.spec], 20); t[S.spec] += pts - t[S.spec] - t[second];
+  return t;
+}
+
+// ---------- items ----------
+const power = it => it ? it.ilvl * QMULT[it.q] : -1;
+function armorType(L = S.level) { const a = cls().armor; return L >= 40 ? a[1] : a[0]; }
+function tierOf(list, ilvl) { return list[clamp(Math.floor((ilvl - 1) / 6), 0, list.length - 1)]; }
+function sfx() { const s = pick(cls().sfx); return /^(Strength|Agility|Stamina|Intellect|Spirit)$/.test(s) ? " of " + s : " of the " + s; }
+function makeItem(slot, ilvl, q) {
+  ilvl = clamp(Math.round(ilvl), 1, 80);
+  const c = cls(); let name;
+  if (ARMOR_BASE.Cloth[slot]) { const t = armorType(); name = tierOf(TIERS[t], ilvl) + " " + ARMOR_BASE[t][slot]; }
+  else if (slot === "Back") name = tierOf(TIERS.Cloth, ilvl) + " " + pick(JEWEL.Back);
+  else if (JEWEL[slot]) name = tierOf(TIERS.Gem, ilvl) + " " + pick(JEWEL[slot]);
+  else { const base = pick(slot === "Main Hand" ? c.main : slot === "Off Hand" ? c.off : c.ranged); name = tierOf(MYSTIC.test(base) ? TIERS.Mystic : TIERS.Metal, ilvl) + " " + base; }
+  if (q >= 2) name += sfx();
+  return { name, ilvl, q, slot };
+}
+const SLOT_WORDS = [
+  [/Bow|Gun|Rifle|Crossbow|Wand|Twitchbow|Shortbow|Libram|Idol|Totem/, "Ranged"], [/Buckler|Shield|Deflector|Guardian|Aegis/, "Off Hand"],
+  [/Cape|Cloak|Shroud|Drape|Hide$/, "Back"], [/Shoulder|Pauldrons|Mantle|Spaulders/, "Shoulder"], [/Leggings|Legguards|Dungarees|Legplates|Pants/, "Legs"],
+  [/Belt|Girdle|Sash|Waistband/, "Waist"], [/Bracers|Bindings|Shackles|Bracelets|Cuffs/, "Wrist"], [/Gloves|Gauntlets|Fists|Knuckles|Handguards/, "Hands"],
+  [/Boots|Ankleguards|Galoshes|Sabatons|Footpads|Treads/, "Feet"], [/Helm|Hood|Chapeau|Cap$|Crown|Barbute|Mask|Head of/, "Head"],
+  [/Armor|Robe|Overshirt|Breastplate|Tunic|Chain|Hauberk|Apron|Vest/, "Chest"], [/Ring|Band|Seal|Loop/, "Finger"],
+  [/Amulet|Necklace|Choker|Pendant|Collar|Medallion|Heart|Diamond/, "Neck"],
+  [/Talisman|Charm|Carrot|Reins|Caller|Eye of Sulfuras|Stone|Shard|Skull|Backpack|Grimoire/, "Trinket"],
+];
+function namedSlot(n) { for (const [re, s] of SLOT_WORDS) if (re.test(n)) return s; return "Main Hand"; }
+function setPiece(tier, ilvl) {
+  const slots = ["Head", "Shoulder", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet"], slot = pick(slots), set = SETS[S.cls][tier];
+  return { name: (SETSHORT[set] || set) + " " + ARMOR_BASE[armorType()][slot], ilvl, q: tier ? 4 : 3, slot };
+}
+// equip if better, otherwise into the bags as something to sell
+function gain(it, how) {
+  const cur = S.equip[it.slot];
+  if (power(it) > power(cur)) {
+    S.equip[it.slot] = it;
+    log(`${how} ${it.name} (item level ${it.ilvl}). Equipped.`, "loot" + Math.min(4, Math.max(2, it.q)));
+    if (cur && cur.q >= 1) addBag({ name: cur.name, val: Math.round(cur.ilvl * cur.ilvl * 2 * QMULT[cur.q]), q: cur.q });
+    return true;
+  }
+  if (it.q >= 3) log(`${how} ${it.name}, but it's no upgrade. Into the bags.`, "loot" + Math.min(4, it.q));
+  addBag({ name: it.name, val: Math.round(it.ilvl * it.ilvl * 2 * QMULT[it.q]), q: it.q });
+  return false;
+}
+function addBag(x) { if (S.bags.length < bagCap()) S.bags.push(x); }
+function gearScore() { let n = 0, s = 0; for (const k of SLOTS) { const it = S.equip[k]; s += it ? power(it) : 0; n++; } return s / n; }
+
+// ---------- spells & level ups ----------
+function trainSpells() {
+  const c = cls(); let cost = 0; const learned = [], ranked = [];
+  for (const sp of c.list) {
+    if (sp.lvl > S.level) continue;
+    const name = spellName(sp.name), rank = RANK_SPELL(sp, S.level);
+    if (!(name in S.spells)) { S.spells[name] = rank; learned.push(name); cost += S.level * S.level * 4 + 10; }
+    else if (S.spells[name] < rank) { S.spells[name] = rank; ranked.push(`${name} (Rank ${rank})`); cost += S.level * S.level * 4 + 10; }
+    if (/^Summon (Warhorse|Felsteed)$/.test(name)) S.mount = Math.max(S.mount, 1);
+    if (/^Summon (Charger|Dreadsteed)$/.test(name)) S.mount = 2;
+  }
+  cost = Math.min(cost, S.money); S.money -= cost;
+  if (learned.length) log(`Learned ${learned.join(", ")}.`, "spell");
+  if (ranked.length) log(`Trained ${ranked.join(", ")}.`, "spell");
+  if (!learned.length && !ranked.length) log(`Nothing new to learn yet.`, "spell");
+  else if (cost) log(`Training cost ${moneyTxt(cost)}.`, "gold");
+}
+function gainXp(n) {
+  if (S.level >= 60) return;
+  S.xp += Math.round(n);
+  while (S.level < 60 && S.xp >= xpNeed(S.level)) {
+    S.xp -= xpNeed(S.level); S.level++;
+    const c = cls(); const gains = [];
+    STATS.forEach((k, i) => { const g = Math.floor(c.w[i] / 2) + (Math.random() < (c.w[i] % 2) / 2 + 0.25 ? 1 : 0) + (k === "STA" ? 1 : 0); if (g) { S.stats[k] += g; gains.push(`+${g} ${k}`); } });
+    if (S.level === 60) { S.xp = 0; log(`DING! Level 60! ${S.name} has reached the level cap after ${fmtPlayed(S.time)} played.`, "ding"); }
+    else log(`Level ${S.level}! ${gains.join(", ")}.`, "lvl");
+    if (S.level === 10) log(`Talent points unlocked. Going ${c.trees[S.spec]}.`, "spell");
+    if (S.level === 40) log(`Talent: learned ${c.ult[S.spec]} (31 points in ${c.trees[S.spec]}).`, "spell");
+  }
+  dirty = true;
+}
+
+// ---------- quests ----------
+const PARTS = [
+  [/Wolf|Prowler|Worg|Coyote|Hyena|Hound|Darkhound|Jackal/, ["Fang", "Pelt", "Paw"]], [/Boar|Tusk|Goretusk|Plainstrider|Strider/, ["Tusk", "Flank", "Feather"]],
+  [/Bear|Ursa|Grizzly|Mauler/, ["Pelt", "Claw"]], [/Spider|Widow|Tarantula|Webwood|Webspinner|Skitterer/, ["Silk Gland", "Venom Sac"]],
+  [/Murloc|Mirefin|Bluegill|Sorrowscale|Tidehunter/, ["Fin", "Eye"]], [/Raptor|Scytheclaw|Ravasaur|Stegodon|Stomper/, ["Talon", "Horn"]],
+  [/Crocolisk|Thresher|Basilisk|Snapjaw|Tortoise/, ["Scale", "Tooth"]], [/Harpy|Owl|Fleshripper|Buzzard|Roc|Hippogryph|Wyvern|Pterrordax|Chimaera|Darter/, ["Feather", "Talon"]],
+  [/Kobold/, ["Candle", "Ear"]], [/Defias|Syndicate|Bandit|Brigand|Bloodsail|Smuggler|Highwayman|Pirate/, ["Red Bandana", "Orders"]],
+  [/Gnoll|Mongrel|Mosshide/, ["Paw", "Mane"]], [/Skeleton|Skeletal|Rotted|Zombie|Ghoul|Rattlecage|Rotting|Crypt|Scourge|Plague|Dead/, ["Bone Fragment", "Ichor"]],
+  [/Elemental|Golem|Ooze|Sludge|Dust Devil|Watcher|Stormer|Rumbler|Tar Beast|Horror/, ["Core", "Essence"]], [/Scorpid|Silithid|Hive/, ["Stinger", "Carapace"]],
+  [/Tiger|Panther|Saber|Cougar|Lion|Leopard|Stalker|Jaguar|Cheetah/, ["Pelt", "Fang"]],
+];
+function mobPart(mob) { for (const [re, a] of PARTS) if (re.test(mob)) return mob.replace(/^(Young|Elder|Dire|Giant|Greater|Adult) /, "") + " " + pick(a); return mob + " " + pick(["Trophy", "Totem", "Sample", "Ear"]); }
+function zoneMobs(z = curZone()) { return ZONES[z][4].split(","); }
+function newQuest() {
+  const z = curZone(), list = ZONES[z][5].split(";"), i = S.zq[z] || 0, mob = pick(zoneMobs(z));
+  let name;
+  if (i < list.length) { name = list[i]; S.zq[z] = i + 1; }
+  else { const taken = S.quests.map(x => x.name); const opts = [`${mob} Menace`, `Thinning the ${plural(mob)}`, `Bounty: ${plural(mob)}`, `Culling the ${plural(mob)}`, `Trouble in ${z}`, `A Task for ${hub()}`, `${hub()} Needs You`, `Supplies for ${hub()}`].filter(n => !taken.includes(n)); name = pick(opts.length ? opts : [`${plural(mob)} Again`]); }
+  const q = { id: ++S.qid, name, zone: z, mob, prog: 0, xp: 0, money: 0 };
+  const wanted = name.match(/^Wanted:? ?-? ?"?([^"]+?)"?$/i);
+  if (wanted) { q.type = "elite"; q.mob = wanted[1].trim(); q.max = 1; }
+  else if (Math.random() < 0.5) { q.type = "col"; q.item = mobPart(mob); q.max = 5 + R(6); }
+  else { q.type = "kill"; q.max = 6 + R(7); }
+  const L = S.level;
+  q.xp = Math.round(mobXp(L) * (q.type === "elite" ? 14 : 7 + R(5)) * 1.15);
+  q.money = Math.round((L * L * 3 + 60) * (0.7 + Math.random() * 0.6));
+  S.quests.push(q);
+  return q;
+}
+function questText(q) { return q.type === "col" ? `${plural(q.item)} ${q.prog}/${q.max}` : q.type === "elite" ? `${q.mob} slain ${q.prog}/1` : `${plural(q.mob)} slain ${q.prog}/${q.max}`; }
+const questDone = q => q.prog >= q.max;
+function plural(s) { return /[^aeiou]y$/.test(s) ? s.slice(0, -1) + "ies" : /(ss|x|ch|sh)$/.test(s) ? s + "es" : /s$/.test(s) ? s : /(Wolf|Thief)$/.test(s) ? s.slice(0, -1) + "ves" : s + "s"; }
+
+// ---------- new character ----------
+function newHero(f) {
+  const r = RACES[f.race], c = CLASSES[f.cls], stats = {};
+  STATS.forEach((k, i) => stats[k] = r.base[i] + Math.round(c.w[i] * 0.7));
+  S = { v: 1, name: (f.name || "").trim() || randomName(), race: f.race, cls: f.cls, spec: f.spec, faction: r.f,
+    level: 1, xp: 0, money: 0, stats, equip: {}, bags: [], bagSlots: [], spells: {}, leg: 0, endZone: "Eastern Plaguelands",
+    loc: "start", arrived: null, quests: [], zq: {}, done: [], dungeons: [], nextCity: 2, cycleQ: 0, mount: 0,
+    kills: 0, deaths: 0, qdone: 0, qid: 0, since: 0, curQ: 0, repair: 0, dg: null, time: 0, log: [], logId: 0, task: null, queue: [], speed: 1, savedAt: Date.now() };
+  SLOTS.forEach(s => S.equip[s] = null);
+  S.equip["Main Hand"] = { name: c.start, ilvl: 2, q: 1, slot: "Main Hand" };
+  ["Chest", "Legs", "Feet"].forEach(s => { const it = makeItem(s, 1, 1); S.equip[s] = it; });
+  trainSpells();
+  S.log = [];
+  log(`${S.name} the ${S.race} ${S.cls} awakens in ${curZone()}. The ${S.faction} needs heroes.`, "zone");
+  save();
+}
+
+// ---------- planning ----------
+const needCity = () => S.level < 60 ? S.level >= S.nextCity : S.cycleQ >= 8;
+function travelVerb() { return S.mount >= 2 ? "Galloping on your " + race().epic : S.mount ? "Riding your " + race().mount : "Running"; }
+
+function plan() {
+  const q = S.queue, z = curZone(), h = hub();
+  // 1. arrive in the current zone
+  if (S.arrived !== z) {
+    const first = S.loc === "start";
+    q.push({ k: "arrive", d: first ? `Getting your bearings in ${z}` : S.level >= 10 ? `Taking the flight path to ${h}, ${z}` : `${travelVerb()} to ${h}, ${z}`, t: sec(first ? 6 : S.level >= 10 ? 140 : 60), zone: z });
+    return;
+  }
+  // 2. out in the field: go back when the bags are full, the quests are done, or it's time to train
+  if (S.loc === "field") {
+    const open = S.quests.filter(x => !questDone(x));
+    if (S.bags.length >= bagCap() || !open.length || needCity()) {
+      q.push({ k: "hub", d: S.bags.length >= bagCap() ? `Bags full. ${travelVerb()} back to ${h}` : `${travelVerb()} back to ${h} to turn in`, t: sec(35 * mountF()) });
+      return;
+    }
+    if (S.since > 3 + R(6)) { S.since = 0; const tier = Math.min(5, Math.floor(S.level / 10)); q.push({ k: "rest", d: cls().mp ? `Drinking ${DRINK[tier]}` : `Eating ${FOOD[tier]}`, t: sec(14) }); return; }
+    let quest = S.quests.find(x => x.id === S.curQ && !questDone(x)) || open[0];
+    if (quest.id !== S.curQ) { S.curQ = quest.id; q.push({ k: "move", d: quest.type === "elite" ? `Looking for a group to kill ${quest.mob}` : `Heading out to find ${plural(quest.mob)} for "${quest.name}"`, t: sec((quest.type === "elite" ? 40 : 20) * mountF()) }); return; }
+    q.push(killTask(quest));
+    return;
+  }
+  // 3. at the quest hub: sell, turn in, then pick up new quests or go train
+  const sells = groupBags();
+  sells.forEach(g => q.push({ k: "sell", d: `Selling ${g.name}${g.n > 1 ? " ×" + g.n : ""}`, t: sec(1.5 + g.n * 0.4, 1), name: g.name }));
+  S.quests.filter(questDone).forEach(x => q.push({ k: "turnin", d: `Turning in "${x.name}"`, t: sec(5), qid: x.id }));
+  if (needCity()) { queueCity(); return; }
+  const want = 3 + R(3) - S.quests.filter(x => !questDone(x)).length;
+  for (let i = 0; i < want; i++) q.push({ k: "accept", d: `Picking up a new quest in ${h}`, t: sec(4) });
+  q.push({ k: "field", d: `Heading out of ${h} into ${z}`, t: sec(15 * mountF()) });
+}
+function groupBags() {
+  const m = new Map(); S.bags.forEach(b => { const g = m.get(b.name) || { name: b.name, n: 0 }; g.n++; m.set(b.name, g); });
+  return [...m.values()];
+}
+
+function killTask(quest) {
+  const c = cls(), [zmin, zmax] = ZONES[quest.zone] || [S.level, S.level];
+  const elite = quest.type === "elite";
+  const mobL = elite ? Math.min(S.level + 2, zmax + 2) : clamp(S.level + R(3) - 1, Math.max(1, zmin - 1), zmax + 2);
+  const mob = elite ? quest.mob : quest.type === "col" && Math.random() < 0.15 ? pick(zoneMobs(quest.zone)) : quest.mob;
+  const atk = c.list.filter(s => s.atk && spellName(s.name) in S.spells).map(s => spellName(s.name));
+  let d = elite ? `Fighting ${mob} (elite) with a pickup group` : `${pick(c.verbs)} ${article(mob)}`;
+  if (atk.length) d += ` · ${pick(atk)}${S.spells[atk[0]] > 1 && Math.random() < 0.3 ? " (Rank " + S.spells[atk[0]] + ")" : ""}`;
+  const gear = clamp(gearScore() / Math.max(1, S.level), 0.5, 1.4);
+  const t = sec((9 + S.level * 0.12) * (elite ? 5 : 1) * clamp(1.35 - gear * 0.35, 0.8, 1.2));
+  return { k: "kill", d, t, mob, mobL, qid: quest.id, elite };
+}
+
+function queueCity() {
+  const q = S.queue, c = cls(), local = S.level < 10, where = local ? hub() : city();
+  if (!local) q.push({ k: "travel", d: `Hearthing to ${where}`, t: sec(14, 1), to: "city" });
+  q.push({ k: "train", d: `Training with your ${S.cls.toLowerCase()} trainer in ${where}`, t: sec(10) });
+  if (S.repair > 0) q.push({ k: "repair", d: `Repairing gear at the blacksmith`, t: sec(5) });
+  if (!local) q.push({ k: "shop", d: `Browsing the Auction House in ${where}`, t: sec(18) });
+  if (S.level >= 40 && S.mount < 1) q.push({ k: "mount", d: `Visiting the riding trainer`, t: sec(8) });
+  if (S.level >= 60 && S.mount < 2) q.push({ k: "mount", d: `Counting gold for an epic mount`, t: sec(6) });
+  q.push({ k: "choose", d: `Studying the map for the next adventure`, t: sec(6) });
+}
+
+function pickDungeon() {
+  const ok = d => d[3] === "B" || d[3] === S.faction[0];
+  if (S.level >= 60) {
+    if (gearScore() >= 62 && Math.random() < 0.4) return pick(RAIDS);
+    return pick(DUNGEONS.filter(d => d[1] >= 52 && ok(d)));
+  }
+  return DUNGEONS.find(d => ok(d) && !S.dungeons.includes(d[0]) && S.level >= d[1] && S.level <= d[1] + 6);
+}
+function queueDungeon(d) {
+  const q = S.queue, raid = RAIDS.includes(d), bosses = d[6].split(","), trash = d[5].split(",");
+  const chat = pick([`LFM ${d[4]}, need heals`, `LF1M ${d[4]}, have summon`, `LFG ${d[4]}, ${S.cls.toLowerCase()} lvl ${S.level}`, `LF tank for ${d[4]} then GO`, `${d[4]} run, LF2M, PST`]);
+  S.dg = { name: d[0], killed: 0, total: bosses.length, raid };
+  q.push({ k: "lfg", d: raid ? `Waiting on the raid invite for ${d[0]}` : `Looking for group: "${chat}"`, t: sec(raid ? 120 : 60 + R(120)), chat: raid ? `[Raid] ${d[4]} invites going out, 40 man, be on time!` : chat, dn: d[0] });
+  q.push({ k: "dtravel", d: `Traveling to ${d[0]} with the group`, t: sec(raid ? 180 : 120), dn: d[0] });
+  bosses.forEach(b => {
+    const n = raid ? 2 + R(2) : 1 + R(3);
+    for (let i = 0; i < n; i++) q.push({ k: "trash", d: `Clearing a pack of ${plural(pick(trash))}`, t: sec(raid ? 70 : 40) });
+    q.push({ k: "boss", d: `Fighting ${b}`, t: sec(raid ? 260 : 110), boss: b, dn: d[0] });
+  });
+  q.push({ k: "dend", d: `Leaving ${d[0]}`, t: sec(10), dn: d[0] });
+}
+
+// ---------- finishing tasks ----------
+const GREYS = ["Broken Fang", "Ruined Pelt", "Torn Wing", "Cracked Bone", "Chipped Claw", "Tattered Cloth", "Bent Spoon", "Rusty Gear", "Slimy Scale", "Shiny Pebble", "Moldy Cheese", "Severed Ear"];
+const PLAYERS = ["Leeroyz", "Tankenstein", "Healbot", "Shadowmeldz", "Gnomercy", "Moonfiyah", "Stabbyjoe", "Frostiez", "Bubblehearth", "Lokdar", "Totemz", "Arrowyn"];
+function flushTrip() { if (S.trip > 0) { log(`Sold junk for ${moneyTxt(S.trip)}.`, "gold"); S.trip = 0; } }
+function findQuest(id) { return S.quests.find(x => x.id === id); }
+function randomSlot() { let best = null; for (let i = 0; i < 3; i++) { const s = pick(SLOTS); if (!best || power(S.equip[s]) < power(S.equip[best])) best = s; } return best; }
+
+function lootDrop(dn, boss) {
+  const d = DUNGEONS.concat(RAIDS).find(x => x[0] === dn); if (!d) return;
+  const raid = RAIDS.includes(d), caster = isCaster();
+  const fits = d[7].filter(x => { const t = x.split("|")[1]; return !t || (t === "c") === caster; });
+  // named items ("Smite's Mighty Hammer") only drop from the boss they are named after
+  const keys = b => b.replace(/'s?\b/g, "").split(/[ ,.]+/).filter(w => w.length > 3 && !/^(the|Lord|Lady|Baron|Captain|High|King|Prince|Commander|General|Master|Emperor|Doctor|Instructor|Chief|Witch|Overlord|Houndmaster|Interrogator|Inquisitor)$/.test(w));
+  const owner = x => d[6].split(",").find(b => keys(b).some(w => x.replace(/'s?\b/g, "").includes(w)));
+  const mine = fits.filter(x => owner(x) === boss), free = fits.filter(x => !owner(x));
+  const pool = mine.length && Math.random() < 0.7 ? mine : free.length ? free : mine;
+  let it;
+  if (raid && Math.random() < 0.5) it = setPiece(dn === "Molten Core" && boss !== "Ragnaros" ? 1 : 2, dn === "Molten Core" && boss !== "Ragnaros" ? 66 : 76);
+  else if (!raid && d[1] >= 52 && S.level >= 58 && Math.random() < 0.3) it = setPiece(0, 60);
+  else if (pool.length) { const name = pick(pool).split("|")[0]; it = { name, slot: namedSlot(name), ilvl: raid ? 68 + R(8) : Math.round((d[1] + d[2]) / 2) + 3, q: raid ? 4 : 3 }; }
+  if (!it) return;
+  log(`${boss} dropped ${it.name}. Rolled Need: ${60 + R(41)}.`, "loot" + it.q);
+  gain(it, "Won");
+}
+
+function finish(t) {
+  switch (t.k) {
+    case "arrive": {
+      S.arrived = t.zone; S.loc = "hub"; S.curQ = 0;
+      const before = S.quests.length; S.quests = S.quests.filter(x => x.zone === t.zone);
+      if (before > S.quests.length) log(`Abandoned ${before - S.quests.length} unfinished quest${before - S.quests.length > 1 ? "s" : ""} from the last zone.`);
+      const z = ZONES[t.zone];
+      log(`Entered ${t.zone} (levels ${z[0]}–${z[1]}).`, "zone");
+      break;
+    }
+    case "field": flushTrip(); S.loc = "field"; break;
+    case "hub": S.loc = "hub"; break;
+    case "kill": {
+      S.since = (S.since || 0) + 1;
+      if (Math.random() < (t.elite ? 0.06 : 0.003)) {
+        S.deaths++; S.repair += S.level * S.level * 4 + 20;
+        log(`Died to ${article(t.mob)}. Releasing spirit…`, "death");
+        S.queue.unshift({ k: "ghost", d: "Running back to your corpse as a ghost", t: sec(45) }, { k: "rez", d: "Resurrecting and drinking up", t: sec(10) });
+        break;
+      }
+      S.kills++; S.repair += Math.round(S.level * 0.6);
+      gainXp(mobXp(t.mobL) * (t.elite ? 6 : 1));
+      const q = findQuest(t.qid);
+      if (q && !questDone(q) && (q.type !== "col" ? t.mob === q.mob : Math.random() < 0.65)) {
+        q.prog++;
+        if (questDone(q)) log(`Objective complete: ${questText(q)}.`, "quest");
+      }
+      if (t.elite) log(`${t.mob} has been slain.`, "boss");
+      const L = S.level;
+      if (Math.random() < 0.55) addBag({ name: Math.random() < 0.4 ? CLOTH[clamp(Math.floor(L / 12), 0, 4)] : pick(GREYS), val: Math.round((L * L * 0.6 + 4) * (0.5 + Math.random())), q: 0 });
+      const r = Math.random();
+      if (r < 0.003) gain(makeItem(pick(SLOTS), t.mobL + 2, 3), `The ${t.mob} dropped`);
+      else if (r < 0.025 || t.elite) gain(makeItem(pick(SLOTS), t.mobL, 2), `The ${t.mob} dropped`);
+      break;
+    }
+    case "sell": {
+      let sum = 0; S.bags = S.bags.filter(b => { if (b.name === t.name) { sum += b.val; return false; } return true; });
+      S.money += sum; S.trip = (S.trip || 0) + sum; break;
+    }
+    case "turnin": {
+      flushTrip();
+      const q = findQuest(t.qid); if (!q) break;
+      S.quests = S.quests.filter(x => x !== q);
+      S.money += q.money; S.qdone++; S.cycleQ++;
+      S.done.unshift(q.name); if (S.done.length > 10) S.done.length = 10;
+      log(`Quest complete: "${q.name}". ${S.level < 60 ? "+" + q.xp.toLocaleString() + " XP, " : ""}${moneyTxt(q.money)}.`, "quest");
+      gainXp(q.xp);
+      if (Math.random() < 0.5) { const qq = S.level < 6 ? 1 : Math.random() < 0.05 ? 3 : 2; gain(makeItem(randomSlot(), S.level + 1, qq), "Quest reward:"); }
+      break;
+    }
+    case "accept": { flushTrip(); const q = newQuest(); log(`Accepted "${q.name}".`, "quest"); break; }
+    case "travel": S.loc = "city"; log(`Arrived in ${city()}.`, "zone"); break;
+    case "train": flushTrip(); trainSpells(); break;
+    case "repair": { const c = Math.min(S.repair, S.money); S.money -= c; S.repair = 0; if (c) log(`Repaired everything for ${moneyTxt(c)}.`, "gold"); break; }
+    case "shop": {
+      const L = S.level, reserve = L >= 34 && S.mount < 1 ? 900000 : L >= 56 && S.mount < 2 ? 10000000 : 0;
+      const bag = BAGS.filter(b => b[0] <= L).pop();
+      if (bag && S.money - bag[3] >= 0) {
+        if (S.bagSlots.length < 4) { S.bagSlots.push(bag[2]); S.money -= bag[3]; log(`Bought ${article(bag[1])} (${bag[2]} slots).`, "gold"); }
+        else { const i = S.bagSlots.indexOf(Math.min(...S.bagSlots)); if (S.bagSlots[i] < bag[2]) { S.bagSlots[i] = bag[2]; S.money -= bag[3]; log(`Swapped a small bag for ${article(bag[1])}.`, "gold"); } }
+      }
+      for (let n = 0; n < 2; n++) {
+        let slot = SLOTS[0]; SLOTS.forEach(s => { if (power(S.equip[s]) < power(S.equip[slot])) slot = s; });
+        const it = makeItem(slot, L - 1, 2), price = it.ilvl * it.ilvl * 8 + 100;
+        if (power(it) > power(S.equip[slot]) && S.money - reserve >= price) { S.money -= price; gain(it, `Bought on the Auction House for ${moneyTxt(price)}:`); }
+      }
+      break;
+    }
+    case "mount": {
+      if (S.level >= 60 && S.mount < 2) {
+        if (S.money >= 10000000) { S.money -= 10000000; S.mount = 2; log(`Paid 1000 gold for epic riding and a ${race().epic}! The grind was worth it.`, "loot4"); }
+        else log(`Epic mount fund: ${moneyTxt(S.money)} of 1000g.`, "gold");
+      } else if (S.mount < 1) {
+        if (S.money >= 900000) { S.money -= 900000; S.mount = 1; log(`Learned Apprentice Riding and bought a ${race().mount}! (90g)`, "loot3"); }
+        else log(`Saving up for a mount: ${moneyTxt(S.money)} of 90g.`, "gold");
+      }
+      break;
+    }
+    case "choose": {
+      const r = route(), old = curZone();
+      while (S.leg < r.length && S.level >= r[S.leg].until) S.leg++;
+      if (S.level >= 60) { S.cycleQ = 0; const pool = ENDGAME_ZONES.filter(z => z !== S.endZone); S.endZone = pick(pool); }
+      S.nextCity = S.level + 2;
+      if (S.level >= 10 || curZone() !== old) S.arrived = null; else S.loc = "hub";
+      const d = pickDungeon(); if (d) queueDungeon(d);
+      break;
+    }
+    case "lfg": log(`[${pick(PLAYERS)}]: ${t.chat}`, "chat"); break;
+    case "dtravel": S.loc = "dungeon"; log(`Entering ${t.dn}.`, "dung"); break;
+    case "trash": if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); break;
+    case "boss": {
+      if (Math.random() < (S.dg && S.dg.raid ? 0.12 : 0.06)) {
+        S.deaths++; S.repair += S.level * S.level * 5;
+        log(`Wiped on ${t.boss}. Corpse run…`, "death");
+        S.queue.unshift({ k: "ghost", d: "Running back through the instance as a ghost", t: sec(60) }, { ...t, el: 0 });
+        break;
+      }
+      if (S.dg) S.dg.killed++;
+      log(`${t.boss} has been defeated.`, "boss");
+      gainXp(mobXp(S.level + 2) * 5);
+      if (Math.random() < (S.dg && S.dg.raid ? 0.3 : 0.4)) lootDrop(t.dn, t.boss);
+      break;
+    }
+    case "dend": {
+      if (!S.dungeons.includes(t.dn)) S.dungeons.push(t.dn);
+      S.runs = (S.runs || 0) + 1;
+      log(`${t.dn} cleared!`, "dung"); S.dg = null; S.loc = "city"; break;
+    }
+  }
+  dirty = true;
+}
+
+function advance(dt) {
+  S.time += dt;
+  let guard = 0;
+  while (dt > 0 && guard++ < 400) {
+    if (!S.task) { if (!S.queue.length) plan(); S.task = S.queue.shift() || { k: "rest", d: "Taking a breather", t: 3000 }; S.task.el = 0; dirty = true; }
+    const rem = S.task.t - S.task.el;
+    if (dt >= rem) { dt -= rem; const t = S.task; S.task = null; finish(t); }
+    else { S.task.el += dt; dt = 0; }
+  }
+}
+// progress made while the tab was closed (at 1x, capped at 12 hours)
+function catchUp(ms) {
+  ms = Math.min(ms, 12 * 3600 * 1000);
+  if (ms < 60000) return;
+  const L0 = S.level, q0 = S.qdone;
+  for (let left = ms; left > 0; left -= 30000) advance(Math.min(30000, left));
+  log(`While you were away (${fmtTime(ms)}): ${S.level > L0 ? `gained ${S.level - L0} level${S.level - L0 > 1 ? "s" : ""}, ` : ""}finished ${S.qdone - q0} quests.`, "lvl");
+}
+
+// ---------- rendering: game ----------
+const $ = id => document.getElementById(id);
+const SPEEDS = [1, 10, 100, 1000];
+
+function gameShell() {
+  $("app").innerHTML = `
+  <div class="topbar">
+    <div class="brand" id="brand">WoWQuest</div>
+    <div class="controls">
+      <span class="speedbox" id="speedbox" ${dev ? "" : "hidden"}><span class="lbl">speed</span>
+        <div class="seg" id="speed">${SPEEDS.map(n => `<button type="button" data-s="${n}" aria-pressed="false">${n}×</button>`).join("")}</div></span>
+      <button type="button" class="ghost" id="retire">New character</button>
+      <span class="saved" id="saved"></span>
+    </div>
+  </div>
+  <section class="hero">
+    <div class="who">
+      <h1 id="hName"></h1>
+      <div class="sub" id="hSub"></div>
+      <div class="tags"><span class="tag" id="hFaction"></span><span class="tag zone" id="hWhere"></span></div>
+    </div>
+    <div class="now">
+      <div class="lbl">now</div>
+      <div class="desc" id="tDesc"></div>
+      <div class="bigbar"><div class="fill" id="tFill"></div><div class="pct" id="tPct"></div></div>
+    </div>
+  </section>
+  <section class="meters">
+    <div class="meter m-xp"><div class="top"><span class="lbl">experience</span><span class="val" id="xpV"></span></div><div class="name" id="xpN"></div><div class="bar"><i id="xpB"></i></div></div>
+    <div class="meter m-bag"><div class="top"><span class="lbl">bags</span><span class="val" id="bgV"></span></div><div class="name" id="bgN"></div><div class="bar"><i id="bgB"></i></div></div>
+    <div class="meter m-quest"><div class="top"><span class="lbl">quest</span><span class="val" id="qV"></span></div><div class="name" id="qN"></div><div class="bar"><i id="qB"></i></div></div>
+    <div class="meter m-zone"><div class="top"><span class="lbl" id="zL">zone</span><span class="val" id="zV"></span></div><div class="name" id="zN"></div><div class="bar"><i id="zB"></i></div></div>
+  </section>
+  <section class="main">
+    <div class="col">
+      <div class="sec"><h2>Character</h2><div class="stats" id="stats"></div><ul class="rows vitals" id="vitals"></ul></div>
+      <div class="sec"><h2>Equipment <small id="gs"></small></h2><ul class="rows" id="equip"></ul></div>
+    </div>
+    <div class="col c-log">
+      <div class="chron sec"><h2>Chronicle <small id="elapsed"></small></h2><ul class="log" id="log"></ul></div>
+    </div>
+    <div class="col">
+      <div class="sec quests"><h2>Quest Log <small id="qCount"></small></h2><ul class="rows" id="quests"></ul></div>
+      <div class="sec"><h2>Talents <small id="talPts"></small></h2><div class="tal" id="tal"></div></div>
+      <div class="sec"><h2>Spellbook <small id="spCount"></small></h2><ul class="rows" id="spells"></ul></div>
+      <div class="sec"><h2>Bags <small id="money"></small></h2><ul class="rows" id="bags"></ul></div>
+      <div class="sec"><h2>Dungeons <small id="dCount"></small></h2><ul class="rows" id="dungeons"></ul></div>
+    </div>
+  </section>`;
+  $("speed").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; speed = S.speed = +b.dataset.s; renderSpeed(); });
+  $("retire").addEventListener("click", confirmRetire);
+  $("brand").addEventListener("click", brandTap);
+  renderSpeed();
+}
+function renderSpeed() { document.querySelectorAll("#speed button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.s === speed))); }
+
+// tap the logo five times quickly to reveal (or hide) the speed controls
+let taps = 0, tapTimer = 0;
+function brandTap() {
+  taps++; clearTimeout(tapTimer); tapTimer = setTimeout(() => taps = 0, 1500);
+  if (taps >= 2 && taps < 5) toast(`${5 - taps} more…`);
+  if (taps < 5) return;
+  taps = 0; dev = !dev;
+  try { localStorage.setItem(DEV_KEY, dev ? "1" : "0"); } catch (e) {}
+  if (!dev && S) { speed = S.speed = 1; renderSpeed(); }
+  $("speedbox").hidden = !dev;
+  toast(dev ? "Speed controls unlocked" : "Speed controls hidden");
+}
+let toastTimer = 0;
+function toast(msg) {
+  let el = document.querySelector(".toast");
+  if (!el) { el = document.createElement("div"); el.className = "toast"; el.setAttribute("role", "status"); document.body.appendChild(el); }
+  el.textContent = msg; clearTimeout(toastTimer); toastTimer = setTimeout(() => el.remove(), 1400);
+}
+
+function where() {
+  if (S.loc === "dungeon" && S.dg) return S.dg.name;
+  if (S.loc === "city") return S.level < 10 ? hub() : city();
+  if (!S.arrived) return "On the road";
+  return S.loc === "hub" ? `${hub()}, ${S.arrived}` : S.arrived;
+}
+function legInfo() {
+  const r = route();
+  if (S.leg >= r.length) return { name: `Endgame · ${curZone()}`, val: `${Math.min(S.cycleQ, 8)} / 8 quests`, p: Math.min(1, S.cycleQ / 8) };
+  const start = S.leg ? r[S.leg - 1].until : 1, end = r[S.leg].until, lv = S.level + S.xp / xpNeed(S.level);
+  return { name: `${r[S.leg].z} (${ZONES[r[S.leg].z][0]}–${ZONES[r[S.leg].z][1]})`, val: `until level ${end}`, p: clamp((lv - start) / Math.max(1, end - start), 0, 1) };
+}
+
+let lastLogId = 0;
+function renderLists() {
+  const c = cls();
+  $("hName").textContent = S.name; $("hName").style.color = c.color;
+  $("hSub").innerHTML = `Level <b>${S.level}</b> ${esc(S.race)} <b style="color:${c.color}">${esc(S.cls)}</b> · ${esc(c.trees[S.spec])}`;
+  $("hFaction").textContent = S.faction; $("hFaction").className = "tag " + S.faction;
+  $("hWhere").textContent = where();
+  $("stats").innerHTML = STATS.map(k => `<div class="stat ${k === c.prime ? "prime" : ""}"><span class="lbl">${k}</span><b>${S.stats[k]}</b></div>`).join("");
+  $("vitals").innerHTML = [
+    ["health", hpMax().toLocaleString()], [c.res.toLowerCase(), resMax().toLocaleString()], ["money", money(S.money)],
+    ["mount", S.mount >= 2 ? race().epic : S.mount ? race().mount : S.level >= 40 ? "saving up…" : "on foot until 40"],
+    ["kills", S.kills.toLocaleString()], ["quests done", S.qdone.toLocaleString()], ["deaths", S.deaths.toLocaleString()],
+  ].map(([k, v]) => `<li><span class="k">${k}</span><span class="v">${v}</span></li>`).join("");
+  $("gs").textContent = `avg item level ${Math.round(SLOTS.reduce((a, s) => a + (S.equip[s] ? S.equip[s].ilvl : 0), 0) / SLOTS.length)}`;
+  $("equip").innerHTML = SLOTS.map(s => { const it = S.equip[s]; return `<li><span class="k">${s.toLowerCase()}</span><span class="v">${it ? `<span class="q${it.q}">${esc(it.name)}</span><span class="ilvl">${it.ilvl}</span>` : '<span class="empty">empty</span>'}</span></li>`; }).join("");
+  const tal = talents();
+  $("talPts").textContent = S.level >= 10 ? `${tal.join(" / ")}` : "from level 10";
+  $("tal").innerHTML = c.trees.map((t, i) => `<div class="${i === S.spec ? "main-spec" : ""}"><b>${tal[i]}</b>${esc(t)}</div>`).join("");
+  const known = c.list.filter(sp => spellName(sp.name) in S.spells).reverse();
+  $("spCount").textContent = `${known.length} known`;
+  $("spells").innerHTML = known.map(sp => { const n = spellName(sp.name), r = S.spells[n]; return `<li><span class="l">${esc(n)}</span><span class="rank">${sp.max > 1 ? "Rank " + r : ""}</span></li>`; }).join("") || `<li><span class="empty">nothing yet</span></li>`;
+  $("money").innerHTML = money(S.money);
+  const groups = groupBags();
+  $("bags").innerHTML = groups.length ? groups.map(g => { const b = S.bags.find(x => x.name === g.name); return `<li><span class="l q${b.q}">${esc(g.name)}${g.n > 1 ? ` <span class="ilvl">×${g.n}</span>` : ""}</span></li>`; }).join("") : `<li><span class="empty">empty</span></li>`;
+  $("qCount").textContent = `${S.quests.length} active`;
+  const qs = S.quests.map(q => `<li><span class="l ${q.id === S.curQ && !questDone(q) ? "cur" : ""}">${esc(q.name)}<br><small style="color:var(--dim)">${esc(questText(q))}</small></span>${questDone(q) ? '<span class="done">✓</span>' : ""}</li>`);
+  $("quests").innerHTML = qs.join("") || `<li><span class="empty">no quests right now</span></li>`;
+  $("dCount").textContent = `${S.dungeons.length} cleared`;
+  $("dungeons").innerHTML = S.dungeons.slice().reverse().map(d => `<li><span class="l">${esc(d)}</span><span class="done">✓</span></li>`).join("") || `<li><span class="empty">the first one opens around level 13–17</span></li>`;
+  $("log").innerHTML = S.log.map(l => `<li class="${l.k}${l.id > lastLogId && lastLogId ? " fresh" : ""}"><time>${fmtTime(l.t)}</time><span>${esc(l.txt)}</span></li>`).join("");
+  lastLogId = S.log.length ? S.log[0].id : 0;
+  $("xpN").textContent = S.level >= 60 ? "Level 60 · max level" : `Level ${S.level} → ${S.level + 1}`;
+  $("bgN").textContent = S.bags.length >= bagCap() ? "Full. Time to visit a vendor." : `Backpack + ${S.bagSlots.length} bag${S.bagSlots.length === 1 ? "" : "s"}`;
+  const cq = S.quests.find(x => x.id === S.curQ);
+  $("qN").textContent = cq ? cq.name : "—"; $("qN").title = cq ? cq.name : "";
+  if (S.dg) { $("zL").textContent = S.dg.raid ? "raid" : "dungeon"; $("zN").textContent = S.dg.name; }
+  else { const li = legInfo(); $("zL").textContent = "zone"; $("zN").textContent = li.name; }
+}
+
+function renderBars() {
+  const t = S.task;
+  if (t) { const p = Math.min(1, t.el / t.t); $("tDesc").textContent = t.d; $("tFill").style.width = (p * 100).toFixed(1) + "%"; $("tPct").textContent = Math.floor(p * 100) + "%"; }
+  const need = xpNeed(S.level);
+  if (S.level >= 60) { $("xpV").textContent = "max"; $("xpB").style.width = "100%"; }
+  else { $("xpV").textContent = `${S.xp.toLocaleString()} / ${need.toLocaleString()}`; $("xpB").style.width = (S.xp / need * 100) + "%"; }
+  const bc = bagCap();
+  $("bgV").textContent = `${S.bags.length} / ${bc}`; $("bgB").style.width = Math.min(100, S.bags.length / bc * 100) + "%";
+  const cq = S.quests.find(x => x.id === S.curQ);
+  if (cq) { $("qV").textContent = `${cq.prog} / ${cq.max}`; $("qB").style.width = (cq.prog / cq.max * 100) + "%"; } else { $("qV").textContent = ""; $("qB").style.width = "0%"; }
+  if (S.dg) { $("zV").textContent = `${S.dg.killed} / ${S.dg.total} bosses`; $("zB").style.width = (S.dg.killed / S.dg.total * 100) + "%"; }
+  else { const li = legInfo(); $("zV").textContent = li.val; $("zB").style.width = (li.p * 100) + "%"; }
+  $("elapsed").textContent = "/played " + fmtTime(S.time);
+}
+
+let rafId = 0, lastNow = 0, saveTimer = 0;
+function loop(now) {
+  const dt = Math.min(now - lastNow, 1000); lastNow = now;
+  if (S) {
+    advance(dt * speed);
+    if (dirty) { renderLists(); dirty = false; }
+    renderBars();
+    saveTimer += dt;
+    if (saveTimer > 5000) { saveTimer = 0; save(); setTimeout(() => { const el = $("saved"); if (el) el.textContent = ""; }, 1200); }
+  }
+  rafId = requestAnimationFrame(loop);
+}
+function startGame() {
+  speed = dev ? (S.speed || 1) : 1;
+  gameShell(); lastLogId = 0; dirty = true;
+  cancelAnimationFrame(rafId); lastNow = performance.now(); rafId = requestAnimationFrame(loop);
+}
+function confirmRetire() {
+  const m = document.createElement("div");
+  m.className = "modal";
+  m.innerHTML = `<div class="box" role="dialog" aria-modal="true" aria-labelledby="mt"><h3 id="mt">Delete ${esc(S.name)}?</h3><p>This deletes your level ${S.level} ${esc(S.cls.toLowerCase())} and all progress. A new character starts at level 1.</p><div class="acts"><button type="button" class="ghost" id="mNo">Keep playing</button><button type="button" class="danger" id="mYes">Delete character</button></div></div>`;
+  document.body.appendChild(m);
+  $("mNo").focus();
+  $("mNo").onclick = () => m.remove();
+  m.addEventListener("click", e => { if (e.target === m) m.remove(); });
+  $("mYes").onclick = () => { m.remove(); wipe(); S = null; showCreate(); };
+}
+
+// ---------- rendering: character creation ----------
+let draft = null;
+function showCreate() {
+  cancelAnimationFrame(rafId);
+  draft = draft || { name: randomName(), faction: "Alliance", race: "Human", cls: "Warrior", spec: 0 };
+  $("app").innerHTML = `
+  <div class="create">
+    <header><h1>WoWQuest</h1>
+      <p>Level 1 to 60, the way it used to be, except your hero does all the work. Pick a faction, race and class, then watch them quest, loot, train and run dungeons on their own. The full journey takes about five days.</p></header>
+    <div class="field"><label class="lbl" for="cName">name</label>
+      <div class="namebox"><input id="cName" maxlength="24" autocomplete="off" spellcheck="false"><button type="button" class="die" id="cRandName">Random</button></div></div>
+    <div class="field"><span class="lbl">faction</span><div class="factions" id="cFac"></div></div>
+    <div class="field"><span class="lbl">race</span><div class="chips" id="cRace"></div></div>
+    <div class="field"><span class="lbl">class</span><div class="classes" id="cCls"></div></div>
+    <div class="field"><span class="lbl">talent specialization</span><div class="chips" id="cSpec"></div></div>
+    <button type="button" class="begin" id="cGo">Enter World</button>
+    <p class="note">A fan-made tribute. Not affiliated with or endorsed by Blizzard Entertainment.</p>
+  </div>`;
+  $("cName").value = draft.name;
+  $("cName").addEventListener("input", e => draft.name = e.target.value);
+  $("cRandName").onclick = () => { draft.name = randomName(); $("cName").value = draft.name; };
+  $("cGo").onclick = () => { newHero(draft); draft = null; startGame(); };
+  $("cFac").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; draft.faction = b.dataset.f; draft.race = Object.keys(RACES).find(r => RACES[r].f === draft.faction); fixClass(); drawCreate(); });
+  $("cRace").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; draft.race = b.dataset.r; fixClass(); drawCreate(); });
+  $("cCls").addEventListener("click", e => { const b = e.target.closest("button"); if (!b || b.disabled) return; draft.cls = b.dataset.c; draft.spec = 0; drawCreate(); });
+  $("cSpec").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; draft.spec = +b.dataset.s; drawCreate(); });
+  drawCreate();
+}
+function fixClass() { if (!ALLOWED[draft.race].includes(draft.cls)) { draft.cls = ALLOWED[draft.race][0]; draft.spec = 0; } }
+function drawCreate() {
+  $("cFac").innerHTML = [["Alliance", "Stormwind, Ironforge, Darnassus"], ["Horde", "Orgrimmar, Undercity, Thunder Bluff"]].map(([f, d]) => `<button type="button" class="fbtn ${f}" data-f="${f}" aria-pressed="${f === draft.faction}"><h3>${f}</h3><p>${d}</p></button>`).join("");
+  $("cRace").innerHTML = Object.entries(RACES).filter(([, v]) => v.f === draft.faction).map(([r, v]) => `<button type="button" class="chip" data-r="${r}" aria-pressed="${r === draft.race}">${r}<small>${v.note}</small></button>`).join("");
+  $("cCls").innerHTML = Object.entries(CLASSES).map(([n, c]) => { const ok = ALLOWED[draft.race].includes(n); return `<button type="button" class="ccard" data-c="${n}" aria-pressed="${n === draft.cls}" ${ok ? "" : "disabled"}><h3 style="color:${c.color}">${n}</h3><p>${ok ? c.blurb : `Not available to the ${draft.race}.`}</p></button>`; }).join("");
+  $("cSpec").innerHTML = CLASSES[draft.cls].trees.map((t, i) => `<button type="button" class="chip" data-s="${i}" aria-pressed="${i === draft.spec}">${t}</button>`).join("");
+}
+
+// ---------- boot ----------
+document.addEventListener("visibilitychange", () => { if (document.hidden) save(); });
+window.addEventListener("beforeunload", save);
+try { const h = window.claude && window.claude.hot; if (h && typeof h.snapshot === "function") h.snapshot(() => ({ S, draft })); } catch (e) {}
+function boot(data) {
+  data = data || {};
+  S = data.S || load();
+  draft = data.draft || null;
+  if (S && !data.S && S.savedAt) catchUp(Date.now() - S.savedAt);
+  if (S) startGame(); else showCreate();
+}
+window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+</script>
+</body>
+</html>
