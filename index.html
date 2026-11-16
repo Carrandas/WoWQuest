@@ -678,6 +678,39 @@ const elixKey = () => isCaster() ? "INT" : cls().prime !== "INT" ? cls().prime :
 function elixirName() { const e = tierAt(ELIXIR[elixKey()]); return e && e[1]; }
 function flaskName() { return S.cls === "Priest" || (S.cls === "Druid" && S.spec === 2) || (S.cls === "Paladin" && S.spec === 0) ? "Flask of Distilled Wisdom" : isCaster() ? "Flask of Supreme Power" : "Flask of the Titans"; }
 
+// food & drink: everyone eats, mana users also drink; mages conjure their own
+const CONJURED = {
+  drink: ["Conjured Water", "Conjured Fresh Water", "Conjured Purified Water", "Conjured Spring Water", "Conjured Mineral Water", "Conjured Sparkling Water", "Conjured Crystal Water"],
+  food: ["Conjured Muffin", "Conjured Bread", "Conjured Rye", "Conjured Pumpernickel", "Conjured Sourdough", "Conjured Sweet Roll", "Conjured Cinnamon Roll"],
+};
+const CONJURE_SPELL = { drink: "Conjure Water", food: "Conjure Food" };
+const restKinds = () => cls().mp ? ["food", "drink"] : ["food"];
+const canConjure = k => S.cls === "Mage" && CONJURE_SPELL[k] in S.spells;
+function rationName(k) {
+  if (canConjure(k)) return CONJURED[k][Math.min(6, S.spells[CONJURE_SPELL[k]] - 1)];
+  return (k === "drink" ? DRINK : FOOD)[Math.min(5, Math.floor(S.level / 10))];
+}
+// a rest task that eats from the bags, or a slow rest when they are empty
+function restTask() {
+  const have = restKinds().filter(k => S.cons[k] > 0);
+  have.forEach(k => S.cons[k]--);
+  if (!have.length) return { k: "rest", d: cls().mp ? "Out of food and water. Sitting down to recover slowly" : "Out of food. Sitting down to recover slowly", t: sec(26) };
+  const words = have.map(k => (k === "drink" ? "drinking " : "eating ") + rationName(k));
+  words[0] = words[0][0].toUpperCase() + words[0].slice(1);
+  return { k: "rest", d: words.join(" and "), t: sec(14) };
+}
+// what to do about rations at the quest hub: conjure (mage) or buy from the innkeeper
+function rationTasks(where) {
+  const out = [];
+  for (const k of restKinds()) {
+    if (S.cons[k] >= 8) continue;
+    if (canConjure(k)) out.push({ k: "conjure", kind: k, d: `Casting ${CONJURE_SPELL[k]} for a stack of ${rationName(k)}`, t: sec(3) });
+    else out.push({ k: "ration", kind: k, d: `Buying ${rationName(k)} from the innkeeper in ${where}`, t: sec(4) });
+  }
+  return out;
+}
+const rationPrice = () => Math.round(5 + S.level * S.level * 0.15);
+
 // buffs the hero wants up right now: [{name, min, item, cast}]
 function wantedBuffs() {
   const out = [];
@@ -792,6 +825,7 @@ function dungeonEntry(n) { return S.dstat[n] || (S.dstat[n] = { runs: 0, at: nul
 // saves from before the journal existed: fill in what we can
 function migrate() {
   S.buffs = S.buffs || {}; S.cons = S.cons || { hp: 0, mp: 0, elix: 0, stone: 0 };
+  if (S.cons.food == null) { S.cons.food = 10; S.cons.drink = cls().mp ? 10 : 0; }
   S.elites = S.elites || []; S.feats = S.feats || []; S.dstat = S.dstat || {};
   if (!S.zones) { S.zones = route().slice(0, S.leg + (S.arrived ? 1 : 0)).map(l => ({ z: l.z, old: 1, q: 0, k: 0 })); }
   S.dungeons.forEach(n => { const e = dungeonEntry(n); if (!e.runs) { e.runs = 1; e.old = 1; } });
@@ -805,7 +839,7 @@ function newHero(f) {
   S = { v: 1, name: (f.name || "").trim() || randomName(), race: f.race, cls: f.cls, spec: f.spec, faction: r.f,
     level: 1, xp: 0, money: 0, stats, equip: {}, bags: [], bagSlots: [], spells: {}, leg: 0, endZone: "Eastern Plaguelands",
     loc: "start", arrived: null, quests: [], zq: {}, done: [], dungeons: [], nextCity: 2, cycleQ: 0, mount: 0,
-    buffs: {}, cons: { hp: 0, mp: 0, elix: 0, stone: 0 }, elites: [], feats: [], zones: [], dstat: {}, ach: {},
+    buffs: {}, cons: { hp: 0, mp: 0, elix: 0, stone: 0, food: 10, drink: CLASSES[f.cls].mp ? 10 : 0 }, elites: [], feats: [], zones: [], dstat: {}, ach: {},
     kills: 0, deaths: 0, qdone: 0, qid: 0, since: 0, curQ: 0, repair: 0, dg: null, time: 0, log: [], logId: 0, task: null, queue: [], speed: 1, savedAt: Date.now() };
   SLOTS.forEach(s => S.equip[s] = null);
   S.equip["Main Hand"] = { name: c.start, ilvl: 2, q: 1, slot: "Main Hand" };
@@ -837,7 +871,11 @@ function plan() {
     }
     const mb = missingBuff();
     if (mb) { q.push({ k: "buff", d: mb.cast, t: sec(2.5), b: mb }); return; }
-    if (S.since > 3 + R(6)) { S.since = 0; const tier = Math.min(5, Math.floor(S.level / 10)); q.push({ k: "rest", d: cls().mp ? `Drinking ${DRINK[tier]}` : `Eating ${FOOD[tier]}`, t: sec(14) }); return; }
+    if (S.since > 3 + R(6)) {
+      const dry = restKinds().find(k => !(S.cons[k] > 0) && canConjure(k));
+      if (dry) { q.push(...rationTasks(h).filter(x => x.k === "conjure")); return; }
+      S.since = 0; q.push(restTask()); return;
+    }
     let quest = S.quests.find(x => x.id === S.curQ && !questDone(x)) || open[0];
     if (quest.id !== S.curQ) { S.curQ = quest.id; if (quest.type === "elite" && elixirName() && S.cons.elix > 0) q.push({ k: "elixir", d: `Drinking ${article(elixirName())} before the fight`, t: sec(3) }); q.push({ k: "move", d: quest.type === "elite" ? `Looking for a group to kill ${quest.mob}` : `Heading out to find ${plural(quest.mob)} for "${quest.name}"`, t: sec((quest.type === "elite" ? 40 : 20) * mountF()) }); return; }
     q.push(killTask(quest));
@@ -847,6 +885,7 @@ function plan() {
   const sells = groupBags();
   sells.forEach(g => q.push({ k: "sell", d: `Selling ${g.name}${g.n > 1 ? " ×" + g.n : ""}`, t: sec(1.5 + g.n * 0.4, 1), name: g.name }));
   S.quests.filter(questDone).forEach(x => q.push({ k: "turnin", d: `Turning in "${x.name}"`, t: sec(5), qid: x.id }));
+  q.push(...rationTasks(h));
   if (needCity()) { queueCity(); return; }
   const want = 3 + R(3) - S.quests.filter(x => !questDone(x)).length;
   for (let i = 0; i < want; i++) q.push({ k: "accept", d: `Picking up a new quest in ${h}`, t: sec(4) });
@@ -1111,6 +1150,12 @@ function finish(t) {
       break;
     }
     case "buff": applyBuff(t.b); break;
+    case "conjure": S.cons[t.kind] = Math.max(S.cons[t.kind] || 0, 20); break;
+    case "ration": {
+      const n = Math.max(0, 20 - (S.cons[t.kind] || 0)), p = rationPrice(), can = Math.min(n, Math.floor(S.money / p));
+      if (can > 0) { S.cons[t.kind] = (S.cons[t.kind] || 0) + can; S.money -= can * p; }
+      break;
+    }
     case "elixir": drinkElixir(false); break;
     case "dbuff": {
       const got = []; wantedBuffs().forEach(b => { if (!b.item || S.cons[b.item] > 0) { applyBuff(b); got.push(b.name); } });
@@ -1276,7 +1321,7 @@ function renderLists() {
   const act = activeBuffs();
   $("bCount").textContent = `${act.length} active`;
   $("buffs").innerHTML = act.map(n => { const left = S.buffs[n] - S.time; return `<li><span class="l buff">${esc(n)}</span><span class="rank">${left > 1e13 ? "" : Math.max(1, Math.ceil(left / MIN)) + " min"}</span></li>`; }).join("") || `<li><span class="empty">none right now</span></li>`;
-  const sup = [["hp", hpPot()], ["mp", cls().mp && S.level >= 5 ? mpPot() : null], ["elix", elixirName()], ["stone", usesStone() ? stoneName() : null]].filter(x => x[1] && S.cons[x[0]] > 0);
+  const sup = [...restKinds().map(k => [k, rationName(k)]), ["hp", hpPot()], ["mp", cls().mp && S.level >= 5 ? mpPot() : null], ["elix", elixirName()], ["stone", usesStone() ? stoneName() : null]].filter(x => x[1] && S.cons[x[0]] > 0);
   $("supplies").innerHTML = sup.map(([k, n]) => `<li><span class="l">${esc(n)}</span><span class="rank">×${S.cons[k]}</span></li>`).join("") || `<li><span class="empty">restocks in the capital</span></li>`;
   renderJournal();
   $("log").innerHTML = S.log.map(l => `<li class="${l.k}${l.id > lastLogId && lastLogId ? " fresh" : ""}"><time>${fmtTime(l.t)}</time><span>${esc(l.txt)}</span></li>`).join("");
