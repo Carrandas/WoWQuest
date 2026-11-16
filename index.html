@@ -541,6 +541,39 @@ const LEGENDARY = {
   "Eye of Sulfuras": { name: "Sulfuras, Hand of Ragnaros", parts: 1 },
 };
 for (const d of DUNGEONS.concat(RAIDS)) d[7] = d[7].split(",");
+// ---------- dungeon quests, picked up before the first run: name|boss that completes it|objective|faction ----------
+const DQUESTS = {
+  "Ragefire Chasm": ["Slaying the Beast|Taragaman the Hungerer|Taragaman's Heart", "Hidden Enemies|Jergosh the Invoker|Jergosh's Head", "Searching for the Lost Satchel|Oggleflint|Maur Grimtotem's Satchel"],
+  "The Deadmines": ["Red Silk Bandanas|Rhahk'Zor|Red Silk Bandanas", "Underground Assault|Sneed's Shredder|Gnoam Sprecklesprocket", "The Defias Brotherhood|Edwin VanCleef|Edwin VanCleef's Head"],
+  "Wailing Caverns": ["Serpentbloom|Lady Anacondra|Serpentbloom", "Deviate Eradication|Kresh|Deviate Ravagers", "Leaders of the Fang|Lord Serpentis|Gems of the four Fang lords", "The Glowing Shard|Mutanus the Devourer|Glowing Shard"],
+  "Shadowfang Keep": ["Deathstalkers in Shadowfang|Rethilgore|Deathstalker Adamant freed|H", "The Book of Ur|Wolf Master Nandos|The Book of Ur", "Arugal Must Die|Archmage Arugal|Head of Arugal|A", "The Arugal Must Die|Archmage Arugal|Head of Arugal|H"],
+  "The Stockade": ["Targorr the Dread|Targorr the Dread|Head of Targorr", "The Fury Runs Deep|Kam Deepfury|Head of Deepfury", "The Stockade Riots|Bazil Thredd|Head of Bazil Thredd", "Crime and Punishment|Dextren Ward|Hand of Dextren Ward"],
+  "Blackfathom Deeps": ["Knowledge in the Deeps|Ghamoo-ra|Lorgalis Manuscript|A", "Baron Aquanis|Baron Aquanis|Strange Water Globe|H", "In Search of Thaelrid|Gelihast|Thaelrid found|A", "Blackfathom Villainy|Twilight Lord Kelris|Head of Kelris"],
+  "Gnomeregan": ["Gnogaine|Viscous Fallout|Irradiated Pillager residue", "Data Rescue|Electrocutioner 6000|Prismatic Punch Card|A", "Grime-Encrusted Ring|Crowd Pummeler 9-60|Grime-Encrusted Ring", "The Grand Betrayal|Mekgineer Thermaplugg|Mekgineer Thermaplugg slain"],
+  "Razorfen Kraul": ["Blueleaf Tubers|Roogug|Blueleaf Tubers", "Going, Going, Guano!|Agathelos the Raging|Kraul Guano", "A Vengeful Fate|Charlga Razorflank|Razorflank's Heart|H", "The Crone of the Kraul|Charlga Razorflank|Razorflank's Medallion|A"],
+  "Scarlet Monastery: Graveyard": ["Vorrel's Revenge|Interrogator Vishas|Vorrel's Wedding Ring|H", "Hearts of Zeal|Azshir the Sleepless|Hearts of Zeal"],
+  "Scarlet Monastery: Library": ["Hearts of Zeal|Houndmaster Loksey|Hearts of Zeal", "Mythology of the Titans|Arcanist Doan|Mythology of the Titans|A", "Compendium of the Fallen|Arcanist Doan|Compendium of the Fallen|H"],
+  "Scarlet Monastery: Armory": ["Into The Scarlet Monastery|Herod|Head of Herod|H", "The Scarlet Armory|Herod|Scarlet Champion's Pauldrons|A"],
+  "Scarlet Monastery: Cathedral": ["In the Name of the Light|High Inquisitor Whitemane|Whitemane and Mograine slain|A", "Into The Scarlet Monastery|High Inquisitor Whitemane|Head of Whitemane|H"],
+  "Razorfen Downs": ["Extinguishing the Idol|Tuten'kash|Idol's flame put out", "Scourge of the Downs|Glutton|Glutton's gut", "Bring the Light|Amnennar the Coldbringer|Amnennar slain|A", "Bring the End|Amnennar the Coldbringer|Skull of the Coldbringer|H"],
+  "Uldaman": ["The Lost Dwarves|The Lost Dwarves|Baelog's Journal|A", "Power Stones|Ancient Stone Keeper|Dentrium and An'Alleum Power Stones", "Reclaimed Treasures|Galgann Firehammer|Garrett Family Treasure|H", "The Platinum Discs|Ironaya|Discs of Norgannon", "The Obsidian Power Source|Archaedas|Obsidian Power Source"],
+  "Zul'Farrak": ["The Prophecy of Mosh'aru|Theka the Martyr|First Mosh'aru Tablet", "Tiara of the Deep|Hydromancer Velratha|Tiara of the Deep", "Gahz'rilla|Gahz'rilla|Gahz'rilla's Electrified Scale", "Divino-matic Rod|Chief Ukorz Sandscalp|Divino-matic Rod"],
+  "Maraudon": ["Shadowshard Fragments|Landslide|Shadowshard Fragments", "Vyletongue Corruption|Lord Vyletongue|Coated Cerulean Vial", "Legends of Maraudon|Celebras the Cursed|Scepter of Celebras", "Corruption of Earth and Seed|Princess Theradras|Princess Theradras slain"],
+  "Sunken Temple": ["Into the Temple of Atal'Hakkar|Atal'alarion|Atal'ai Tablets", "Jammal'an the Prophet|Jammal'an the Prophet|Head of Jammal'an|A", "The God Hakkar|Morphaz|Egg of Hakkar charged|H", "The Essence of Eranikus|Shade of Eranikus|Essence of Eranikus"],
+  "Blackrock Depths": ["Attunement to the Core|Lord Incendius|Core Fragment", "The Rise of the Machines|Golem Lord Argelmach|Head of Argelmach|H", "Dark Iron Legacy|Fineous Darkvire|Ironfel", "The Heart of the Mountain|Magmus|Heart of the Mountain", "The Royal Rescue|Emperor Dagran Thaurissan|Princess Moira freed|A"],
+  "Lower Blackrock Spire": ["Seal of Ascension|War Master Voone|Gemstone of Spirestone", "Mother's Milk|Mother Smolderweb|Mother's Milk", "Bijou's Belongings|Quartermaster Zigris|Bijou's Belongings", "Warlord's Command|Overlord Wyrmthalak|Highlord Omokk, Voone and Wyrmthalak slain|H"],
+  "Upper Blackrock Spire": ["For The Horde!|Warchief Rend Blackhand|Head of Rend Blackhand|H", "Blood of the Black Dragon Champion|General Drakkisath|Blood of the Black Dragon Champion", "General Drakkisath's Demise|General Drakkisath|General Drakkisath slain|A"],
+  "Dire Maul": ["Lethtendris's Web|Alzzin the Wildshaper|Lethtendris's Web", "The Madness Within|Immol'thar|Immol'thar slain", "Elven Legends|Prince Tortheldrin|Kariel Winthalus found", "Unfinished Gordok Business|King Gordok|Gordok's Gauntlet"],
+  "Scholomance": ["Kirtonos the Herald|Kirtonos the Herald|Kirtonos slain", "The Lich, Ras Frostwhisper|Ras Frostwhisper|Human Head of Ras Frostwhisper", "Doctor Theolen Krastinov, the Butcher|Doctor Theolen Krastinov|Krastinov slain", "Barov Family Fortune|Lord Alexei Barov|Barov family deeds"],
+  "Stratholme": ["Of Love and Family|Timmy the Cruel|Of Love and Family", "Houses of the Holy|Malor the Zealous|Holy Water", "The Truth Comes Crashing Down|Balnazzar|Head of Balnazzar", "Dead Man's Plea|Baron Rivendare|Ysida Harmon freed"],
+  "Molten Core": ["Hands of the Enemy|Sulfuron Harbinger|Hands of Lucifron, Sulfuron, Gehennas and Shazzrah", "The Molten Core|Baron Geddon|Garr and Baron Geddon slain", "Thunderaan the Windseeker|Ragnaros|Essence of the Firelord"],
+  "Onyxia's Lair": ["Victory for the Alliance|Onyxia|Head of Onyxia|A", "Victory for the Horde|Onyxia|Head of Onyxia|H"],
+  "Blackwing Lair": ["Nefarius's Corruption|Vaelastrasz the Corrupt|Vaelastrasz freed", "The Lord of Blackrock|Nefarian|Head of Nefarian"],
+  "Zul'Gurub": ["Paragons of Power|High Priest Thekal|Primal Hakkari Idol", "The Heart of Hakkar|Hakkar|Heart of Hakkar"],
+  "Ruins of Ahn'Qiraj": ["The Fall of Ossirian|Ossirian the Unscarred|Head of Ossirian the Unscarred"],
+  "Temple of Ahn'Qiraj": ["The Secrets of the Qiraji|Battleguard Sartura|Ancient Qiraji Artifact", "C'Thun's Legacy|C'Thun|Eye of C'Thun"],
+  "Naxxramas": ["The Dread Citadel|Patchwerk|Patchwerk slain", "The Fall of Kel'Thuzad|Kel'Thuzad|Phylactery of Kel'Thuzad"],
+};
 
 // ---------- tuning ----------
 const XP_TABLE = [0, 400, 900, 1400, 2100, 2800, 3600, 4500, 5400, 6500, 7600, 8800, 10100, 11400, 12900, 14400, 16000, 17700, 19400, 21300, 23200, 25200, 27300, 29400, 31700, 34000, 36400, 38900, 41400, 44300, 47400,
@@ -1230,6 +1263,8 @@ function queueDungeon(d) {
   const chat = pick([`LFM ${d[4]}, need heals`, `LF1M ${d[4]}, have summon`, `LFG ${d[4]}, ${S.cls.toLowerCase()} lvl ${S.level}`, `LF tank for ${d[4]} then GO`, `${d[4]} run, LF2M, PST`]);
   S.dg = { name: d[0], killed: 0, total: bosses.length, raid };
   S.party = makeParty(raid);
+  const dq = S.dungeons.includes(d[0]) ? [] : (DQUESTS[d[0]] || []).map(x => x.split("|")).filter(x => !x[3] || x[3] === S.faction[0]);
+  if (dq.length) q.push({ k: "dqpick", d: `Picking up quests for ${d[0]}`, t: sec(6 + 3 * dq.length), dn: d[0], dq: dq.map(x => ({ name: x[0], boss: x[1], obj: x[2], raid, done: false })) });
   q.push({ k: "lfg", d: raid ? `Waiting on the raid invite for ${d[0]}` : `Looking for group: "${chat}"`, t: sec(raid ? 120 : 60 + R(120)), chat: raid ? `[Raid] ${d[4]} invites going out, ${RAID_INFO[d[0]].size} man, be on time!` : chat, dn: d[0] });
   q.push({ k: "dtravel", d: `Traveling to ${d[0]} with the group`, t: sec(raid ? 180 : 120), dn: d[0] });
   q.push({ k: "dbuff", d: raid ? "Buffing up and drinking a flask at the instance portal" : "Buffing up at the instance entrance", t: sec(8), raid });
@@ -1240,6 +1275,7 @@ function queueDungeon(d) {
     q.push(regroupTask(raid));
   });
   q.push({ k: "dend", d: `Leaving ${d[0]}`, t: sec(10), dn: d[0] });
+  if (dq.length) q.push({ k: "dqturn", d: `Turning in the ${d[0]} quests`, t: sec(8 + 4 * dq.length), dn: d[0] });
 }
 
 // ---------- finishing tasks ----------
@@ -1402,6 +1438,19 @@ function finish(t) {
       if (S.party && S.party.length > 4) { if (S.dg) S.dg.formed = true; const all = [{ name: S.name, role: heroRole() }, ...S.party], tanks = all.filter(m => m.role === "tank").map(m => m.name); log(`Raid assembled: ${all.length} players, ${tanks.length} tanks and ${all.filter(m => m.role === "heal").length} healers. Main tank: ${tanks[0]}.`, "chat"); }
       else if (S.party) { if (S.dg) S.dg.formed = true; log(`Group formed: ${S.party.map(m => `${m.name} (${m.cls.toLowerCase()} ${ROLE_NAME[m.role].toLowerCase()})`).join(", ")}.`, "chat"); }
       break;
+    case "dqpick": S.dq = t.dq; log(`Picked up ${t.dq.length} quest${t.dq.length > 1 ? "s" : ""} for ${t.dn}: ${t.dq.map(x => `"${x.name}"`).join(", ")}.`, "quest"); break;
+    case "dqturn": {
+      const raid = !!RAID_INFO[t.dn];
+      (S.dq || []).filter(x => x.done).forEach(x => {
+        const xp = S.level < 60 ? Math.round(mobXp(S.level + 2) * (14 + R(6))) : 0, coin = Math.round((S.level * S.level * 6 + 200) * (0.8 + Math.random() * 0.5) * (raid ? 4 : 1));
+        S.money += coin; S.qdone++;
+        S.done.unshift(x.name); if (S.done.length > 10) S.done.length = 10;
+        log(`Quest complete: "${x.name}". ${xp ? "+" + xp.toLocaleString() + " XP, " : ""}${moneyTxt(coin)}.`, "quest");
+        if (xp) gainXp(xp);
+        if (Math.random() < (raid ? 0.5 : 0.7)) gain(makeItem(randomSlot(), S.level + (raid ? 12 : 3), raid ? 4 : 3), "Quest reward:");
+      });
+      S.dq = null; break;
+    }
     case "dtravel": S.loc = "dungeon"; log(`Entering ${t.dn}.`, "dung"); break;
     case "trash": if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); break;
     case "boss": {
@@ -1414,6 +1463,7 @@ function finish(t) {
       }
       if (S.dg) S.dg.killed++;
       log(`${t.boss} has been defeated.`, "boss");
+      (S.dq || []).filter(x => !x.done && x.boss === t.boss).forEach(x => { x.done = true; log(`Objective complete: ${x.obj} ("${x.name}").`, "quest"); });
       gainXp(mobXp(S.level + 2) * 5);
       if (Math.random() < (S.dg && S.dg.raid ? 0.3 : 0.4)) lootDrop(t.dn, t.boss);
       if (t.dn === "Naxxramas" && Math.random() < 0.1) atiesh();
@@ -1593,8 +1643,9 @@ function renderLists() {
   $("money").innerHTML = money(S.money);
   const groups = groupBags();
   $("bags").innerHTML = groups.length ? groups.map(g => { const b = S.bags.find(x => x.name === g.name); return `<li><span class="l q${b.q}">${esc(g.name)}${g.n > 1 ? ` <span class="ilvl">×${g.n}</span>` : ""}</span></li>`; }).join("") : `<li><span class="empty">empty</span></li>`;
-  $("qCount").textContent = `${S.quests.length} active`;
-  const qs = S.quests.map(q => `<li><span class="l ${q.id === S.curQ && !questDone(q) ? "cur" : ""}">${esc(q.name)}<br><small style="color:var(--dim)">${esc(questText(q))}</small></span>${questDone(q) ? '<span class="done">✓</span>' : ""}</li>`);
+  const dqs = S.dq || [];
+  $("qCount").textContent = `${S.quests.length + dqs.length} active`;
+  const qs = dqs.map(x => `<li><span class="l">${esc(x.name)} <span class="ilvl">(${x.raid ? "raid" : "dungeon"})</span><br><small style="color:var(--dim)">${esc(x.obj)} ${x.done ? 1 : 0}/1</small></span>${x.done ? '<span class="done">✓</span>' : ""}</li>`).concat(S.quests.map(q => `<li><span class="l ${q.id === S.curQ && !questDone(q) ? "cur" : ""}">${esc(q.name)}<br><small style="color:var(--dim)">${esc(questText(q))}</small></span>${questDone(q) ? '<span class="done">✓</span>' : ""}</li>`));
   $("quests").innerHTML = qs.join("") || `<li><span class="empty">no quests right now</span></li>`;
   const act = activeBuffs();
   $("bCount").textContent = `${act.length} active`;
