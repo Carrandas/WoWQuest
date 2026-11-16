@@ -29,6 +29,8 @@
   --xp: #a64fd9;
   --rest: #3a78d4;
   --good: #63d64a;
+  --hp-ok: #3fbf3f; --hp-mid: #e6d23a; --hp-low: #ef8a24; --hp-crit: #e0332e;
+  --rage: #c8312b; --energy: #e8d44a;
   --display: "Cinzel", "Trajan Pro", Georgia, serif;
   --body: "Alegreya Sans", system-ui, sans-serif;
   --label: "Alegreya Sans SC", system-ui, sans-serif;
@@ -121,6 +123,10 @@ button:disabled { cursor: not-allowed; }
 .stat.prime { border-color: var(--gold-dk); background: #ffd10010; }
 .stat.prime .lbl { color: var(--gold); }
 .vitals { margin-top: 10px; }
+.pools { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.pools .bar { height: 12px; }
+.pools .bar > i { transition: width .25s linear, background-color .4s; }
+.pools .val { color: var(--text); }
 .ilvl { font-size: 12px; color: var(--dim); margin-left: 6px; font-variant-numeric: tabular-nums; }
 .q0 { color: var(--poor); } .q1 { color: var(--common); } .q2 { color: var(--uncommon); } .q3 { color: var(--rare); } .q4 { color: var(--epic); } .q5 { color: var(--legend); }
 .rank { font-size: 13px; color: var(--dim); white-space: nowrap; }
@@ -711,6 +717,33 @@ function rationTasks(where) {
 }
 const rationPrice = () => Math.round(5 + S.level * S.level * 0.15);
 
+// current health / mana (fractions, display only): fights drain, rests and walking refill
+const FIGHTS = ["kill", "trash", "boss"];
+function vitalEnd(t) {
+  if (t.ve) return t.ve;
+  const hp = S.hpF ?? 1, mp = S.mpF ?? 1, r = (a, b) => a + Math.random() * (b - a), lo = x => Math.max(0.04, x), up = x => Math.min(1, x);
+  let e;
+  if (t.k === "kill") e = t.elite ? [lo(hp - r(0.35, 0.6)), lo(mp - r(0.3, 0.5))] : [lo(hp - r(0.07, 0.17)), lo(mp - r(0.08, 0.18))];
+  else if (t.k === "trash") e = [r(0.4, 0.9), r(0.25, 0.85)];
+  else if (t.k === "boss") e = [r(0.2, 0.7), r(0.1, 0.5)];
+  else if (t.k === "rest" || t.k === "rez") e = [1, 1];
+  else if (t.k === "ghost") e = [0, 0];
+  else if (t.k === "buff" || t.k === "conjure" || t.k === "dbuff") e = [up(hp + 0.05), lo(mp - 0.08)];
+  else e = [up(hp + 0.25), up(mp + 0.15)];
+  return (t.ve = e);
+}
+function vitalsNow() {
+  const t = S.task; let hp = S.hpF ?? 1, mp = S.mpF ?? 1;
+  if (t) { const p = Math.min(1, t.el / t.t), e = vitalEnd(t); hp += (e[0] - hp) * p; mp += (e[1] - mp) * p; }
+  return [hp, mp];
+}
+// rage builds during a fight and fades after; energy dips and ticks back
+function secondPool() {
+  const t = S.task, fight = t && FIGHTS.includes(t.k), p = t ? Math.min(1, t.el / t.t) : 0;
+  if (cls().res === "Rage") return fight ? Math.round(15 + 70 * p) : 0;
+  return fight ? Math.round(100 - 65 * Math.abs(Math.sin(p * Math.PI * 3))) : 100;
+}
+
 // buffs the hero wants up right now: [{name, min, item, cast}]
 function wantedBuffs() {
   const out = [];
@@ -1037,6 +1070,7 @@ function atiesh() {
 }
 
 function finish(t) {
+  const ve = vitalEnd(t); S.hpF = ve[0]; S.mpF = ve[1];
   switch (t.k) {
     case "arrive": {
       S.arrived = t.zone; S.loc = "hub"; S.curQ = 0;
@@ -1053,10 +1087,10 @@ function finish(t) {
       if (Math.random() < (t.elite ? 0.06 : 0.003)) {
         if (S.cons.hp > 0 && Math.random() < 0.7) {
           S.cons.hp--; if (!S.feats.includes("close call")) S.feats.push("close call");
-          log(`Close call! Nearly died to ${article(t.mob)}, but ${article(hpPot())} saved the day.`, "death");
+          S.hpF = 0.6; log(`Close call! Nearly died to ${article(t.mob)}, but ${article(hpPot())} saved the day.`, "death");
         } else {
         S.deaths++; loseBuffs(); S.repair += S.level * S.level * 4 + 20;
-        log(`Died to ${article(t.mob)}. Releasing spirit…`, "death");
+        log(`Died to ${article(t.mob)}. Releasing spirit…`, "death"); S.hpF = 0;
         S.queue.unshift({ k: "ghost", d: "Running back to your corpse as a ghost", t: sec(45) }, { k: "rez", d: "Resurrecting and drinking up", t: sec(10) });
         break;
         }
@@ -1138,7 +1172,7 @@ function finish(t) {
     case "boss": {
       if (Math.random() < (RAID_INFO[t.dn] ? RAID_INFO[t.dn].wipe : 0.06)) {
         S.deaths++; S.repair += S.level * S.level * 5; loseBuffs();
-        log(`Wiped on ${t.boss}. Corpse run…`, "death");
+        log(`Wiped on ${t.boss}. Corpse run…`, "death"); S.hpF = 0;
         S.queue.unshift({ k: "ghost", d: "Running back through the instance as a ghost", t: sec(60) }, { ...t, el: 0 });
         break;
       }
@@ -1232,7 +1266,10 @@ function gameShell() {
   </section>
   <section class="main">
     <div class="col">
-      <div class="sec"><h2>Character</h2><div class="stats" id="stats"></div><ul class="rows vitals" id="vitals"></ul></div>
+      <div class="sec"><h2>Character</h2><div class="stats" id="stats"></div>
+        <div class="pools"><div class="meter"><div class="top"><span class="lbl">health</span><span class="val" id="hpV"></span></div><div class="bar"><i id="hpB"></i></div></div>
+        <div class="meter"><div class="top"><span class="lbl" id="mpL">mana</span><span class="val" id="mpV"></span></div><div class="bar"><i id="mpB"></i></div></div></div>
+        <ul class="rows vitals" id="vitals"></ul></div>
       <div class="sec"><h2>Equipment <small id="gs"></small></h2><ul class="rows" id="equip"></ul></div>
     </div>
     <div class="col c-log">
@@ -1300,7 +1337,7 @@ function renderLists() {
   $("hWhere").textContent = where();
   $("stats").innerHTML = STATS.map(k => `<div class="stat ${k === c.prime ? "prime" : ""}"><span class="lbl">${k}</span><b>${S.stats[k]}</b></div>`).join("");
   $("vitals").innerHTML = [
-    ["health", hpMax().toLocaleString()], [c.res.toLowerCase(), resMax().toLocaleString()], ["money", money(S.money)],
+    ["money", money(S.money)],
     ["mount", S.mount >= 2 ? race().epic : S.mount ? race().mount : S.level >= 40 ? "saving up…" : "on foot until 40"],
     ["kills", S.kills.toLocaleString()], ["quests done", S.qdone.toLocaleString()], ["deaths", S.deaths.toLocaleString()],
   ].map(([k, v]) => `<li><span class="k">${k}</span><span class="v">${v}</span></li>`).join("");
@@ -1339,6 +1376,12 @@ function renderBars() {
   if (t) { const p = Math.min(1, t.el / t.t); $("tDesc").textContent = t.d;
     const cs = t.casts || [], ci = Math.min(cs.length - 1, Math.floor(p * cs.length));
     $("tCasts").innerHTML = cs.slice(0, ci + 1).map((s, i) => `<span${i === ci ? ' class="cur"' : ""}>${esc(s)}</span>`).join(" › "); $("tFill").style.width = (p * 100).toFixed(1) + "%"; $("tPct").textContent = Math.floor(p * 100) + "%"; }
+  const [hf, mf] = vitalsNow(), hm = hpMax(), poolCol = f => f > 0.6 ? "var(--hp-ok)" : f > 0.35 ? "var(--hp-mid)" : f > 0.15 ? "var(--hp-low)" : "var(--hp-crit)";
+  $("hpV").textContent = `${Math.round(hf * hm).toLocaleString()} / ${hm.toLocaleString()}`;
+  $("hpB").style.width = (hf * 100).toFixed(1) + "%"; $("hpB").style.background = poolCol(hf);
+  const res = cls().res; $("mpL").textContent = res.toLowerCase();
+  if (cls().mp) { const mm = resMax(); $("mpV").textContent = `${Math.round(mf * mm).toLocaleString()} / ${mm.toLocaleString()}`; $("mpB").style.width = (mf * 100).toFixed(1) + "%"; $("mpB").style.background = poolCol(mf); }
+  else { const v = secondPool(); $("mpV").textContent = `${v} / 100`; $("mpB").style.width = v + "%"; $("mpB").style.background = res === "Rage" ? "var(--rage)" : "var(--energy)"; }
   const need = xpNeed(S.level);
   if (S.level >= 60) { $("xpV").textContent = "max"; $("xpB").style.width = "100%"; }
   else { $("xpV").textContent = `${S.xp.toLocaleString()} / ${need.toLocaleString()}`; $("xpB").style.width = (S.xp / need * 100) + "%"; }
