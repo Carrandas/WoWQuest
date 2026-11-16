@@ -253,6 +253,7 @@ button:disabled { cursor: not-allowed; }
 .note { color: #5d6578; font-size: 13px; }
 
 /* modal */
+.loadfile { align-self: flex-start; }
 .modal { position: fixed; inset: 0; background: #03050acc; display: grid; place-items: center; z-index: 20; padding: 16px; }
 .modal .box { background: var(--panel); border: 1px solid var(--gold-dk); border-radius: 8px; padding: 20px; max-width: 380px; width: 100%; display: flex; flex-direction: column; gap: 14px; }
 .modal h3 { margin: 0; font-family: var(--display); font-size: 24px; color: var(--gold); }
@@ -1430,6 +1431,8 @@ function gameShell() {
     <div class="controls">
       <span class="speedbox" id="speedbox" ${dev ? "" : "hidden"}><span class="lbl">speed</span>
         <div class="seg" id="speed">${SPEEDS.map(n => `<button type="button" data-s="${n}" aria-pressed="false">${n}×</button>`).join("")}</div></span>
+      <button type="button" class="ghost" id="exportSave" title="Download your save as a file">Save file</button>
+      <button type="button" class="ghost" id="importSave" title="Load a save file">Load file</button>
       <button type="button" class="ghost" id="retire">New character</button>
       <span class="saved" id="saved"></span>
     </div>
@@ -1480,6 +1483,8 @@ function gameShell() {
   </section>`;
   $("speed").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; speed = S.speed = +b.dataset.s; renderSpeed(); });
   $("retire").addEventListener("click", confirmRetire);
+  $("exportSave").addEventListener("click", exportSave);
+  $("importSave").addEventListener("click", pickSaveFile);
   $("tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; uiTab = b.dataset.t; document.querySelectorAll("#tabs button").forEach(x => x.setAttribute("aria-selected", String(x === b))); dirty = true; });
   $("brand").addEventListener("click", brandTap);
   renderSpeed();
@@ -1643,6 +1648,44 @@ function startGame() {
   gameShell(); lastLogId = 0; dirty = true;
   cancelAnimationFrame(rafId); lastNow = performance.now(); rafId = requestAnimationFrame(loop);
 }
+// ---------- save files: the same data as the browser save, as a download ----------
+function exportSave() {
+  save();
+  const blob = new Blob([JSON.stringify(S)], { type: "application/json" });
+  const a = document.createElement("a"), d = new Date(), pad = n => String(n).padStart(2, "0");
+  a.href = URL.createObjectURL(blob);
+  a.download = `WoWQuest-${S.name.replace(/[^\w-]+/g, "_")}-L${S.level}-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast("Save file downloaded");
+}
+function pickSaveFile() {
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = ".json,application/json";
+  inp.onchange = () => {
+    const f = inp.files && inp.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      let data = null;
+      try { data = JSON.parse(r.result); } catch (e) {}
+      if (!data || typeof data !== "object" || !data.name || !CLASSES[data.cls] || !RACES[data.race] || !(data.level >= 1) || !Array.isArray(data.queue)) { toast("That isn't a WoWQuest save file"); return; }
+      confirmLoad(data);
+    };
+    r.readAsText(f);
+  };
+  inp.click();
+}
+function confirmLoad(data) {
+  const m = document.createElement("div");
+  m.className = "modal";
+  const what = `level ${data.level} ${esc(data.race)} ${esc(data.cls.toLowerCase())}`;
+  m.innerHTML = `<div class="box" role="dialog" aria-modal="true" aria-labelledby="mt"><h3 id="mt">Load ${esc(data.name)}?</h3><p>Loads ${esc(data.name)}, a ${what}${S ? `. This replaces ${esc(S.name)} (level ${S.level}) in this browser, so save them to a file first if you want to keep them` : ""}.</p><div class="acts"><button type="button" class="ghost" id="mNo">Cancel</button><button type="button" class="danger" id="mYes">Load save</button></div></div>`;
+  document.body.appendChild(m);
+  $("mNo").focus();
+  $("mNo").onclick = () => m.remove();
+  m.addEventListener("click", e => { if (e.target === m) m.remove(); });
+  $("mYes").onclick = () => { m.remove(); S = data; migrate(); S.savedAt = Date.now(); save(); startGame(); toast(`Loaded ${S.name}`); };
+}
 function confirmRetire() {
   const m = document.createElement("div");
   m.className = "modal";
@@ -1670,12 +1713,14 @@ function showCreate() {
     <div class="field"><span class="lbl">class</span><div class="classes" id="cCls"></div></div>
     <div class="field"><span class="lbl">talent specialization</span><div class="chips" id="cSpec"></div></div>
     <button type="button" class="begin" id="cGo">Enter World</button>
+    <button type="button" class="ghost loadfile" id="cLoad">Load a save file</button>
     <p class="note">A fan-made tribute. Not affiliated with or endorsed by Blizzard Entertainment.</p>
   </div>`;
   $("cName").value = draft.name;
   $("cName").addEventListener("input", e => draft.name = e.target.value);
   $("cRandName").onclick = () => { draft.name = randomName(); $("cName").value = draft.name; };
   $("cGo").onclick = () => { newHero(draft); draft = null; startGame(); };
+  $("cLoad").onclick = pickSaveFile;
   $("cFac").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; draft.faction = b.dataset.f; draft.race = Object.keys(RACES).find(r => RACES[r].f === draft.faction); fixClass(); drawCreate(); });
   $("cRace").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; draft.race = b.dataset.r; fixClass(); drawCreate(); });
   $("cCls").addEventListener("click", e => { const b = e.target.closest("button"); if (!b || b.disabled) return; draft.cls = b.dataset.c; draft.spec = 0; drawCreate(); });
