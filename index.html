@@ -68,22 +68,16 @@ button:disabled { cursor: not-allowed; }
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--panel-2); border: 1px solid var(--gold-dk); color: var(--gold);
   padding: 8px 16px; border-radius: 8px; font-family: var(--label); font-weight: 700; letter-spacing: .05em; z-index: 30; box-shadow: 0 6px 24px #000a; }
 
-/* hero banner */
-.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); gap: 20px; align-items: end; border-bottom: 1px solid var(--rim); padding-bottom: 18px; }
-.who h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(32px, 5vw, 50px); line-height: 1; overflow-wrap: anywhere; }
-.who .sub { margin-top: 6px; font-size: 18px; color: var(--dim); }
+/* name line at the top of the Character tab */
+.who { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin-bottom: 10px; }
+.who h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 24px; line-height: 1.1; overflow-wrap: anywhere; }
+.who .sub { font-size: 15px; color: var(--dim); }
 .who .sub b { color: var(--text); font-weight: 700; }
-.tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-.tag { display: inline-flex; gap: 6px; align-items: center; font-family: var(--label); font-weight: 700; font-size: 13px; letter-spacing: .06em; border: 1px solid var(--rim); border-radius: 999px; padding: 3px 12px 3px 9px; color: var(--dim); }
-.tag.zone { color: var(--good); }
-.tag.zone::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 8px var(--good); }
-.tag.Alliance { color: #8fb0f0; border-color: #2f4f8f; background: #4a7bd81a; }
-.tag.Horde { color: #f08a80; border-color: #8f2f28; background: #d43b301a; }
-.now { min-width: 0; }
+.now { min-width: 0; text-align: center; }
 .now .lbl { color: var(--gold); }
 .now .desc { font-size: clamp(19px, 2.2vw, 24px); margin: 4px 0 10px; min-height: 1.42em; overflow-wrap: anywhere; }
 .now .desc::after { content: "…"; color: var(--dim); }
-.now .casts { min-height: 1.4em; margin: -6px 0 8px; color: var(--dim); font-size: 15px; overflow-wrap: anywhere; }
+.now .casts { min-height: 1.4em; margin: 8px 0 0; color: var(--dim); font-size: 15px; overflow-wrap: anywhere; }
 .now .casts .cur { color: var(--gold); }
 .bigbar { position: relative; height: 22px; border-radius: 3px; background: #05070c; border: 1px solid #5a4a12; overflow: hidden; box-shadow: inset 0 2px 6px #000a; }
 .bigbar .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(180deg, #ffe066, #e0b100 55%, #9a7a00); }
@@ -93,20 +87,20 @@ button:disabled { cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) { .bigbar .fill::after { animation: none; } }
 
 /* meters */
-.meters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.meters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .meter { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .meter .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .meter .val { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--dim); white-space: nowrap; }
+.meter.idle { opacity: .45; }
 .meter .name { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.4em; }
 .bar { height: 9px; border-radius: 2px; background: #05070c; border: 1px solid var(--rim); overflow: hidden; }
 .bar > i { display: block; height: 100%; width: 0; transition: width .25s linear; }
 .m-xp i { background: linear-gradient(90deg, #7a2fb0, var(--xp)); }
-.m-bag i { background: #b07a43; }
 .m-quest i { background: var(--gold); }
 .m-zone i { background: var(--good); }
 
 /* main grid */
-.main { display: grid; grid-template-columns: 310px minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+.main { display: grid; grid-template-columns: 380px minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
 .col { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 .sec h2 { margin: 0 0 8px; font-family: var(--display); font-weight: 700; font-size: 18px; letter-spacing: .03em; color: var(--gold); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .sec h2 small { font-family: var(--body); font-weight: 400; font-size: 13px; color: var(--dim); letter-spacing: 0; }
@@ -203,6 +197,12 @@ button:disabled { cursor: not-allowed; }
 .tabs button[aria-selected="true"] { color: var(--gold); border-bottom-color: var(--gold); }
 .tabs button:focus-visible { outline: 2px solid var(--gold-dk); outline-offset: 2px; }
 .tabmeta { text-align: right; font-size: 13px; color: var(--dim); margin-bottom: 2px; min-height: 1.2em; }
+.ctabs { gap: 4px 9px; margin-bottom: 10px; }
+.ctabs button { font-size: 14px; }
+.paneh { margin: 10px 0 2px; font-family: var(--label); font-weight: 700; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; color: var(--gold); }
+.cpane > .tabmeta + .paneh { margin-top: 0; }
+.paneh small { font-family: var(--body); font-weight: 400; font-size: 12.5px; letter-spacing: 0; text-transform: none; color: var(--dim); margin-left: 4px; }
+.tabmeta .full { color: var(--hp-low); font-weight: 700; }
 .log[hidden], .journal[hidden] { display: none; }
 .journal { list-style: none; margin: 0; padding: 0; max-height: 700px; overflow-y: auto; }
 .journal li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; padding: 8px 0; border-bottom: 1px solid #28314966; align-items: start; }
@@ -263,13 +263,13 @@ button:disabled { cursor: not-allowed; }
 
 @media (max-width: 1080px) {
   .main { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .main .c-log { grid-column: 1 / -1; order: -1; }
+  .main .c-log { grid-column: 1 / -1; order: 1; }
   .gcards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .rgroups { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 @media (max-width: 720px) {
-  .hero { grid-template-columns: minmax(0, 1fr); }
   .meters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .meters .m-quest { grid-column: 1 / -1; }
   .gcards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rgroups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .main { grid-template-columns: minmax(0, 1fr); }
@@ -1533,33 +1533,34 @@ function gameShell() {
       <span class="saved" id="saved"></span>
     </div>
   </div>
-  <section class="hero">
-    <div class="who">
-      <h1 id="hName"></h1>
-      <div class="sub" id="hSub"></div>
-      <div class="tags"><span class="tag" id="hFaction"></span><span class="tag zone" id="hWhere"></span></div>
-    </div>
-    <div class="now">
-      <div class="lbl">now</div>
-      <div class="desc" id="tDesc"></div>
-      <div class="casts" id="tCasts"></div>
-      <div class="bigbar"><div class="fill" id="tFill"></div><div class="pct" id="tPct"></div></div>
-    </div>
-  </section>
   <section class="meters">
-    <div class="meter m-xp"><div class="top"><span class="lbl">experience</span><span class="val" id="xpV"></span></div><div class="name" id="xpN"></div><div class="bar"><i id="xpB"></i></div></div>
-    <div class="meter m-bag"><div class="top"><span class="lbl">bags</span><span class="val" id="bgV"></span></div><div class="name" id="bgN"></div><div class="bar"><i id="bgB"></i></div></div>
-    <div class="meter m-quest"><div class="top"><span class="lbl">quest</span><span class="val" id="qV"></span></div><div class="name" id="qN"></div><div class="bar"><i id="qB"></i></div></div>
+    <div class="meter m-xp"><div class="top"><span class="lbl" id="xpL">experience</span><span class="val" id="xpV"></span></div><div class="name" id="xpN"></div><div class="bar"><i id="xpB"></i></div></div>
     <div class="meter m-zone"><div class="top"><span class="lbl" id="zL">zone</span><span class="val" id="zV"></span></div><div class="name" id="zN"></div><div class="bar"><i id="zB"></i></div></div>
+    <div class="meter m-quest"><div class="top"><span class="lbl">quest</span><span class="val" id="qV"></span></div><div class="name" id="qN"></div><div class="bar"><i id="qB"></i></div></div>
+  </section>
+  <section class="now">
+    <div class="lbl" id="tWhere"></div>
+    <div class="desc" id="tDesc"></div>
+    <div class="bigbar"><div class="fill" id="tFill"></div><div class="pct" id="tPct"></div></div>
+    <div class="casts" id="tCasts"></div>
   </section>
   <section class="group" id="group" hidden><h2 id="gTitle">Group</h2><div class="gcards" id="gcards"></div></section>
   <section class="main">
     <div class="col">
-      <div class="sec"><h2>Character</h2><div class="stats" id="stats"></div>
+      <div class="sec">
+        <div class="tabs ctabs" role="tablist" id="ctabs">${CTABS.map(([k, n]) => `<button type="button" role="tab" data-c="${k}" aria-selected="${k === charTab}">${n}</button>`).join("")}</div>
+        <div class="cpane" data-c="char"><div class="who"><h1 id="hName"></h1><span class="sub" id="hSub"></span></div><div class="stats" id="stats"></div>
         <div class="pools"><div class="meter"><div class="top"><span class="lbl">health</span><span class="val" id="hpV"></span></div><div class="bar"><i id="hpB"></i></div></div>
         <div class="meter"><div class="top"><span class="lbl" id="mpL">mana</span><span class="val" id="mpV"></span></div><div class="bar"><i id="mpB"></i></div></div></div>
-        <ul class="rows vitals" id="vitals"></ul></div>
-      <div class="sec"><h2>Equipment <small id="gs"></small></h2><ul class="rows" id="equip"></ul></div>
+        <ul class="rows vitals" id="vitals"></ul>
+        <h3 class="paneh">Buffs <small id="bCount"></small></h3><ul class="rows" id="buffs"></ul></div>
+        <div class="cpane" data-c="equip"><div class="tabmeta"><small id="gs"></small></div><ul class="rows" id="equip"></ul></div>
+        <div class="cpane" data-c="bags"><div class="tabmeta"><small id="money"></small></div>
+          <h3 class="paneh">Supplies</h3><ul class="rows" id="supplies"></ul>
+          <h3 class="paneh">Bags</h3><ul class="rows" id="bags"></ul></div>
+        <div class="cpane" data-c="tal"><div class="tabmeta"><small id="talPts"></small></div><div class="tal" id="tal"></div></div>
+        <div class="cpane" data-c="spells"><div class="tabmeta"><small id="spCount"></small></div><ul class="rows" id="spells"></ul></div>
+      </div>
     </div>
     <div class="col c-log">
       <div class="chron sec">
@@ -1570,11 +1571,6 @@ function gameShell() {
     </div>
     <div class="col">
       <div class="sec quests"><h2>Quest Log <small id="qCount"></small></h2><ul class="rows" id="quests"></ul></div>
-      <div class="sec"><h2>Buffs <small id="bCount"></small></h2><ul class="rows" id="buffs"></ul></div>
-      <div class="sec"><h2>Supplies</h2><ul class="rows" id="supplies"></ul></div>
-      <div class="sec"><h2>Talents <small id="talPts"></small></h2><div class="tal" id="tal"></div></div>
-      <div class="sec"><h2>Spellbook <small id="spCount"></small></h2><ul class="rows" id="spells"></ul></div>
-      <div class="sec"><h2>Bags <small id="money"></small></h2><ul class="rows" id="bags"></ul></div>
     </div>
   </section>`;
   $("speed").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; speed = S.speed = +b.dataset.s; renderSpeed(); });
@@ -1582,8 +1578,16 @@ function gameShell() {
   $("exportSave").addEventListener("click", exportSave);
   $("importSave").addEventListener("click", pickSaveFile);
   $("tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; uiTab = b.dataset.t; document.querySelectorAll("#tabs button").forEach(x => x.setAttribute("aria-selected", String(x === b))); dirty = true; });
+  $("ctabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; charTab = b.dataset.c; renderCharTab(); });
   $("brand").addEventListener("click", brandTap);
-  renderSpeed();
+  renderSpeed(); renderCharTab();
+}
+// character panel tabs: character, equipment, bags (with supplies), talents, spellbook
+const CTABS = [["char", "Character"], ["equip", "Equipment"], ["bags", "Bags"], ["tal", "Talents"], ["spells", "Spellbook"]];
+let charTab = "char";
+function renderCharTab() {
+  document.querySelectorAll("#ctabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.c === charTab)));
+  document.querySelectorAll(".cpane").forEach(p => p.hidden = p.dataset.c !== charTab);
 }
 function renderSpeed() { document.querySelectorAll("#speed button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.s === speed))); }
 
@@ -1606,11 +1610,28 @@ function toast(msg) {
   el.textContent = msg; clearTimeout(toastTimer); toastTimer = setTimeout(() => el.remove(), 1400);
 }
 
+// where the hero is right now, shown above the current task
 function where() {
   if (S.loc === "dungeon" && S.dg) return S.dg.name;
   if (S.loc === "city") return S.level < 10 ? hub() : city();
   if (!S.arrived) return "On the road";
   return S.loc === "hub" ? `${hub()}, ${S.arrived}` : S.arrived;
+}
+// the level 60 goal: clear every raid once (the current first clear counts boss by boss)
+function raidGoal() {
+  const left = RAIDS.filter(r => !S.dungeons.includes(r[0])), done = RAIDS.length - left.length;
+  const cur = S.dg && S.dg.raid && left.some(r => r[0] === S.dg.name) ? S.dg : null;
+  // next raid plus the next boss to kill in it (bosses fall in list order)
+  const r = cur ? left.find(x => x[0] === cur.name) : left[0], bosses = r ? r[6].split(",") : [], k = cur ? cur.killed : 0;
+  return { name: r ? `Next: ${r[0]} – ${k < bosses.length ? bosses[k] : "cleared"}` : "Every raid cleared", val: `${done} / ${RAIDS.length} raids`,
+    p: (done + (cur ? cur.killed / cur.total : 0)) / RAIDS.length };
+}
+// the quest meter: a dungeon or raid quest inside an instance, otherwise the current zone quest
+function questMeter() {
+  const dq = S.dg && S.dq && S.dq.length ? S.dq.find(x => !x.done) || S.dq[S.dq.length - 1] : null;
+  if (dq) return { name: dq.name, val: `${dq.done ? 1 : 0} / 1`, p: dq.done ? 1 : 0 };
+  const q = S.quests.find(x => x.id === S.curQ);
+  return q ? { name: q.name, val: `${q.prog} / ${q.max}`, p: q.prog / q.max } : null;
 }
 function legInfo() {
   const r = route();
@@ -1623,9 +1644,8 @@ let lastLogId = 0;
 function renderLists() {
   const c = cls();
   $("hName").textContent = S.name; $("hName").style.color = c.color;
+  $("tWhere").textContent = where();
   $("hSub").innerHTML = `Level <b>${S.level}</b> ${esc(S.race)} <b style="color:${c.color}">${esc(S.cls)}</b> · ${esc(c.trees[S.spec])}`;
-  $("hFaction").textContent = S.faction; $("hFaction").className = "tag " + S.faction;
-  $("hWhere").textContent = where();
   $("stats").innerHTML = STATS.map(k => `<div class="stat ${k === c.prime ? "prime" : ""}"><span class="lbl">${k}</span><b>${S.stats[k]}</b></div>`).join("");
   $("vitals").innerHTML = [
     ["money", money(S.money)],
@@ -1640,7 +1660,7 @@ function renderLists() {
   const known = c.list.filter(sp => spellName(sp.name) in S.spells).reverse();
   $("spCount").textContent = `${known.length} known`;
   $("spells").innerHTML = known.map(sp => { const n = spellName(sp.name), r = S.spells[n]; return `<li><span class="l">${esc(n)}</span><span class="rank">${sp.max > 1 ? "Rank " + r : ""}</span></li>`; }).join("") || `<li><span class="empty">nothing yet</span></li>`;
-  $("money").innerHTML = money(S.money);
+  $("money").innerHTML = `${S.bags.length >= bagCap() ? '<span class="full">full</span> ' : ""}${S.bags.length} / ${bagCap()} slots · ${money(S.money)}`;
   const groups = groupBags();
   $("bags").innerHTML = groups.length ? groups.map(g => { const b = S.bags.find(x => x.name === g.name); return `<li><span class="l q${b.q}">${esc(g.name)}${g.n > 1 ? ` <span class="ilvl">×${g.n}</span>` : ""}</span></li>`; }).join("") : `<li><span class="empty">empty</span></li>`;
   const dqs = S.dq || [];
@@ -1655,10 +1675,11 @@ function renderLists() {
   renderJournal();
   $("log").innerHTML = S.log.map(l => `<li class="${l.k}${l.id > lastLogId && lastLogId ? " fresh" : ""}"><time>${fmtTime(l.t)}</time><span>${esc(l.txt)}</span></li>`).join("");
   lastLogId = S.log.length ? S.log[0].id : 0;
-  $("xpN").textContent = S.level >= 60 ? "Level 60 · max level" : `Level ${S.level} → ${S.level + 1}`;
-  $("bgN").textContent = S.bags.length >= bagCap() ? "Full. Time to visit a vendor." : `Backpack + ${S.bagSlots.length} bag${S.bagSlots.length === 1 ? "" : "s"}`;
-  const cq = S.quests.find(x => x.id === S.curQ);
-  $("qN").textContent = cq ? cq.name : "—"; $("qN").title = cq ? cq.name : "";
+  $("xpL").textContent = S.level >= 60 ? "raids" : "experience";
+  $("xpN").textContent = S.level >= 60 ? raidGoal().name : `Level ${S.level} → ${S.level + 1}`; $("xpN").title = $("xpN").textContent;
+  const qm = questMeter();
+  $("qN").textContent = qm ? qm.name : "between quests"; $("qN").title = qm ? qm.name : "";
+  document.querySelector(".m-quest").classList.toggle("idle", !qm);
   if (S.dg) { $("zL").textContent = S.dg.raid ? "raid" : "dungeon"; $("zN").textContent = S.dg.name; }
   else { const li = legInfo(); $("zL").textContent = "zone"; $("zN").textContent = li.name; }
 }
@@ -1675,12 +1696,10 @@ function renderBars() {
   if (cls().mp) { const mm = resMax(); $("mpV").textContent = `${Math.round(mf * mm).toLocaleString()} / ${mm.toLocaleString()}`; $("mpB").style.width = (mf * 100).toFixed(1) + "%"; $("mpB").style.background = "var(--mana)"; }
   else { const v = secondPool(); $("mpV").textContent = `${v} / 100`; $("mpB").style.width = v + "%"; $("mpB").style.background = res === "Rage" ? "var(--rage)" : "var(--energy)"; }
   const need = xpNeed(S.level);
-  if (S.level >= 60) { $("xpV").textContent = "max"; $("xpB").style.width = "100%"; }
+  if (S.level >= 60) { const g = raidGoal(); $("xpV").textContent = g.val; $("xpB").style.width = (g.p * 100) + "%"; }
   else { $("xpV").textContent = `${S.xp.toLocaleString()} / ${need.toLocaleString()}`; $("xpB").style.width = (S.xp / need * 100) + "%"; }
-  const bc = bagCap();
-  $("bgV").textContent = `${S.bags.length} / ${bc}`; $("bgB").style.width = Math.min(100, S.bags.length / bc * 100) + "%";
-  const cq = S.quests.find(x => x.id === S.curQ);
-  if (cq) { $("qV").textContent = `${cq.prog} / ${cq.max}`; $("qB").style.width = (cq.prog / cq.max * 100) + "%"; } else { $("qV").textContent = ""; $("qB").style.width = "0%"; }
+  const qm = questMeter();
+  $("qV").textContent = qm ? qm.val : ""; $("qB").style.width = (qm ? qm.p * 100 : 0) + "%";
   if (S.dg) { $("zV").textContent = `${S.dg.killed} / ${S.dg.total} bosses`; $("zB").style.width = (S.dg.killed / S.dg.total * 100) + "%"; }
   else { const li = legInfo(); $("zV").textContent = li.val; $("zB").style.width = (li.p * 100) + "%"; }
   renderGroup(hf, mf);
