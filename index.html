@@ -227,6 +227,13 @@ button:disabled { cursor: not-allowed; }
 .rank { font-size: 13px; color: var(--dim); white-space: nowrap; }
 .money { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .money .g { color: #ffd34d; } .money .s { color: #c7c7cf; } .money .c { color: #d0874a; }
+.rows .ench { display: block; font-size: 12px; color: #8fd0ff; }
+.rows .ench.no { color: var(--dim); font-style: italic; }
+.profs .prow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 2px 10px; align-items: baseline; }
+.profs .prow .gbar { grid-column: 1 / -1; position: relative; }
+.profs .prow .gbar i { background: var(--gold-dk); }
+.profs .prow .gbar b { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--dim); opacity: .6; }
+.profs .prow.sec2 .l { color: var(--dim); }
 .ttabs { display: flex; width: 100%; margin: 2px 0 8px; }
 .ttabs button { flex: 1; padding: 5px 6px; font-family: var(--label); font-weight: 700; letter-spacing: .03em; }
 .ttabs button b { font-variant-numeric: tabular-nums; opacity: .8; }
@@ -273,7 +280,7 @@ button:disabled { cursor: not-allowed; }
 .tabs button[aria-selected="true"] { color: var(--gold); border-bottom-color: var(--gold); }
 .tabs button:focus-visible { outline: 2px solid var(--gold-dk); outline-offset: 2px; }
 .tabmeta { text-align: right; font-size: 13px; color: var(--dim); margin-bottom: 2px; min-height: 1.2em; }
-.ctabs { gap: 4px 9px; margin-bottom: 10px; }
+.ctabs { gap: 4px 8px; margin-bottom: 10px; }
 .chron .tabs { gap: 4px 10px; }
 .chron .tabs button { font-size: 13px; }
 .chron .tabs button small { font-size: 11.5px; }
@@ -281,7 +288,7 @@ button:disabled { cursor: not-allowed; }
 .chips { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; }
 .foe .paneh { text-align: right; }
 .chips li { border: 1px solid var(--rim); border-radius: 999px; padding: 1px 9px; font-size: 13px; color: var(--dim); }
-.ctabs button { font-size: 14px; }
+.ctabs button { font-size: 13px; }
 .paneh { margin: 10px 0 2px; font-family: var(--label); font-weight: 700; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; color: var(--gold); }
 .cpane > .tabmeta + .paneh { margin-top: 0; }
 .paneh small { font-family: var(--body); font-weight: 400; font-size: 12.5px; letter-spacing: 0; text-transform: none; color: var(--dim); margin-left: 4px; }
@@ -754,8 +761,14 @@ function gain(it, how) {
   addBag({ name: it.name, val: Math.round(it.ilvl * it.ilvl * 2 * QMULT[it.q]), q: it.q });
   return false;
 }
+// a bigger bag than the smallest one carried (or a free bag slot)
+const bagUpgrade = bag => S.bagSlots.length < 4 || Math.min(...S.bagSlots) < bag[2];
+function giveBag(bag, how) {
+  if (S.bagSlots.length < 4) S.bagSlots.push(bag[2]); else S.bagSlots[S.bagSlots.indexOf(Math.min(...S.bagSlots))] = bag[2];
+  log(`${how} ${article(bag[1])} (${bag[2]} slots).`, "gold");
+}
 function addBag(x) { if (S.bags.length < bagCap()) S.bags.push(x); }
-function gearScore() { let n = 0, s = 0; for (const k of SLOTS) { const it = S.equip[k]; s += it ? power(it) : 0; n++; } return s / n; }
+function gearScore() { let n = 0, s = 0; for (const k of SLOTS) { const it = S.equip[k]; s += it ? power(it) + enchBonus(it) * QMULT[it.q] : 0; n++; } return s / n; }
 
 // ---------- spells & level ups ----------
 function trainSpells() {
@@ -870,6 +883,7 @@ function rationName(k) {
 }
 // a rest task that eats from the bags, or a slow rest when they are empty
 function restTask() {
+  if (S.cons.band > 0 && (S.hpF ?? 1) < 0.6) { S.cons.band--; return { k: "rest", d: `Using ${article(BANDAGES[Math.min(4, Math.max(0, skillTier(profSkill("First Aid"))))])} and catching a breath`, t: sec(9) }; }
   const have = restKinds().filter(k => S.cons[k] > 0);
   have.forEach(k => S.cons[k]--);
   if (!have.length) return { k: "rest", d: cls().mp ? "Out of food and water. Sitting down to recover slowly" : "Out of food. Sitting down to recover slowly", t: sec(26) };
@@ -936,6 +950,7 @@ function wantedBuffs() {
   for (const [chain, min] of CLASS_BUFFS[S.cls]()) { const n = chain.find(x => x in S.spells); if (n) out.push({ name: n, min, cast: /^(Summon|Call)/.test(n) ? `${n.replace("Summon", "Summoning").replace("Call Pet", "Calling your pet")}` : `Casting ${n}` }); }
   if (S.cls === "Rogue" && "Instant Poison" in S.spells) { const n = "Instant Poison" + ROMAN[S.spells["Instant Poison"]]; out.push({ name: n, min: 30, cast: `Applying ${n} to both daggers` }); }
   else if (usesStone() && S.cons.stone > 0) out.push({ name: stoneName(), min: 30, item: "stone", cast: `Using ${article(stoneName())} on your weapon` });
+  if (S.cons.feast > 0) out.push({ name: "Well Fed", min: 15, item: "feast", cast: `Eating ${DISHES[Math.min(4, Math.max(0, skillTier(profSkill("Cooking"))))]} for the Well Fed buff` });
   return out;
 }
 const buffUp = n => (S.buffs[n] || 0) > S.time;
@@ -950,7 +965,7 @@ const buffSpeed = () => 1 - 0.015 * Math.min(4, activeBuffs().length);
 function loseBuffs() { S.buffs = {}; }
 // elixir before an elite or a dungeon, a flask before a raid
 function drinkElixir(raid) {
-  if (raid) { S.buffs[flaskName()] = S.time + 120 * MIN; return flaskName(); }
+  if (raid && S.cons.flask > 0) { S.cons.flask--; S.buffs[flaskName()] = S.time + 120 * MIN; return flaskName(); }
   const n = elixirName(); if (!n || !(S.cons.elix > 0)) return null;
   S.cons.elix--; S.buffs[n] = S.time + 60 * MIN; return n;
 }
@@ -960,6 +975,7 @@ function potionCasts(out) {
   if (S.cons.hp > 0 && Math.random() < 0.3) { S.cons.hp--; out.splice(at(), 0, hpPot()); }
   if (cls().mp && S.cons.mp > 0 && S.level >= 5 && Math.random() < 0.35) { S.cons.mp--; out.splice(at(), 0, mpPot()); }
 }
+const FLASK_PRICE = 150000;
 // restock at the capital; returns the copper spent
 function buySupplies(budget) {
   const L = S.level, price = tier => Math.round(tier * tier * 3 + 30), want = [["hp", 5, tierAt(HP_POT)[0]]];
@@ -972,8 +988,282 @@ function buySupplies(budget) {
     while (b < need && spent + p <= budget) { b++; spent += p; }
     if (b) { S.cons[k] = (S.cons[k] || 0) + b; got.push(k); }
   }
-  S.money -= spent;
-  if (spent) log(`Restocked supplies (${got.map(k => ({ hp: hpPot(), mp: mpPot(), elix: elixirName(), stone: stoneName() })[k]).map(plural).join(", ")}) for ${moneyTxt(spent)}.`, "gold");
+  // a flask for every raid night at 60 (alchemists make their own)
+  if (S.level >= 60 && !(S.prof && S.prof.b === "Alchemy" && S.prof.sk.Alchemy >= 300)) {
+    let b = 0; while ((S.cons.flask || 0) + b < 2 && spent + FLASK_PRICE <= budget * 3 && spendable() - spent >= FLASK_PRICE * 3) { b++; spent += FLASK_PRICE; }
+    if (b) { S.cons.flask = (S.cons.flask || 0) + b; got.push("flask"); }
+  }
+  spend("sup", spent);
+  if (spent) log(`Restocked supplies (${got.map(k => ({ hp: hpPot(), mp: mpPot(), elix: elixirName(), stone: stoneName(), flask: flaskName() })[k]).map(plural).join(", ")}) for ${moneyTxt(spent)}.`, "gold");
+}
+
+// ---------- professions: gathering in the field, crafting on city visits ----------
+// skill tiers like back then: Apprentice from level 5, Journeyman 10, Expert 20, Artisan 35
+const PROF_TIERS = [[35, 300, "Artisan"], [20, 225, "Expert"], [10, 150, "Journeyman"], [5, 75, "Apprentice"]];
+const trainCap = (L = S.level) => (PROF_TIERS.find(x => L >= x[0]) || [0, 0])[1];
+const tierName = cap => (PROF_TIERS.find(x => x[1] === cap) || [0, 0, "Untrained"])[2];
+// the pairs a hero can pick: anyone can do herbs + alchemy or mining + engineering, the rest goes by armor
+const PROF_PAIRS = { smith: ["Mining", "Blacksmithing"], leather: ["Skinning", "Leatherworking"], tailor: ["Tailoring", "Enchanting"], herb: ["Herbalism", "Alchemy"], eng: ["Mining", "Engineering"] };
+const PAIR_FOR = { Warrior: "smith", Paladin: "smith", Hunter: "leather", Rogue: "leather", Shaman: "leather", Druid: "leather", Priest: "tailor", Mage: "tailor", Warlock: "tailor" };
+const pairsFor = c => [PAIR_FOR[c], "herb", "eng"];
+const pairLabel = k => PROF_PAIRS[k].join(" + ");
+const SECONDARY = ["First Aid", "Cooking"];
+// materials in five tiers, found by zone level and skill
+const MAT_REQ = [1, 65, 125, 175, 230];
+const MATS = {
+  Mining: ["Copper Ore", "Tin Ore", "Iron Ore", "Mithril Ore", "Thorium Ore"],
+  Herbalism: ["Peacebloom", "Briarthorn", "Kingsblood", "Sungrass", "Dreamfoil"],
+  Skinning: ["Light Leather", "Medium Leather", "Heavy Leather", "Thick Leather", "Rugged Leather"],
+  Cloth: CLOTH,
+  Dust: ["Strange Dust", "Soul Dust", "Vision Dust", "Dream Dust", "Illusion Dust"],
+  Meat: ["Boar Meat", "Bear Meat", "Raptor Flank", "Tender Wolf Meat", "Chimaera Leg"],
+};
+const NODES = { Mining: ["Copper Vein", "Tin Vein", "Iron Deposit", "Mithril Deposit", "Thorium Vein"] };
+// where each craft gets its materials
+const CRAFT_SRC = { Blacksmithing: "Mining", Engineering: "Mining", Alchemy: "Herbalism", Leatherworking: "Skinning", Tailoring: "Cloth", Enchanting: "Dust", "First Aid": "Cloth", Cooking: "Meat" };
+const CRAFT_AT = { Blacksmithing: "at the anvil", Leatherworking: "at the leatherworking bench", Tailoring: "at the loom", Alchemy: "at the alchemy lab", Engineering: "at the engineering bench", Enchanting: "at the enchanting table" };
+const BLACK_LOTUS = 60000; // a flask's rare herb, bought on the AH
+const matPrice = t => (t + 1) * (t + 1) * 500; // copper per material on the Auction House
+const zoneTier = (z = curZone()) => { const d = ZONES[z], m = d ? (d[0] + d[1]) / 2 : S.level; return m < 13 ? 0 : m < 23 ? 1 : m < 33 ? 2 : m < 45 ? 3 : 4; };
+const skillTier = sk => { let t = -1; MAT_REQ.forEach((r, i) => { if (sk >= r) t = i; }); return t; };
+// orange always teaches something, yellow usually, green now and then, grey never
+const skillChance = (sk, req) => { const d = sk - req; return d < 0 ? 0 : d < 25 ? 1 : d < 50 ? 0.55 : d < 90 ? 0.18 : 0; };
+const profSkill = n => (S.prof && S.prof.sk[n]) || 0;
+const hasProf = n => !!(S.prof && (S.prof.a === n || S.prof.b === n));
+// the crafts in the pair (Tailoring + Enchanting has two)
+const crafts = () => S.prof ? [S.prof.a, S.prof.b].filter(n => CRAFT_AT[n]) : [];
+function skillUp(n, req) {
+  const p = S.prof; if (!p || !(n in p.sk) || p.sk[n] >= p.cap) return 0;
+  if (Math.random() >= skillChance(p.sk[n], req)) return 0;
+  p.sk[n]++;
+  if (p.sk[n] % 25 === 0) log(`${n} skill increased to ${p.sk[n]}.`, "spell");
+  return 1;
+}
+const addMat = (src, t, n) => { const k = MATS[src][t]; S.prof.mats[k] = (S.prof.mats[k] || 0) + n; };
+const matCount = (src, t) => S.prof.mats[MATS[src][t]] || 0;
+const takeMat = (src, t, n) => { const k = MATS[src][t]; S.prof.mats[k] -= n; if (S.prof.mats[k] <= 0) delete S.prof.mats[k]; };
+function newProf(pair, L = 1) {
+  const [a, b] = PROF_PAIRS[pair], cap = trainCap(L), on = sk => Math.max(0, Math.min(cap, sk));
+  const sk = {}; [a, b, ...SECONDARY].forEach(n => sk[n] = on(L * 5 - 5));
+  return { pair, a, b, cap, sk, mats: {}, recent: [], ah: 0, made: 0 };
+}
+
+// out in the field: a node or a skinnable beast after a kill
+function gatherTasks(t) {
+  const p = S.prof; if (!p || !p.cap) return [];
+  const out = [], mobs = t.mobs || [t.mob];
+  const g = ["Mining", "Herbalism"].find(hasProf);
+  if (g && Math.random() < 0.15) {
+    const tier = Math.min(zoneTier(), skillTier(p.sk[g]));
+    if (tier >= 0) out.push({ k: "gather", prof: g, tier, d: g === "Mining" ? `Mining ${article(NODES.Mining[tier])}` : `Picking ${tier ? "some " : "a "}${MATS.Herbalism[tier]}`, t: sec(2.5) });
+  }
+  if (hasProf("Skinning")) {
+    const beast = mobs.find(m => foeKind(m) === "beast");
+    if (beast && Math.random() < 0.9) { const tier = Math.min(zoneTier(), skillTier(p.sk.Skinning)); if (tier >= 0) out.push({ k: "gather", prof: "Skinning", tier, d: `Skinning the ${beast}`, t: sec(1.5) }); }
+  }
+  return out;
+}
+// loot that goes to the profession store instead of the bags: cloth from anyone, meat from beasts
+function profLoot(t) {
+  if (!S.prof) return false;
+  const mobs = t.mobs || [t.mob], tier = zoneTier();
+  if (mobs.some(m => foeKind(m) === "beast") && Math.random() < 0.35) addMat("Meat", tier, 1);
+  if (mobs.some(m => foeKind(m) !== "beast") && Math.random() < 0.25) { addMat("Cloth", clamp(Math.floor(S.level / 12), 0, 4), 1 + R(2)); return true; }
+  return false;
+}
+function finishGather(t) {
+  const n = t.prof === "Skinning" ? 1 + R(2) : 1 + R(3);
+  addMat(t.prof, t.tier, n);
+  skillUp(t.prof, MAT_REQ[t.tier]);
+}
+
+// ---------- crafting ----------
+// each craft has two recipes per material tier: the basic one and a harder one a bit further up
+const recipes = craft => { const out = []; for (let t = 0; t < 5; t++) for (let v = 0; v < 2; v++) out.push({ t, v, req: MAT_REQ[t] + v * 30, n: 2 + v * 2 }); return out; };
+const CRAFT_WORDS = {
+  Blacksmithing: ["Copper", "Bronze", "Iron", "Mithril", "Thorium"],
+  Leather: ["Embossed", "Fine", "Barbaric", "Nightscape", "Wicked"], Mail: ["Scorpid", "Turtle Scale", "Green Dragonscale", "Blue Dragonscale", "Black Dragonscale"],
+  Tailoring: ["Linen", "Woolen", "Silk", "Mageweave", "Runecloth"],
+};
+const GOGGLES = ["Flying Tiger Goggles", "Green Tinted Goggles", "Catseye Ultra Goggles", "Gnomish Goggles", "Goblin Rocket Helmet"];
+const BOMBS = ["Rough Copper Bomb", "Coarse Dynamite", "Iron Grenade", "Mithril Frag Bomb", "Thorium Grenade"];
+const BANDAGES = ["Linen Bandage", "Wool Bandage", "Silk Bandage", "Mageweave Bandage", "Runecloth Bandage"];
+const DISHES = ["Roasted Boar Meat", "Bear Steak", "Roast Raptor", "Tender Wolf Steak", "Monster Omelet"];
+const ROD = ["Runed Copper Rod", "Lesser Magic Wand", "Runed Silver Rod", "Greater Mystic Wand", "Runed Arcanite Rod"];
+const ARMOR_SLOTS = ["Head", "Shoulder", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet"];
+// the gear slots a craft can make for this hero
+function craftSlots(craft) {
+  const a = armorType();
+  if (craft === "Blacksmithing") return (a === "Plate" || a === "Mail" ? ARMOR_SLOTS : []).concat(["Main Hand"]);
+  if (craft === "Leatherworking") return a === "Leather" || a === "Mail" ? ARMOR_SLOTS.concat(["Back"]) : ["Back"];
+  if (craft === "Tailoring") return a === "Cloth" ? ARMOR_SLOTS.concat(["Back"]) : ["Back"];
+  if (craft === "Engineering") return ["Head"];
+  return [];
+}
+function craftItem(craft, r, slot) {
+  const ilvl = Math.round(r.req / 5 + 3 + r.v * 3), a = armorType();
+  let name;
+  if (craft === "Engineering") name = GOGGLES[r.t];
+  else if (slot === "Back") name = (craft === "Tailoring" ? CRAFT_WORDS.Tailoring[r.t] : CRAFT_WORDS.Leather[r.t]) + " Cloak";
+  else if (slot === "Main Hand") name = CRAFT_WORDS.Blacksmithing[r.t] + " " + pick(cls().main.filter(x => !MYSTIC.test(x)).concat(["Mace"]));
+  else { const w = craft === "Leatherworking" ? CRAFT_WORDS[a === "Mail" ? "Mail" : "Leather"] : craft === "Tailoring" ? CRAFT_WORDS.Tailoring : CRAFT_WORDS.Blacksmithing; name = w[r.t] + " " + ARMOR_BASE[a][slot]; }
+  return { name: (r.v ? (craft === "Tailoring" ? "Embroidered " : craft === "Engineering" ? "Improved " : "Heavy ") : "") + name, ilvl, q: 2, slot, made: true };
+}
+// what the hero still wants from a consumable craft, and what it's called
+const CONS_CRAFT = {
+  Alchemy: () => [["hp", hpPot(), 8], ...(cls().mp && S.level >= 5 ? [["mp", mpPot(), 8]] : []), ...(elixirName() ? [["elix", elixirName(), 5]] : []), ...(S.level >= 60 && profSkill("Alchemy") >= 300 ? [["flask", flaskName(), 3]] : [])],
+  Engineering: () => [["bomb", BOMBS[Math.min(4, skillTier(profSkill("Engineering")))], 5]],
+  "First Aid": () => [["band", BANDAGES[Math.min(4, skillTier(profSkill("First Aid")))], 10]],
+  Cooking: () => [["feast", DISHES[Math.min(4, skillTier(profSkill("Cooking")))], 10]],
+};
+// the AH can make up a shortfall when the skill falls behind (cloth and dust are hard to come by)
+function buyMats(src, t, n, why) {
+  const c = n * matPrice(t), k = MATS[src][t];
+  if (spendable() < c * 3) return false;
+  spend("mats", c); addMat(src, t, n);
+  const b = why[k] || (why[k] = [0, 0]); b[0] += n; b[1] += c;
+  return true;
+}
+// one profession at the crafting station: useful things first, then skill-ups with what's left
+function craftRun(craft, primary) {
+  const p = S.prof, src = CRAFT_SRC[craft], sk0 = p.sk[craft], made = [], notes = {};
+  let crafts = 0, vend = 0;
+  const can = r => p.sk[craft] >= r.req && matCount(src, r.t) >= r.n;
+  const best = () => recipes(craft).filter(r => p.sk[craft] >= r.req).pop();
+  const behind = () => p.sk[craft] < Math.min(p.cap, S.level * 5) - 10;
+  const use = r => { takeMat(src, r.t, r.n); crafts++; skillUp(craft, r.req); };
+  // gear: the best recipe, for a slot where it beats what's worn
+  const slots = craftSlots(craft).filter(s => !(craft === "Engineering" && s === "Head" && S.level < 20));
+  if (slots.length) {
+    for (let i = 0; i < 2; i++) {
+      const r = best(); if (!r) break;
+      const slot = slots.filter(s => power(craftItem(craft, r, s)) > power(S.equip[s])).sort((a, b) => power(S.equip[a]) - power(S.equip[b]))[0];
+      if (!slot) break;
+      if (!can(r) && !buyMats(src, r.t, r.n - matCount(src, r.t), notes)) break;
+      use(r); const it = craftItem(craft, r, slot); gain(it, "Crafted"); p.made++; made.push(it.name);
+    }
+  }
+  // consumables: refill what the hero uses
+  const want = CONS_CRAFT[craft] ? CONS_CRAFT[craft]() : [];
+  for (const [k, name, top] of want) {
+    let n = 0;
+    while ((S.cons[k] || 0) < top) {
+      const r = recipes(craft).filter(can).pop(); if (!r) break;
+      if (k === "flask") { if (r.t < 4 || spendable() < BLACK_LOTUS * 2) break; spend("mats", BLACK_LOTUS); } // a flask needs a Black Lotus
+      use(r); S.cons[k] = (S.cons[k] || 0) + (k === "band" || k === "feast" ? 2 : 1); n++; }
+    if (n) { made.push(`${n}× ${name}`); p.made += n; }
+  }
+  // bags from the loom
+  if (craft === "Tailoring") {
+    const bag = BAGS.filter(b => b[0] <= S.level).pop(), r = bag && recipes(craft).filter(x => x.t <= BAGS.indexOf(bag) && p.sk[craft] >= x.req).pop();
+    if (bag && r && bagUpgrade(bag) && (matCount(src, r.t) >= 6 || buyMats(src, r.t, 6 - matCount(src, r.t), notes))) { takeMat(src, r.t, 6); crafts++; skillUp(craft, r.req); giveBag(bag, "Sewed"); made.push(bag[1]); }
+  }
+  // enchanters enchant their own gear for the cost of the dust
+  if (craft === "Enchanting") enchantGear(true, made);
+  // skill-ups: orange and yellow recipes while the materials last (bought when behind), sold to a vendor after
+  let ups = 0;
+  for (let i = 0; i < 12; i++) {
+    const r = recipes(craft).filter(x => p.sk[craft] >= x.req && skillChance(p.sk[craft], x.req) >= 0.5).pop() || recipes(craft).filter(x => p.sk[craft] >= x.req && skillChance(p.sk[craft], x.req) > 0).pop();
+    if (!r) break;
+    if (!can(r) && !(behind() && buyMats(src, r.t, r.n - matCount(src, r.t), notes))) break;
+    use(r); ups++; vend += Math.round((r.t + 1) * (r.t + 1) * 300 * (r.v + 1));
+  }
+  if (vend) S.money += vend;
+  if (!crafts) return;
+  const gained = p.sk[craft] - sk0;
+  log(`${craft}${made.length ? ": made " + made.join(", ") : ""}${ups ? `${made.length ? ", plus" : ":"} ${ups} practice piece${ups > 1 ? "s" : ""}` : ""}${gained ? ` (${craft} ${sk0} → ${p.sk[craft]})` : ""}.${Object.keys(notes).length ? " Bought " + Object.entries(notes).map(([k, [n, c]]) => `${n} ${k} for ${moneyTxt(c)}`).join(", ") + " on the AH." : ""}`, primary ? "spell" : "");
+  if (primary) p.recent.unshift(...made.map(n => ({ n, L: S.level })));
+  if (p.recent.length > 8) p.recent.length = 8;
+}
+// materials nobody here will use go to the Auction House
+function sellMats() {
+  const p = S.prof, uses = new Set([...crafts().map(n => CRAFT_SRC[n]), "Cloth", "Meat"]), got = [];
+  let sum = 0;
+  for (const src of Object.keys(MATS)) MATS[src].forEach((k, t) => {
+    const have = p.mats[k] || 0; if (!have) return;
+    const tailor = hasProf("Tailoring"), craft = src === "Cloth" ? (tailor ? "Tailoring" : "First Aid") : src === "Meat" ? "Cooking" : crafts().find(n => CRAFT_SRC[n] === src) || p.b;
+    const top = skillTier(profSkill(craft)), keep = !uses.has(src) ? 0 : t < top - 1 ? 0 : src === "Cloth" && !tailor ? 10 : src === "Meat" ? 10 : 40;
+    if (have > keep) { const n = have - keep, c = Math.round(n * matPrice(t) * 0.3); sum += c; got.push(`${n} ${k}`); p.mats[k] = keep; if (!keep) delete p.mats[k]; }
+  });
+  if (!sum) return;
+  S.money += sum; p.ah += sum;
+  log(`Sold ${got.join(", ")} on the Auction House for ${moneyTxt(sum)}.`, "gold");
+}
+function finishCraft() {
+  const p = S.prof; if (!p || !p.cap) return;
+  crafts().forEach(n => craftRun(n, true));
+  SECONDARY.forEach(n => craftRun(n, false));
+  crafts().forEach(masterwork);
+  sellMats();
+}
+// the top end at 300: one great piece per craft, with rare materials bought on the AH
+const MASTER = {
+  Blacksmithing: () => ({ name: "Lionheart Helm", slot: "Head", mat: "Arcanite Bar", cost: 1500000 }),
+  Leatherworking: () => armorType() === "Mail" ? { name: "Black Dragonscale Breastplate", slot: "Chest", mat: "Black Dragonscale", cost: 1200000 } : { name: "Devilsaur Leggings", slot: "Legs", mat: "Devilsaur Leather", cost: 1200000 },
+  Tailoring: () => ({ name: S.cls === "Priest" ? "Truefaith Vestments" : S.cls === "Warlock" ? "Robe of the Void" : "Robe of the Archmage", slot: "Chest", mat: "Mooncloth", cost: 1500000 }),
+  Engineering: () => ({ name: "Gnomish Battle Goggles", slot: "Head", mat: "Enchanted Thorium Bar", cost: 900000 }),
+};
+function masterwork(craft) {
+  const p = S.prof, m = MASTER[craft] && MASTER[craft](); if (!m || p.sk[craft] < 300) return;
+  const it = { name: m.name, ilvl: 70, q: 4, slot: m.slot, made: true };
+  if (power(it) <= power(S.equip[m.slot]) || spendable() < m.cost) return;
+  spend("mats", m.cost);
+  log(`Bought the ${m.mat} for ${moneyTxt(m.cost)} and crafted ${m.name}!`, "loot4");
+  gain(it, "Crafted"); p.made++; p.recent.unshift({ n: m.name, L: S.level });
+}
+
+// ---------- gold: what's spare, and where it went this week ----------
+const WEEK = 7 * 86400000;
+// gold kept back for the next mount
+const mountReserve = () => S.level >= 34 && S.mount < 1 ? 900000 : S.level >= 56 && S.mount < 2 ? 10000000 : 0;
+const spendable = () => Math.max(0, S.money - mountReserve());
+function spend(kind, c) {
+  c = Math.max(0, Math.round(c)); S.money -= c;
+  const wk = Math.floor(S.time / WEEK);
+  if (!S.spend || S.spend.wk !== wk) S.spend = { wk, ench: 0, sup: 0, rep: 0, mats: 0, gear: 0 };
+  S.spend[kind] = (S.spend[kind] || 0) + c;
+}
+
+// ---------- enchants ----------
+// per slot, by the level they come in at (the enchanter's skill when they do it themselves)
+const ENCH = {
+  "Main Hand": [[1, "Minor Striking"], [20, "Lesser Striking"], [35, "Striking"], [48, "Greater Striking"], [56, "Superior Striking"], [60, "Crusader"]],
+  Chest: [[1, "Minor Health"], [20, "Lesser Health"], [30, "Minor Stats"], [44, "Lesser Stats"], [55, "Stats"], [60, "Greater Stats"]],
+  Wrist: [[1, "Minor Stamina"], [20, "Lesser Stamina"], [35, "Stamina"], [48, "Greater Stamina"], [58, "Superior Stamina"]],
+  Feet: [[1, "Minor Stamina"], [30, "Lesser Agility"], [45, "Stamina"], [55, "Greater Agility"]],
+  Hands: [[35, "Agility"], [48, "Strength"], [58, "Greater Agility"]],
+  Back: [[1, "Minor Protection"], [30, "Lesser Agility"], [45, "Defense"], [55, "Greater Resistance"]],
+};
+const CASTER_ENCH = { "Main Hand": { "Superior Striking": "Spell Power", Crusader: "Healing Power" }, Hands: { Agility: "Minor Haste", Strength: "Shadow Power", "Greater Agility": "Fire Power" }, Feet: { "Lesser Agility": "Lesser Spirit", "Greater Agility": "Spirit" } };
+const enchName = (slot, n) => (isCaster() && CASTER_ENCH[slot] && CASTER_ENCH[slot][n]) || n;
+// how much an enchant adds to the gear score (in item levels on that slot)
+const enchBonus = it => it && it.ench ? 1.5 + it.ench.t * 1.4 + (it.ench.t >= 5 ? 2 : 0) : 0;
+const enchPrice = lv => Math.round(lv * lv * lv * 1.5 * (lv >= 60 ? 1.5 : 1));
+const ENCH_ORDER = ["Main Hand", "Chest", "Wrist", "Feet", "Hands", "Back"];
+// the hero enchants new gear on a city visit: weapon and chest first; while levelling only blues and up,
+// at 60 everything; the expensive ones wait until the gold is there. Enchanters do it themselves for dust
+function enchantGear(self, made) {
+  const p = S.prof, enchanter = self && p && p.b === "Enchanting", lvl = enchanter ? Math.min(60, Math.floor(p.sk.Enchanting / 5)) : S.level;
+  const done = [];
+  for (const slot of ENCH_ORDER) {
+    const it = S.equip[slot]; if (!it || it.q < 2) continue;
+    if (!enchanter && S.level < 60 && (it.q < 3 || !["Main Hand", "Chest"].includes(slot))) continue;
+    const list = ENCH[slot].filter(e => e[0] <= lvl); if (!list.length) continue;
+    const t = list.length - 1, e = list[t];
+    if (it.ench && it.ench.t >= t) continue;
+    if (enchanter) {
+      const dt = Math.min(4, Math.floor(e[0] / 13)), need = 2 + (t >= 4 ? 4 : 0);
+      if (matCount("Dust", dt) < need && !buyMats("Dust", dt, need - matCount("Dust", dt), {})) continue;
+      takeMat("Dust", dt, need); skillUp("Enchanting", e[0] * 5);
+    } else {
+      const c = enchPrice(e[0]); if (spendable() < c * (S.level >= 60 ? 3 : 4)) continue;
+      spend("ench", c);
+    }
+    it.ench = { name: enchName(slot, e[1]), t }; done.push(`${it.ench.name} on ${it.name}`);
+  }
+  if (!done.length) return;
+  if (made) made.push(...done.map(x => "Enchant " + x));
+  else log(`Enchanted ${done.join(", ")}.`, "spell");
 }
 
 // ---------- achievements, zones & dungeons journal ----------
@@ -1049,6 +1339,9 @@ function migrate() {
   if (!S.zones) { S.zones = route().slice(0, S.leg + (S.arrived ? 1 : 0)).map(l => ({ z: l.z, old: 1, q: 0, k: 0 })); }
   S.dungeons.forEach(n => { const e = dungeonEntry(n); if (!e.runs) { e.runs = 1; e.old = 1; } });
   if (!S.ach) { S.ach = {}; checkAch(true); }
+  ["band", "bomb", "feast", "flask"].forEach(k => S.cons[k] = S.cons[k] || 0);
+  // heroes from before professions pick up their class's pair, already on pace for their level
+  if (!S.prof) { S.prof = newProf(PAIR_FOR[S.cls], S.level); if (S.prof.cap) log(`Picked up ${S.prof.a} and ${S.prof.b} (${S.prof.sk[S.prof.b]} / ${S.prof.cap}).`, "spell"); }
 }
 
 // ---------- dungeon groups: one tank, one healer, three dps; the hero fills their own slot ----------
@@ -1278,7 +1571,8 @@ function newHero(f) {
   S = { v: 1, name: (f.name || "").trim() || randomName(), race: f.race, cls: f.cls, spec: f.spec, faction: r.f,
     level: 1, xp: 0, money: 0, stats, equip: {}, bags: [], bagSlots: [], spells: {}, leg: 0, endZone: "Eastern Plaguelands",
     loc: "start", arrived: null, quests: [], zq: {}, done: [], dungeons: [], nextCity: 2, cycleQ: 0, mount: 0,
-    buffs: {}, cons: { hp: 0, mp: 0, elix: 0, stone: 0, food: 10, drink: CLASSES[f.cls].mp ? 10 : 0 }, elites: [], feats: [], zones: [], dstat: {}, ach: {},
+    buffs: {}, cons: { hp: 0, mp: 0, elix: 0, stone: 0, food: 10, drink: CLASSES[f.cls].mp ? 10 : 0, band: 0, bomb: 0, feast: 0, flask: 0 },
+    prof: newProf(pairsFor(f.cls).includes(f.prof) ? f.prof : PAIR_FOR[f.cls], 1), elites: [], feats: [], zones: [], dstat: {}, ach: {},
     kills: 0, deaths: 0, qdone: 0, qid: 0, since: 0, curQ: 0, repair: 0, dg: null, time: 0, log: [], logId: 0, task: null, queue: [], speed: 1, savedAt: Date.now() };
   SLOTS.forEach(s => S.equip[s] = null);
   S.equip["Main Hand"] = { name: c.start, ilvl: 2, q: 1, slot: "Main Hand" };
@@ -1355,7 +1649,7 @@ function killTask(quest) {
 // next to a single-target cast of the same weight
 const AOE = { "Arcane Explosion": [99, 0.7], Blizzard: [99, 0.8], Flamestrike: [99, 0.8], "Cone of Cold": [99, 0.6], "Frost Nova": [99, 0.3],
   "Rain of Fire": [99, 0.8], Hellfire: [99, 0.7], Consecration: [99, 0.6], "Holy Nova": [99, 0.5], Hurricane: [99, 0.8], Volley: [99, 0.8],
-  "Fire Nova Totem": [99, 0.6], "Thunder Clap": [4, 0.5], Whirlwind: [4, 0.9], Cleave: [2, 0.9], "Multi-Shot": [3, 0.85], "Chain Lightning": [3, 0.8] };
+  "Fire Nova Totem": [99, 0.6], "Rough Copper Bomb": [99, 0.9], "Coarse Dynamite": [99, 0.9], "Iron Grenade": [99, 0.9], "Mithril Frag Bomb": [99, 0.9], "Thorium Grenade": [99, 0.9], "Thunder Clap": [4, 0.5], Whirlwind: [4, 0.9], Cleave: [2, 0.9], "Multi-Shot": [3, 0.85], "Chain Lightning": [3, 0.8] };
 // what each class reaches for with three or more enemies on it
 const AOE_PICK = { Mage: ["Arcane Explosion", "Blizzard", "Flamestrike", "Cone of Cold", "Frost Nova"], Warlock: ["Rain of Fire", "Hellfire"], Warrior: ["Whirlwind", "Cleave", "Thunder Clap"],
   Paladin: ["Consecration"], Druid: ["Hurricane"], Hunter: ["Multi-Shot", "Volley"], Priest: ["Holy Nova"], Shaman: ["Chain Lightning", "Fire Nova Totem"] };
@@ -1439,6 +1733,8 @@ function queueCity() {
   const q = S.queue, c = cls(), local = S.level < 10, where = local ? hub() : city();
   if (!local) q.push({ k: "travel", d: `Hearthing to ${where}`, t: sec(14, 1), to: "city" });
   q.push({ k: "train", d: `Training with your ${S.cls.toLowerCase()} trainer in ${where}`, t: sec(10) });
+  const p = S.prof;
+  if (p && trainCap()) { const c = crafts()[0]; q.push({ k: "craft", d: `Crafting ${CRAFT_AT[c]} (${c} ${Math.max(1, p.sk[c])})`, t: sec(12) }); }
   if (S.repair > 0) q.push({ k: "repair", d: `Repairing gear at the blacksmith`, t: sec(5) });
   if (!local) q.push({ k: "shop", d: `Browsing the Auction House in ${where}`, t: sec(18) });
   if (S.level >= 40 && S.mount < 1) q.push({ k: "mount", d: `Visiting the riding trainer`, t: sec(8) });
@@ -1462,7 +1758,7 @@ const regroupTask = raid => ({ k: "regroup", d: pick(["Waiting for the healer to
 function queueDungeon(d) {
   const q = S.queue, raid = RAIDS.includes(d), bosses = d[6].split(","), trash = d[5].split(",");
   const chat = pick([`LFM ${d[4]}, need heals`, `LF1M ${d[4]}, have summon`, `LFG ${d[4]}, ${S.cls.toLowerCase()} lvl ${S.level}`, `LF tank for ${d[4]} then GO`, `${d[4]} run, LF2M, PST`]);
-  S.dg = { name: d[0], killed: 0, total: bosses.length, raid };
+  S.dg = { name: d[0], killed: 0, total: bosses.length, raid, rep0: S.repair };
   S.party = makeParty(raid);
   S.meter = { dn: d[0], dmg: [], heal: [], secs: 0, last: null };
   const dq = S.dungeons.includes(d[0]) ? [] : (DQUESTS[d[0]] || []).map(x => x.split("|")).filter(x => !x[3] || x[3] === S.faction[0]);
@@ -1582,14 +1878,21 @@ function finish(t) {
       if (t.elite) { log(`${t.mob} has been slain.`, "boss"); if (!S.elites.includes(t.mob)) S.elites.push(t.mob); }
       if (S.arrived) { const ze = zoneEntry(S.arrived); ze.k++; ze.L1 = S.level; ze.t1 = realNow(); }
       const L = S.level;
-      if (Math.random() < 0.55) addBag({ name: Math.random() < 0.4 ? CLOTH[clamp(Math.floor(L / 12), 0, 4)] : pick(GREYS), val: Math.round((L * L * 0.6 + 4) * (0.5 + Math.random())), q: 0 });
+      if (S.prof) { profLoot(t); if (Math.random() < 0.4) addBag({ name: pick(GREYS), val: Math.round((L * L * 0.6 + 4) * (0.5 + Math.random())), q: 0 }); }
+      else if (Math.random() < 0.55) addBag({ name: Math.random() < 0.4 ? CLOTH[clamp(Math.floor(L / 12), 0, 4)] : pick(GREYS), val: Math.round((L * L * 0.6 + 4) * (0.5 + Math.random())), q: 0 });
+      S.queue.unshift(...gatherTasks(t));
       const r = Math.random();
       if (r < 0.003) gain(makeItem(pick(SLOTS), t.mobL + 2, 3), `The ${t.mob} dropped`);
       else if (r < 0.025 || t.elite) gain(makeItem(pick(SLOTS), t.mobL, 2), `The ${t.mob} dropped`);
       break;
     }
     case "sell": {
-      let sum = 0; S.bags = S.bags.filter(b => { if (b.name === t.name) { sum += b.val; return false; } return true; });
+      let sum = 0; const de = S.prof && S.prof.b === "Enchanting" && S.prof.cap;
+      S.bags = S.bags.filter(b => {
+        if (b.name !== t.name) return true;
+        if (de && b.q >= 2) { addMat("Dust", clamp(Math.floor((S.level - 5) / 11), 0, 4), b.q >= 3 ? 3 : 1 + R(2)); return false; }
+        sum += b.val; return false;
+      });
       S.money += sum; S.trip = (S.trip || 0) + sum; break;
     }
     case "turnin": {
@@ -1607,21 +1910,33 @@ function finish(t) {
     }
     case "accept": { flushTrip(); const q = newQuest(); log(`Accepted "${q.name}".`, "quest"); break; }
     case "travel": S.loc = "city"; log(`Arrived in ${city()}.`, "zone"); break;
-    case "train": flushTrip(); trainSpells(); break;
-    case "repair": { const c = Math.min(S.repair, S.money); S.money -= c; S.repair = 0; if (c) log(`Repaired everything for ${moneyTxt(c)}.`, "gold"); break; }
+    case "train": {
+      flushTrip(); trainSpells();
+      const p = S.prof, cap = trainCap();
+      if (p && cap > p.cap) {
+        p.cap = cap; [p.a, p.b, ...SECONDARY].forEach(n => { if (!p.sk[n]) p.sk[n] = 1; });
+        log(`Trained ${tierName(cap)} ${p.a} and ${p.b} (up to ${cap}), plus First Aid and Cooking.`, "spell");
+      }
+      break;
+    }
+    case "repair": { const c = Math.min(S.repair, S.money); spend("rep", c); S.repair = 0; if (c) log(`Repaired everything for ${moneyTxt(c)}.`, "gold"); break; }
     case "shop": {
-      const L = S.level, reserve = L >= 34 && S.mount < 1 ? 900000 : L >= 56 && S.mount < 2 ? 10000000 : 0;
-      buySupplies(Math.max(0, S.money - reserve) * 0.25);
+      const L = S.level;
+      buySupplies(spendable() * 0.25);
       const bag = BAGS.filter(b => b[0] <= L).pop();
-      if (bag && S.money - bag[3] >= 0) {
-        if (S.bagSlots.length < 4) { S.bagSlots.push(bag[2]); S.money -= bag[3]; log(`Bought ${article(bag[1])} (${bag[2]} slots).`, "gold"); }
-        else { const i = S.bagSlots.indexOf(Math.min(...S.bagSlots)); if (S.bagSlots[i] < bag[2]) { S.bagSlots[i] = bag[2]; S.money -= bag[3]; log(`Swapped a small bag for ${article(bag[1])}.`, "gold"); } }
-      }
+      // tailors sew their own bags
+      if (bag && !(hasProf("Tailoring") && S.prof.cap) && S.money >= bag[3] && bagUpgrade(bag)) { spend("gear", bag[3]); giveBag(bag, S.bagSlots.length < 4 ? "Bought" : "Swapped a small bag for"); }
+      const weakest = () => { let slot = SLOTS[0]; SLOTS.forEach(s => { if (power(S.equip[s]) < power(S.equip[slot])) slot = s; }); return slot; };
       for (let n = 0; n < 2; n++) {
-        let slot = SLOTS[0]; SLOTS.forEach(s => { if (power(S.equip[s]) < power(S.equip[slot])) slot = s; });
-        const it = makeItem(slot, L - 1, 2), price = it.ilvl * it.ilvl * 8 + 100;
-        if (power(it) > power(S.equip[slot]) && S.money - reserve >= price) { S.money -= price; gain(it, `Bought on the Auction House for ${moneyTxt(price)}:`); }
+        const slot = weakest(), it = makeItem(slot, L - 1, 2), price = it.ilvl * it.ilvl * 8 + 100;
+        if (power(it) > power(S.equip[slot]) && spendable() >= price) { spend("gear", price); gain(it, `Bought on the Auction House for ${moneyTxt(price)}:`); }
       }
+      // at 60, now and then a bind-on-equip epic shows up: expensive, and only worth it as a real upgrade
+      if (L >= 60 && Math.random() < 0.25) {
+        const slot = weakest(), it = makeItem(slot, 66 + R(6), 4), price = 3000000 + it.ilvl * 50000;
+        if (power(it) > power(S.equip[slot]) * 1.05 && spendable() >= price * 1.5) { spend("gear", price); gain(it, `Bought a bind-on-equip epic on the Auction House for ${moneyTxt(price)}:`); }
+      }
+      if (!(S.prof && S.prof.b === "Enchanting" && S.prof.cap)) enchantGear(false);
       break;
     }
     case "mount": {
@@ -1640,6 +1955,10 @@ function finish(t) {
       if (S.level >= 60) { S.cycleQ = 0; const pool = ENDGAME_ZONES.filter(z => z !== S.endZone); S.endZone = pick(pool); }
       S.nextCity = S.level + 2;
       if (S.level >= 10 || curZone() !== old) S.arrived = null; else S.loc = "hub";
+      if (S.level >= 60 && S.money < 500000) {
+        const g = ["Mining", "Herbalism", "Skinning"].find(hasProf), z = pick(["Winterspring", "Eastern Plaguelands", "Silithus", "Burning Steppes"]);
+        S.queue.push({ k: "farm", d: g === "Mining" ? `Farming Thorium in ${z}` : g === "Herbalism" ? `Farming Dreamfoil in ${z}` : g ? `Farming Rugged Leather in ${z}` : pick(["Running Stratholme for gold", `Farming Runecloth in ${z}`]), t: sec(240) });
+      }
       const d = pickDungeon(); if (d) queueDungeon(d);
       break;
     }
@@ -1665,13 +1984,13 @@ function finish(t) {
     case "boss": {
       if (t.foe) t.foe.units.forEach(u => (u.phases || []).forEach(p => { if (p.say) log(p.say, "boss"); }));
       if (bossWipes(t)) {
-        S.deaths++; S.repair += S.level * S.level * 5; loseBuffs();
+        S.deaths++; S.repair += S.level * S.level * (S.dg && S.dg.raid ? 25 : 5); loseBuffs();
         log(`Wiped on ${t.boss}. Corpse run…`, "death"); S.hpF = 0; (S.party || []).forEach(m => m.hp = 0);
         const again = { ...t, el: 0 }; delete again.ve; delete again.foe; delete again.wipe;
         S.queue.unshift({ k: "ghost", d: "Running back through the instance as a ghost", t: sec(60) }, regroupTask(S.dg && S.dg.raid), again);
         break;
       }
-      if (S.dg) S.dg.killed++;
+      if (S.dg) { S.dg.killed++; if (S.dg.raid) S.repair += S.level * S.level * 2; }
       log(`${t.boss} has been defeated.`, "boss");
       (S.dq || []).filter(x => !x.done && x.boss === t.boss).forEach(x => { x.done = true; log(`Objective complete: ${x.obj} ("${x.name}").`, "quest"); });
       gainXp(mobXp(S.level + 2) * 5);
@@ -1680,10 +1999,18 @@ function finish(t) {
       break;
     }
     case "buff": applyBuff(t.b); break;
+    case "gather": finishGather(t); break;
+    case "craft": finishCraft(); break;
+    case "farm": {
+      const c = Math.round(t.t / 3600000 * 150000), g = ["Mining", "Herbalism", "Skinning"].find(hasProf);
+      S.money += c; if (g) addMat(g, 4, 6 + R(8));
+      log(`${t.d.replace(/^\w+ing/, m => m === "Running" ? "Ran" : "Farmed")}: ${moneyTxt(c)}${g ? ` and some ${MATS[g][4]}` : ""}.`, "gold");
+      break;
+    }
     case "conjure": S.cons[t.kind] = Math.max(S.cons[t.kind] || 0, 20); break;
     case "ration": {
       const n = Math.max(0, 20 - (S.cons[t.kind] || 0)), p = rationPrice(), can = Math.min(n, Math.floor(S.money / p));
-      if (can > 0) { S.cons[t.kind] = (S.cons[t.kind] || 0) + can; S.money -= can * p; }
+      if (can > 0) { S.cons[t.kind] = (S.cons[t.kind] || 0) + can; spend("sup", can * p); }
       break;
     }
     case "elixir": drinkElixir(false); break;
@@ -1698,7 +2025,9 @@ function finish(t) {
       const de = dungeonEntry(t.dn); de.runs++; if (!de.at) { de.at = realNow(); de.L = S.level; de.p = S.time; }
       if (!S.dungeons.includes(t.dn)) S.dungeons.push(t.dn);
       S.runs = (S.runs || 0) + 1;
-      log(`${t.dn} cleared!`, "dung"); S.dg = null; S.party = null; S.loc = "city"; break;
+      log(`${t.dn} cleared!`, "dung");
+      const bill = S.dg && S.dg.raid ? S.repair - (S.dg.rep0 || 0) : 0;
+      if (bill > 0) log(`Repair bill after ${t.dn}: ${moneyTxt(bill)}.`, "gold"); S.dg = null; S.party = null; S.loc = "city"; break;
     }
   }
   checkAch();
@@ -1775,6 +2104,9 @@ function gameShell() {
           <h3 class="paneh">Bags</h3><ul class="rows" id="bags"></ul></div>
         <div class="cpane" data-c="tal"><div class="tabmeta"><small id="talPts"></small></div><div class="talsum" id="talSum"></div><div class="seg ttabs" id="talTabs"></div><ul class="tal" id="tal"></ul></div>
         <div class="cpane" data-c="spells"><div class="tabmeta"><small id="spCount"></small></div><ul class="rows" id="spells"></ul></div>
+        <div class="cpane" data-c="prof"><div class="tabmeta"><small id="profMeta"></small></div><ul class="rows profs" id="profs"></ul>
+          <h3 class="paneh">Materials</h3><ul class="rows" id="mats"></ul>
+          <h3 class="paneh">Recent crafts</h3><ul class="rows" id="crafts"></ul></div>
       </div>
     </div>
     <div class="col c-log">
@@ -1837,10 +2169,11 @@ const TAB_ICONS = {
   ach: '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4M9 21h6M10 17h4"/>',
   zones: '<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',
   dung: '<path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-5a3 3 0 0 1 6 0v5"/>',
+  prof: '<path d="M14.5 4.5l5 5-2 2-5-5z"/><path d="M13.5 7.5L4 17l3 3 9.5-9.5"/><path d="M3 21h7"/>',
 };
 const tabIcon = k => `<svg class="ti" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${TAB_ICONS[k] || ""}</svg>`;
 // character panel tabs: character, equipment, bags (with supplies), talents, spellbook
-const CTABS = [["char", "Character"], ["equip", "Equipment"], ["bags", "Bags"], ["tal", "Talents"], ["spells", "Spellbook"]];
+const CTABS = [["char", "Character"], ["equip", "Gear"], ["bags", "Bags"], ["tal", "Talents"], ["spells", "Spells"], ["prof", "Professions"]];
 let charTab = "char";
 function renderCharTab() {
   document.querySelectorAll("#ctabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.c === charTab)));
@@ -2023,8 +2356,10 @@ function useCooldowns(t) {
     (S.cd ||= {})[x.name] = S.time + (x.tree === S.spec && x.name === cls().ult[S.spec] ? 300 : 180) * 1000 * SPAN(S.level);
     if (cdType(x.name) === "burst" && t.k === "kill") t.t = Math.round(t.t * 0.88); // the pull goes down faster
   });
+  // an engineer opens with a bomb
+  if (S.cons.bomb > 0 && t.casts.length > 2) { S.cons.bomb--; t.casts.splice(Math.min(t.casts.length - 1, 1 + t.cds.length), 0, BOMBS[Math.min(4, Math.max(0, skillTier(profSkill("Engineering"))))]); }
 }
-const castWeight = s => LOST.test(s) ? 0 : CD_TYPE[s] ? 0.15 : /^(Auto Attack|Auto Shot|Shoot)$/.test(s) ? 0.5
+const castWeight = s => LOST.test(s) ? 0 : /Bomb|Grenade|Dynamite/.test(s) ? 1.6 : CD_TYPE[s] ? 0.15 : /^(Auto Attack|Auto Shot|Shoot)$/.test(s) ? 0.5
   : /Potion|Elixir|Stone|Shield|Form|Seal|Mark|Prowl|Bloodrage|Battle Shout|Heal|Renew|Rejuv|Regrowth|Holy Light|Flash of Light|Life Tap|Lightning Shield|Totem|Prayer|Tranquility|Swiftmend|Lay on Hands|Evocation|Ice Block|Barrier|Armor/.test(s) ? 0.15 : 1;
 function dungeonRow() { return S.dg ? DUNGEONS.concat(RAIDS).find(d => d[0] === S.dg.name) : null; }
 
@@ -2487,10 +2822,11 @@ function renderLists() {
   $("vitals").innerHTML = [
     ["money", money(S.money)],
     ["mount", S.mount >= 2 ? race().epic : S.mount ? race().mount : S.level >= 40 ? "saving up…" : "on foot until 40"],
-    ["kills", S.kills.toLocaleString()], ["quests done", S.qdone.toLocaleString()], ["deaths", S.deaths.toLocaleString()],
+    ["kills", S.kills.toLocaleString()], ["quests done", S.qdone.toLocaleString()], ["deaths", S.deaths.toLocaleString()], ...spentRow(),
   ].map(([k, v]) => `<li><span class="k">${k}</span><span class="v">${v}</span></li>`).join("");
   $("gs").textContent = `avg item level ${Math.round(SLOTS.reduce((a, s) => a + (S.equip[s] ? S.equip[s].ilvl : 0), 0) / SLOTS.length)}`;
-  $("equip").innerHTML = SLOTS.map(s => { const it = S.equip[s]; return `<li><span class="k">${s.toLowerCase()}</span><span class="v">${it ? `<span class="q${it.q}">${esc(it.name)}</span><span class="ilvl">${it.ilvl}</span>` : '<span class="empty">empty</span>'}</span></li>`; }).join("");
+  $("equip").innerHTML = SLOTS.map(s => { const it = S.equip[s]; return `<li><span class="k">${s.toLowerCase()}</span><span class="v">${it ? `<span class="q${it.q}">${esc(it.name)}</span><span class="ilvl">${it.ilvl}</span>${it.ench ? `<small class="ench">${esc(it.ench.name)}</small>` : ENCH[s] && it.q >= 2 && S.level >= 20 ? '<small class="ench no">not enchanted</small>' : ""}` : '<span class="empty">empty</span>'}</span></li>`; }).join("");
+  renderProfs();
   const tal = talents();
   renderTalents();
   const known = c.list.filter(sp => spellName(sp.name) in S.spells).reverse();
@@ -2508,7 +2844,8 @@ function renderLists() {
   const act = activeBuffs();
   $("bCount").textContent = `${act.length} active`;
   $("buffs").innerHTML = act.map(n => { const left = S.buffs[n] - S.time; return `<li><span class="l buff">${esc(n)}</span><span class="rank">${left > 1e13 ? "" : Math.max(1, Math.ceil(left / MIN)) + " min"}</span></li>`; }).join("") || `<li><span class="empty">none right now</span></li>`;
-  const sup = [...restKinds().map(k => [k, rationName(k)]), ["hp", hpPot()], ["mp", cls().mp && S.level >= 5 ? mpPot() : null], ["elix", elixirName()], ["stone", usesStone() ? stoneName() : null]].filter(x => x[1] && S.cons[x[0]] > 0);
+  const sup = [...restKinds().map(k => [k, rationName(k)]), ["hp", hpPot()], ["mp", cls().mp && S.level >= 5 ? mpPot() : null], ["elix", elixirName()], ["stone", usesStone() ? stoneName() : null], ["flask", flaskName()],
+    ["band", BANDAGES[Math.max(0, Math.min(4, skillTier(profSkill("First Aid"))))]], ["feast", DISHES[Math.max(0, Math.min(4, skillTier(profSkill("Cooking"))))]], ["bomb", BOMBS[Math.max(0, Math.min(4, skillTier(profSkill("Engineering"))))]]].filter(x => x[1] && S.cons[x[0]] > 0);
   $("supplies").innerHTML = sup.map(([k, n]) => `<li><span class="l">${esc(n)}</span><span class="rank">×${S.cons[k]}</span></li>`).join("") || `<li><span class="empty">restocks in the capital</span></li>`;
   renderJournal();
   $("log").innerHTML = S.log.map(l => `<li class="${l.k}${l.id > lastLogId && lastLogId ? " fresh" : ""}"><time>${fmtTime(l.t)}</time><span>${esc(l.txt)}</span></li>`).join("");
@@ -2547,6 +2884,22 @@ function renderBars() {
   if (uiTab === "log") $("elapsed").textContent = "/played " + fmtTime(S.time);
 }
 
+// gold spent this week, with where it went
+function spentRow() {
+  const w = S.spend; if (!w || w.wk !== Math.floor(S.time / WEEK)) return [];
+  const parts = [["enchants", w.ench], ["supplies", w.sup], ["repairs", w.rep], ["materials", w.mats], ["gear", w.gear]].filter(x => x[1] > 0);
+  const tot = parts.reduce((a, b) => a + b[1], 0); if (!tot) return [];
+  return [["spent this week", `<span title="${parts.map(([k, v]) => k + " " + moneyTxt(v)).join(", ")}">${money(tot)}</span>`]];
+}
+// the professions tab: skill bars, materials, the last things made
+function renderProfs() {
+  const p = S.prof; if (!p) return;
+  $("profMeta").textContent = p.cap ? `${pairLabel(p.pair)} · ${p.made} made · ${moneyTxt(p.ah)} on the AH` : "trainers teach professions from level 5";
+  $("profs").innerHTML = [p.a, p.b, ...SECONDARY].map((n, i) => `<li class="prow${i > 1 ? " sec2" : ""}"><span class="l">${esc(n)}</span><span class="rank">${p.cap ? tierName(p.cap) : "untrained"}</span><span class="v">${p.sk[n]} / ${p.cap || 0}</span><div class="gbar thin"><i style="width:${(p.sk[n] / 300 * 100).toFixed(1)}%"></i><b style="left:${(p.cap / 300 * 100).toFixed(1)}%"></b></div></li>`).join("");
+  const mats = Object.entries(p.mats).filter(x => x[1] > 0);
+  $("mats").innerHTML = mats.map(([k, n]) => `<li><span class="l">${esc(k)}</span><span class="rank">×${n}</span></li>`).join("") || `<li><span class="empty">nothing gathered yet</span></li>`;
+  $("crafts").innerHTML = p.recent.map(x => `<li><span class="l">${esc(x.n)}</span><span class="rank">level ${x.L}</span></li>`).join("") || `<li><span class="empty">nothing made yet</span></li>`;
+}
 // party / raid frames: the hero plus the companions
 let gCache = {};
 function renderGroup(hf, mf) {
@@ -2672,6 +3025,7 @@ function showCreate() {
     <div class="field"><span class="lbl">race</span><div class="chips" id="cRace"></div></div>
     <div class="field"><span class="lbl">class</span><div class="classes" id="cCls"></div></div>
     <div class="field"><span class="lbl">talent specialization</span><div class="chips" id="cSpec"></div></div>
+    <div class="field"><span class="lbl">professions</span><div class="chips" id="cProf"></div></div>
     <button type="button" class="begin" id="cGo">Enter World</button>
     <button type="button" class="ghost loadfile" id="cLoad">Load a save file</button>
     <p class="note">A fan-made tribute. Not affiliated with or endorsed by Blizzard Entertainment.</p>
@@ -2685,6 +3039,7 @@ function showCreate() {
   $("cRace").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; draft.race = b.dataset.r; fixClass(); drawCreate(); });
   $("cCls").addEventListener("click", e => { const b = e.target.closest("button"); if (!b || b.disabled) return; draft.cls = b.dataset.c; draft.spec = 0; drawCreate(); });
   $("cSpec").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; draft.spec = +b.dataset.s; drawCreate(); });
+  $("cProf").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; draft.prof = b.dataset.p; drawCreate(); });
   drawCreate();
 }
 function fixClass() { if (!ALLOWED[draft.race].includes(draft.cls)) { draft.cls = ALLOWED[draft.race][0]; draft.spec = 0; } }
@@ -2692,6 +3047,9 @@ function drawCreate() {
   $("cFac").innerHTML = [["Alliance", "Stormwind, Ironforge, Darnassus"], ["Horde", "Orgrimmar, Undercity, Thunder Bluff"]].map(([f, d]) => `<button type="button" class="fbtn ${f}" data-f="${f}" aria-pressed="${f === draft.faction}"><h3>${f}</h3><p>${d}</p></button>`).join("");
   $("cRace").innerHTML = Object.entries(RACES).filter(([, v]) => v.f === draft.faction).map(([r, v]) => `<button type="button" class="chip" data-r="${r}" aria-pressed="${r === draft.race}">${r}<small>${v.note}</small></button>`).join("");
   $("cCls").innerHTML = Object.entries(CLASSES).map(([n, c]) => { const ok = ALLOWED[draft.race].includes(n); return `<button type="button" class="ccard" data-c="${n}" aria-pressed="${n === draft.cls}" ${ok ? "" : "disabled"}><h3 style="color:${c.color}">${n}</h3><p>${ok ? c.blurb : `Not available to the ${draft.race}.`}</p></button>`; }).join("");
+  if (!pairsFor(draft.cls).includes(draft.prof)) draft.prof = PAIR_FOR[draft.cls];
+  const PROF_NOTE = { smith: "plate armor and weapons", leather: "leather or mail armor", tailor: "cloth armor, bags, enchants", herb: "potions, elixirs, flasks", eng: "goggles and bombs" };
+  $("cProf").innerHTML = pairsFor(draft.cls).map(k => `<button type="button" class="chip" data-p="${k}" aria-pressed="${k === draft.prof}">${pairLabel(k)}<small>${PROF_NOTE[k]}</small></button>`).join("");
   $("cSpec").innerHTML = CLASSES[draft.cls].trees.map((t, i) => `<button type="button" class="chip" data-s="${i}" aria-pressed="${i === draft.spec}">${t}</button>`).join("");
 }
 
