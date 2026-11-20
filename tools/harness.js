@@ -13,7 +13,7 @@ const setups = {
       if(Math.abs(last-ve)>1e-6)res.off++; if(t.fate!=="die"&&tl.some(x=>x[1]<0.05-1e-9))res.low++; if(t.fate==="die"&&!t.killer)res.noKiller++;
       if(elite){res.nE++;if(t.fate==="die")res.dieE++;}else{res.n++;res.mobs[t.mobs.length]++;if(t.fate==="die")res.die++;if(t.fate==="close")res.close++;}}
     const g={};S.party=null;const d=instanceRow("The Deadmines");queueDungeon(d);S.dg.formed=true;const tr=S.queue.find(x=>x.k==="trash");const pf=partyFight(tr);const P=[pf.hero,...pf.m];
-    g.target=foeTarget();g.role=heroRole();g.drops=P.map((p,i)=>(i?S.party[i-1].role:heroRole())+":"+p.tl.length);g.aoe=foeEvents(tr).filter(e=>e[2]).length;g.hits=foeEvents(tr).length;
+    g.target=foeTarget();g.role=heroRole();g.drops=P.map((p,i)=>(i?S.party[i-1].role:heroRole())+":"+p.tl.length);g.aoe=foeEvents(tr).filter(e=>e.aoe??e[2]).length;g.hits=foeEvents(tr).length;
     document.title=JSON.stringify([res,g]);document.body.innerHTML="<pre style='color:#fff;font-size:18px;white-space:pre-wrap'>"+document.title+"</pre>";S.task={k:"move",d:"x",t:1e9};`,
   killlog: `S.dg=null;S.party=null;S.loc="field";let q=S.quests.find(x=>!questDone(x));if(!q){q={id:9999,name:"Test",mob:"Defias Pathstalker",type:"kill",zone:curZone(),prog:0,max:8};S.quests.push(q);}const out=[];
     for(const fate of ["die","close",""]){const t=killTask(q);t.fate=fate;soloFight(t);finish(t);out.push(S.log[0].txt+" | hpF="+S.hpF);}

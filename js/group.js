@@ -138,29 +138,30 @@ function simFight(t) {
   const W = { tank: 3, dps: 0.6, heal: 0.3 }, wsum = P.reduce((a, p) => a + W[p.role], 0);
   const tough = heroTaken(false, (dungeonRow() || { max: S.level }).max);
   P.forEach((p, i) => { const d = fightDrop(p.role, t.k); if (!i) { d[0] *= tough; d[1] *= talMod("m"); } p.mpEnd = lo(p.mp - d[1]); p.hit = (d[0] + supply * HEAL_EFF * W[p.role] / wsum) / (p.casts.length || 1); p.cur = p.hp; p.tl = [[0, p.hp]]; });
-  const ev = []; P.forEach((p, i) => p.casts.forEach((s, k) => ev.push([(k + 1) / p.casts.length, i, k])));
+  // what happens in the pull, in time order: member i's cast k ({ at, i, k }) and the enemy's hits on them ({ at, i, dmg })
+  const ev = []; P.forEach((p, i) => p.casts.forEach((s, k) => ev.push({ at: (k + 1) / p.casts.length, i, k })));
   // the enemy's hits: single-target ones on whoever it is attacking, aoe on everyone. Members it never
   // hits this pull (no aoe) keep taking their usual splash damage on their own casts
   const fe = foeEvents(t), tn = foeTarget(), ti = tn === "you" ? 0 : Math.max(0, P.findIndex(p => p.name === tn));
   // the one it's attacking takes all of its share from the enemy's hits; everyone else gets a slice from
   // area hits (more area hits, bigger slice) and the rest as the usual splash on their own casts
-  const nAoe = fe.filter(e => e[2]).length;
+  const nAoe = fe.filter(e => e.aoe).length;
   // hits are sized by the time since the last one (so damage flows evenly through the pull, even when
   // a pack of adds is up at the start) and by how strong the ability is
   P.forEach((p, i) => {
-    const hs = fe.filter(e => e[2] || i === ti), budget = p.hit * (p.casts.length || 1);
+    const hs = fe.filter(e => e.aoe || i === ti), budget = p.hit * (p.casts.length || 1);
     const share = !hs.length ? 0 : i === ti ? 1 : Math.min(0.5, 0.1 * nAoe);
     p.splash = 1 - share; if (!share) return;
-    let last = 0; const wt = hs.map(e => { const dt = Math.max(0.01, e[0] - last); last = e[0]; return dt * (0.5 + 0.5 * e[1]); }), W = wt.reduce((a, b) => a + b, 0);
-    hs.forEach((e, j) => ev.push([e[0], i, -1, budget * share * wt[j] / W]));
+    let last = 0; const wt = hs.map(e => { const dt = Math.max(0.01, e.at - last); last = e.at; return dt * (0.5 + 0.5 * e.size); }), W = wt.reduce((a, b) => a + b, 0);
+    hs.forEach((e, j) => ev.push({ at: e.at, i, dmg: budget * share * wt[j] / W }));
   });
-  ev.sort((a, b) => a[0] - b[0]);
+  ev.sort((a, b) => a.at - b.at);
   const put = (p, at, v) => { p.cur = Math.min(1, Math.max(0.05, v)); p.tl.push([at, p.cur]); };
-  const heal = (h, q, at, v) => { const was = q.cur; put(q, at, v); if (q.cur > was) h.healEv.push([at, Math.round((q.cur - was) * q.mx)]); };
+  const heal = (h, q, at, v) => { const was = q.cur; put(q, at, v); if (q.cur > was) h.healEv.push({ at, amt: Math.round((q.cur - was) * q.mx) }); };
   let shield = 0;
-  for (const [at, i, k, amt] of ev) {
+  for (const { at, i, k, dmg } of ev) {
     const p = P[i];
-    if (k < 0) { let a = amt; if (!i && shield > 0) { const soak = Math.min(shield, a); shield -= soak; a -= soak; } if (a > 0) put(p, at, p.cur - a); continue; }
+    if (k == null) { let a = dmg; if (!i && shield > 0) { const soak = Math.min(shield, a); shield -= soak; a -= soak; } if (a > 0) put(p, at, p.cur - a); continue; }
     const s = p.casts[k], cd = !i && (t.cds || []).find(c => c.name === s.replace(/ on .+$/, ""));
     if (cd && cd.type === "shield") { shield += 0.3; continue; }
     if (cd && cd.type === "heal") { const q = P.reduce((a, b) => (1 - b.cur > 1 - a.cur ? b : a)); heal(p, q, at, q.cur + 0.4 * talMod("l")); continue; }

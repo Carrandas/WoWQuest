@@ -191,21 +191,37 @@ function foeOf(t) {
   if (!t || !FIGHTS.includes(t.k)) return null;
   if (t.foe) return t.foe;
   const casts = t.casts || [], N = Math.max(1, casts.length), raid = !!(S.dg && S.dg.raid), units = foeUnits(t, raid);
-  // the fight as a run of chunks, each one bringing one enemy from one health level to another, in order.
-  // Packs and adds go down one by one; a scripted boss pauses at its thresholds while its adds are dealt with
-  const addW = raid ? 0.07 : 0.14, boss = t.k === "boss" ? units[units.length - 1] : null, sc = boss ? BOSS_SCRIPT[t.boss] || [] : [];
-  if (boss && bossWipes(t)) boss.left = 0.08 + Math.random() * 0.4;
-  const chunks = [], marks = [], w0 = heroWeights(t, casts, N);
-  // a pack (no boss): played out cast by cast, so area spells hurt every enemy still standing
+  const boss = t.k === "boss" ? units[units.length - 1] : null;
+  if (boss && bossWipes(t)) boss.left = 0.08 + Math.random() * 0.4; // how much health the boss has left when the group wipes
+  const w0 = heroWeights(t, casts, N);
+  // a pack (no boss): played out cast by cast, so area spells hurt every enemy still standing;
+  // everything else goes down enemy by enemy
   const pack = !boss && units.length > 1 ? packFit(casts, w0, units.length, t.aoeShare || 0) : null;
-  if (pack) {
-    const last = pack.die.indexOf(Math.max(...pack.die));
-    units.forEach((u, j) => {
-      const a = Math.max(0, pack.dw[j].findIndex(x => x > 0));
-      u.dw = pack.dw[j]; u.a = a; u.b = j === last ? N : pack.die[j] + 1; u.spawn = 0;
-      u.segs = [{ a, b: u.b, from: 1, to: 0 }];
-    });
-  } else if (!boss) units.forEach(u => chunks.push({ u, from: 1, to: 0, wt: 1 }));
+  if (pack) layoutPack(units, pack, N); else layoutChunks(t, units, boss, raid, N);
+  units.forEach(u => { u.max = foeHp(u.L, u.rank); u.res = FOE_RES[u.kind]; u.acts = foeActions(u, N); });
+  frostNova(casts, units);
+  controlHero(t, units, N);
+  const w = heroWeights(t, casts, N);
+  // a cast lost to a stun or a fear does no damage to anyone in the pack either
+  units.forEach(u => { if (u.dw) u.dw = u.dw.map((x, i) => w0[i] ? x * w[i] / w0[i] : 0); });
+  units.forEach(u => u.hp = foeCurve(u, w, N));
+  return (t.foe = { units, w });
+}
+// a pack: each enemy takes the damage packSim gave it, from its first hit until it dies (the last one at the end)
+function layoutPack(units, pack, N) {
+  const last = pack.die.indexOf(Math.max(...pack.die));
+  units.forEach((u, j) => {
+    const a = Math.max(0, pack.dw[j].findIndex(x => x > 0));
+    u.dw = pack.dw[j]; u.a = a; u.b = j === last ? N : pack.die[j] + 1; u.spawn = 0;
+    u.segs = [{ a, b: u.b, from: 1, to: 0 }];
+  });
+}
+// the fight as a run of chunks, each one bringing one enemy from one health level to another, in order, and
+// spread over the hero's N casts by weight. Single enemies and adds go down one by one; a scripted boss pauses
+// at its thresholds while its adds are dealt with (and maybe hides meanwhile)
+function layoutChunks(t, units, boss, raid, N) {
+  const addW = raid ? 0.07 : 0.14, sc = boss ? BOSS_SCRIPT[t.boss] || [] : [], chunks = [], marks = [];
+  if (!boss) units.forEach(u => chunks.push({ u, from: 1, to: 0, wt: 1 }));
   else {
     const startAdds = units.slice(0, -1), late = sc.some(p => p.adds), end = boss.left || 0;
     if (!late) startAdds.forEach(u => chunks.push({ u, from: 1, to: 0, wt: addW }));
@@ -223,7 +239,7 @@ function foeOf(t) {
   const W = chunks.reduce((a, c) => a + c.wt, 0);
   let acc = 0, prev = 0;
   chunks.forEach((c, i) => { acc += c.wt; c.a = prev; c.b = i === chunks.length - 1 ? N : Math.min(N, Math.max(prev + (N > chunks.length ? 1 : 0), Math.round(acc / W * N))); prev = c.b; });
-  if (!pack) units.forEach(u => {
+  units.forEach(u => {
     const mine = chunks.filter(c => c.u === u);
     u.segs = mine.map(c => ({ a: c.a, b: c.b, from: c.from, to: c.to }));
     const last = mine[mine.length - 1];
@@ -236,16 +252,11 @@ function foeOf(t) {
     (boss.phases = boss.phases || []).push({ k, label: m.p.label, pool: m.p.pool, say: m.p.say });
     if (m.p.hide) { (boss.hide = boss.hide || []).push([k, kEnd]); boss.phases.push({ k: kEnd, label: m.p.after, say: m.p.back }); }
   });
-  if (!pack) units.forEach(u => { if (!chunks.some(c => c.u === u)) u.spawn = N + 1; });
-  units.forEach(u => { u.max = foeHp(u.L, u.rank); u.res = FOE_RES[u.kind]; u.acts = foeActions(u, N); });
-  // Frost Nova roots everything close by: melee enemies (not bosses) lose their next two actions
+  units.forEach(u => { if (!chunks.some(c => c.u === u)) u.spawn = N + 1; });
+}
+// Frost Nova roots everything close by: melee enemies (not bosses) lose their next two actions
+function frostNova(casts, units) {
   casts.forEach((c, i) => { if (c === "Frost Nova") units.forEach(u => { if (u.kind !== "caster" && !/boss/.test(u.rank)) for (let j = i + 1; j <= i + 2 && j < u.acts.length; j++) if (u.acts[j]) u.acts[j] = "Frozen"; }); });
-  controlHero(t, units, N);
-  const w = heroWeights(t, casts, N);
-  // a cast lost to a stun or a fear does no damage to anyone in the pack either
-  units.forEach(u => { if (u.dw) u.dw = u.dw.map((x, i) => w0[i] ? x * w[i] / w0[i] : 0); });
-  units.forEach(u => u.hp = foeCurve(u, w, N));
-  return (t.foe = { units, w });
 }
 // state of one enemy after k finished hero casts
 function foeAt(f, u, k) {
@@ -277,7 +288,8 @@ function foeHit(a) {
   if (/bolt|Fireball|Smite|Lightning|Shock|Burst|Blast|Eye Beam|Hateful|Incinerate|Chains/i.test(a)) return { m: 2 };
   return { m: 1.5 };
 }
-// every hit the enemies land in a fight: [time 0..1, size, aoe, who, ability, action index, unit]
+// every hit the enemies land in a fight, in time order: { at (0..1 through the fight), size (a swing is 1), aoe,
+// who (the enemy's name), act (the ability), k (the action's index), u (the enemy) }
 // action i is on screen while the hero works on cast i, and lands just past the middle of it
 function foeEvents(t) {
   const f = foeOf(t); if (!f) return [];
@@ -287,11 +299,11 @@ function foeEvents(t) {
     for (let i = u.spawn || 0; i < last; i++) {
       const a = u.acts[i], h = foeHit(a);
       if (!h.m) continue;
-      if (h.dot) for (let j = 0; j < h.dot && i + j < last; j++) out.push([(i + j + 0.6) / N, h.m / h.dot, false, u.name, a, i + j, u]);
-      else out.push([(i + 0.6) / N, h.m, !!h.aoe, u.name, a, i, u]);
+      if (h.dot) for (let j = 0; j < h.dot && i + j < last; j++) out.push({ at: (i + j + 0.6) / N, size: h.m / h.dot, aoe: false, who: u.name, act: a, k: i + j, u });
+      else out.push({ at: (i + 0.6) / N, size: h.m, aoe: !!h.aoe, who: u.name, act: a, k: i, u });
     }
   });
-  return out.sort((a, b) => a[0] - b[0]);
+  return out.sort((a, b) => a.at - b.at);
 }
 // ---------- how hard enemies hit, and how well the hero takes it ----------
 // a typical hero's health at a level: enemy hits are sized against this, so stamina and gear make a real difference
@@ -313,30 +325,31 @@ function soloFight(t) {
   const potion = S.cons.hp > 0 && !casts.some(c => /Healing Potion/.test(c));
   // some pulls just go badly: a mob that keeps critting, a parry streak, a resist at the wrong moment
   const luck = 0.85 + 0.45 * Math.random() ** 4;
+  // what happens to the hero's health, in time order: { at, amt (negative for a hit), who, act, k }, or a shield
   const ev = foeEvents(t).map(e => {
-    const u = e[6], spell = (u.kind === "caster" && e[4] !== "Auto Attack") || SPELLY.test(e[4]), crit = Math.random() < 0.08;
+    const u = e.u, spell = (u.kind === "caster" && e.act !== "Auto Attack") || SPELLY.test(e.act), crit = Math.random() < 0.08;
     const base = refHp(u.L) * (u.rank === "elite" ? 0.046 : 0.016);
-    return [e[0], -Math.max(1, Math.round(base * luck * e[1] * heroTaken(spell, u.L) * (0.8 + Math.random() * 0.4) * (crit ? 1.5 : 1))), e[3], e[4], e[5]];
+    return { at: e.at, amt: -Math.max(1, Math.round(base * luck * e.size * heroTaken(spell, u.L) * (0.8 + Math.random() * 0.4) * (crit ? 1.5 : 1))), who: e.who, act: e.act, k: e.k };
   });
   casts.forEach((s, k) => {
-    const cd = (t.cds || []).find(c => c.name === s);
-    if (cd && cd.type === "shield") { ev.push([(k + 1) / N, 0, "shield", s, k]); return; }
-    if (cd && cd.type === "heal") { ev.push([(k + 1) / N, Math.round(hm * 0.4 * talMod("l")), null, s, k]); return; }
-    if (/Healing Potion/.test(s)) ev.push([(k + 1) / N, Math.round(hm * 0.35), null, s, k]);
-    else if (isHeal(s)) ev.push([(k + 1) / N, Math.round(hm * healAmt(s) * 0.6 * talMod("l")), null, s, k]);
+    const cd = (t.cds || []).find(c => c.name === s), at = (k + 1) / N, heal = amt => ev.push({ at, amt, who: null, act: s, k });
+    if (cd && cd.type === "shield") { ev.push({ at, amt: 0, shield: true, act: s, k }); return; }
+    if (cd && cd.type === "heal") { heal(Math.round(hm * 0.4 * talMod("l"))); return; }
+    if (/Healing Potion/.test(s)) heal(Math.round(hm * 0.35));
+    else if (isHeal(s)) heal(Math.round(hm * healAmt(s) * 0.6 * talMod("l")));
   });
-  ev.sort((a, b) => a[0] - b[0]);
+  ev.sort((a, b) => a.at - b.at);
   const tl = [[0, cur / hm]];
   let shield = 0;
   for (const e of ev) {
-    if (e[2] === "shield") { shield += Math.round(hm * 0.3); continue; }
-    if (e[1] < 0 && shield > 0) { const soak = Math.min(shield, -e[1]); shield -= soak; e[1] += soak; if (!e[1]) continue; }
-    cur = Math.min(hm, cur + e[1]);
-    if (cur <= 0) { cur = 0; killer = e; tl.push([e[0], 0]); break; }
-    tl.push([e[0], cur / hm]); low = Math.min(low, cur);
-    if (potion && !drank && cur < hm * 0.25) { drank = true; cur = Math.min(hm, cur + Math.round(hm * 0.4)); tl.push([e[0], cur / hm]); }
+    if (e.shield) { shield += Math.round(hm * 0.3); continue; }
+    if (e.amt < 0 && shield > 0) { const soak = Math.min(shield, -e.amt); shield -= soak; e.amt += soak; if (!e.amt) continue; }
+    cur = Math.min(hm, cur + e.amt);
+    if (cur <= 0) { cur = 0; killer = e; tl.push([e.at, 0]); break; }
+    tl.push([e.at, cur / hm]); low = Math.min(low, cur);
+    if (potion && !drank && cur < hm * 0.25) { drank = true; cur = Math.min(hm, cur + Math.round(hm * 0.4)); tl.push([e.at, cur / hm]); }
   }
-  if (killer) { fo.stop = killer[4]; t.killer = { src: killer[2], a: killer[3] }; }
+  if (killer) { fo.stop = killer.k; t.killer = { src: killer.who, a: killer.act }; }
   return (t.sf = { tl, end: cur / hm, drank, low: low / hm });
 }
 // what's next when nothing is being fought

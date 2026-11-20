@@ -125,7 +125,9 @@ const SETSHORT = { "Battlegear of Might": "Might", "Battlegear of Wrath": "Wrath
 const FOOD = ["Tough Jerky", "Haunch of Meat", "Mutton Chop", "Wild Hog Shank", "Cured Ham Steak", "Roasted Quail"];
 const DRINK = ["Refreshing Spring Water", "Ice Cold Milk", "Melon Juice", "Sweet Nectar", "Moonberry Juice", "Morning Glory Dew"];
 const CLOTH = ["Linen Cloth", "Wool Cloth", "Silk Cloth", "Mageweave Cloth", "Runecloth"];
-const BAGS = [[10, "Linen Bag", 6, 300], [16, "Woolen Bag", 8, 1200], [24, "Silk Bag", 10, 4000], [34, "Mageweave Bag", 12, 12000], [48, "Runecloth Bag", 14, 40000]];
+// bags: from level, slots, price in copper
+const BAGS = [[10, "Linen Bag", 6, 300], [16, "Woolen Bag", 8, 1200], [24, "Silk Bag", 10, 4000], [34, "Mageweave Bag", 12, 12000], [48, "Runecloth Bag", 14, 40000]]
+  .map(([lvl, name, slots, price]) => ({ lvl, name, slots, price }));
 
 // ---------- zones: [min, max, Alliance hub, Horde hub, mobs, quests], turned into objects below ----------
 const ZONES = {
@@ -247,9 +249,9 @@ const LEGENDARY = {
   "Bindings of the Windseeker": { name: "Thunderfury, Blessed Blade of the Windseeker", parts: 2 },
   "Eye of Sulfuras": { name: "Sulfuras, Hand of Ragnaros", parts: 1 },
 };
-// each dungeon and raid becomes { name, min, max, side (A, H or B for both), abbr, trash: [...], bosses: [...], loot: [...] }
+// each dungeon and raid becomes { name, min, max, side (A, H or B for both), abbr, trash: [...], bosses: [...], loot: [{ name, tag }] }
 for (const list of [DUNGEONS, RAIDS]) list.forEach(([name, min, max, side, abbr, trash, bosses, loot], i) =>
-  list[i] = { name, min, max, side, abbr, trash: trash.split(","), bosses: bosses.split(","), loot: loot.split(",") });
+  list[i] = { name, min, max, side, abbr, trash: trash.split(","), bosses: bosses.split(","), loot: loot.split(",").map(x => { const [n, tag] = x.split("|"); return { name: n, tag }; }) });
 // ---------- dungeon quests, picked up before the first run: name|boss that completes it|objective|faction ----------
 const DQUESTS = {
   "Ragefire Chasm": ["Slaying the Beast|Taragaman the Hungerer|Taragaman's Heart", "Hidden Enemies|Jergosh the Invoker|Jergosh's Head", "Searching for the Lost Satchel|Oggleflint|Maur Grimtotem's Satchel"],

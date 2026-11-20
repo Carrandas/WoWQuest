@@ -15,10 +15,10 @@ function randomSlot() { let best = null; for (let i = 0; i < 3; i++) { const s =
 function lootDrop(dn, boss) {
   const d = instanceRow(dn); if (!d) return;
   const raid = RAIDS.includes(d), caster = isCaster();
-  const fits = d.loot.filter(x => { const t = x.split("|")[1]; return !t || (t === "c") === caster; });
+  const fits = d.loot.filter(x => !x.tag || (x.tag === "c") === caster);
   // named items ("Smite's Mighty Hammer") only drop from the boss they are named after
   const keys = b => b.replace(/'s?\b/g, "").split(/[ ,.]+/).filter(w => w.length > 3 && !/^(the|Lord|Lady|Baron|Captain|High|King|Prince|Commander|General|Master|Emperor|Doctor|Instructor|Chief|Witch|Overlord|Houndmaster|Interrogator|Inquisitor)$/.test(w));
-  const owner = x => d.bosses.find(b => keys(b).some(w => x.replace(/'s?\b/g, "").includes(w)));
+  const owner = x => d.bosses.find(b => keys(b).some(w => x.name.replace(/'s?\b/g, "").includes(w)));
   const mine = fits.filter(x => owner(x) === boss), free = fits.filter(x => !owner(x));
   const pool = mine.length && Math.random() < 0.7 ? mine : free.length ? free : mine;
   const ri = RAID_INFO[dn], r = Math.random();
@@ -31,9 +31,9 @@ function lootDrop(dn, boss) {
   // a generic piece for the weakest slot, so every slot can reach blue (dungeons) or purple (raids)
   else if (r > 0.8) it = makeItem(weakestSlot(), dropIlvl(), ri ? 4 : 3);
   else if (pool.length) {
-    let name = pick(pool).split("|")[0];
-    const alt = pool.filter(x => !LEGENDARY[x.split("|")[0]]);
-    if (LEGENDARY[name] && alt.length && Math.random() < 0.5) name = pick(alt).split("|")[0];
+    let name = pick(pool).name;
+    const alt = pool.filter(x => !LEGENDARY[x.name]);
+    if (LEGENDARY[name] && alt.length && Math.random() < 0.5) name = pick(alt).name;
     if (LEGENDARY[name]) return legendaryPart(name, boss);
     const q = ri && ri.size === 20 ? (Math.random() < 0.5 ? 3 : 4) : ri ? 4 : 3;
     it = { name, slot: namedSlot(name), ilvl: dropIlvl(), q };
@@ -143,9 +143,9 @@ const FINISH = {
   shop() {
     const L = S.level;
     buySupplies(spendable() * 0.25);
-    const bag = BAGS.filter(b => b[0] <= L).pop();
+    const bag = BAGS.filter(b => b.lvl <= L).pop();
     // tailors sew their own bags
-    if (bag && !(hasProf("Tailoring") && S.prof.cap) && S.money >= bag[3] && bagUpgrade(bag)) { spend("gear", bag[3]); giveBag(bag, S.bagSlots.length < 4 ? "Bought" : "Swapped a small bag for"); }
+    if (bag && !(hasProf("Tailoring") && S.prof.cap) && S.money >= bag.price && bagUpgrade(bag)) { spend("gear", bag.price); giveBag(bag, S.bagSlots.length < 4 ? "Bought" : "Swapped a small bag for"); }
     for (let n = 0; n < 2; n++) {
       const slot = weakestSlot(), it = makeItem(slot, L - 1, 2), price = it.ilvl * it.ilvl * 8 + 100;
       if (power(it) > power(S.equip[slot]) && spendable() >= price) { spend("gear", price); gain(it, `Bought on the Auction House for ${moneyTxt(price)}:`); }

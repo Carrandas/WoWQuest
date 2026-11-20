@@ -81,10 +81,10 @@ function gain(it, how) {
   return false;
 }
 // a bigger bag than the smallest one carried (or a free bag slot)
-const bagUpgrade = bag => S.bagSlots.length < 4 || Math.min(...S.bagSlots) < bag[2];
+const bagUpgrade = bag => S.bagSlots.length < 4 || Math.min(...S.bagSlots) < bag.slots;
 function giveBag(bag, how) {
-  if (S.bagSlots.length < 4) S.bagSlots.push(bag[2]); else S.bagSlots[S.bagSlots.indexOf(Math.min(...S.bagSlots))] = bag[2];
-  log(`${how} ${article(bag[1])} (${bag[2]} slots).`, "gold");
+  if (S.bagSlots.length < 4) S.bagSlots.push(bag.slots); else S.bagSlots[S.bagSlots.indexOf(Math.min(...S.bagSlots))] = bag.slots;
+  log(`${how} ${article(bag.name)} (${bag.slots} slots).`, "gold");
 }
 function addBag(x) { if (S.bags.length < bagCap()) S.bags.push(x); }
 // the slot with the weakest item (the first one, on a tie)

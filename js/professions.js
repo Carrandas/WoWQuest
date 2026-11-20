@@ -3,9 +3,9 @@
 
 // ---------- professions: gathering in the field, crafting on city visits ----------
 // skill tiers like back then: Apprentice from level 5, Journeyman 10, Expert 20, Artisan 35
-const PROF_TIERS = [[35, 300, "Artisan"], [20, 225, "Expert"], [10, 150, "Journeyman"], [5, 75, "Apprentice"]];
-const trainCap = (L = S.level) => (PROF_TIERS.find(x => L >= x[0]) || [0, 0])[1];
-const tierName = cap => (PROF_TIERS.find(x => x[1] === cap) || [0, 0, "Untrained"])[2];
+const PROF_TIERS = [{ L: 35, cap: 300, name: "Artisan" }, { L: 20, cap: 225, name: "Expert" }, { L: 10, cap: 150, name: "Journeyman" }, { L: 5, cap: 75, name: "Apprentice" }];
+const trainCap = (L = S.level) => (PROF_TIERS.find(x => L >= x.L) || { cap: 0 }).cap;
+const tierName = cap => (PROF_TIERS.find(x => x.cap === cap) || { name: "Untrained" }).name;
 // the pairs a hero can pick: anyone can do herbs + alchemy or mining + engineering, the rest goes by armor
 const PROF_PAIRS = { smith: ["Mining", "Blacksmithing"], leather: ["Skinning", "Leatherworking"], tailor: ["Tailoring", "Enchanting"], herb: ["Herbalism", "Alchemy"], eng: ["Mining", "Engineering"] };
 const PAIR_FOR = { Warrior: "smith", Paladin: "smith", Hunter: "leather", Rogue: "leather", Shaman: "leather", Druid: "leather", Priest: "tailor", Mage: "tailor", Warlock: "tailor" };
@@ -183,9 +183,9 @@ function craftConsumables(run) {
 // tailors sew the best bag for their level when it beats the smallest one carried
 function sewBag(run) {
   const { craft, p, src } = run;
-  const bag = BAGS.filter(b => b[0] <= S.level).pop(), r = bag && recipes(craft).filter(x => x.t <= BAGS.indexOf(bag) && p.sk[craft] >= x.req).pop();
+  const bag = BAGS.filter(b => b.lvl <= S.level).pop(), r = bag && recipes(craft).filter(x => x.t <= BAGS.indexOf(bag) && p.sk[craft] >= x.req).pop();
   if (!bag || !r || !bagUpgrade(bag) || !topUp(run, r.t, 6)) return;
-  takeMat(src, r.t, 6); run.crafts++; skillUp(craft, r.req); giveBag(bag, "Sewed"); run.made.push(bag[1]);
+  takeMat(src, r.t, 6); run.crafts++; skillUp(craft, r.req); giveBag(bag, "Sewed"); run.made.push(bag.name);
 }
 // skill-ups: orange and yellow recipes while the materials last (bought when behind), sold to a vendor after.
 // Returns how many were made

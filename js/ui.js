@@ -235,7 +235,7 @@ function meterNow(t, raw) {
   const m = meterFight(t); if (!m) return null;
   const f = foeOf(t), k = Math.floor(raw * f.w.length);
   const total = f.units.reduce((a, u) => a + Math.max(0, 1 - foeAt(f, u, k).hp) * u.max, 0);
-  return { dmg: m.share.map(s => s * total), heal: m.heal.map(ev => ev.reduce((a, e) => a + (e[0] <= raw + 1e-9 ? e[1] : 0), 0)), secs: raw * t.t / 1000 / SPAN(S.level) };
+  return { dmg: m.share.map(s => s * total), heal: m.heal.map(ev => ev.reduce((a, e) => a + (e.at <= raw + 1e-9 ? e.amt : 0), 0)), secs: raw * t.t / 1000 / SPAN(S.level) };
 }
 // the run's totals (saves from before the meter existed start one mid-run)
 const meterRun = () => S.meter || (S.dg && S.party ? (S.meter = { dn: S.dg.name, dmg: [], heal: [], secs: 0, last: null }) : null);
