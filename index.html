@@ -850,7 +850,9 @@ const CLASS_BUFFS = {
 const usesStone = () => S.cls === "Warrior" || S.cls === "Paladin" || (S.cls === "Rogue" && !("Instant Poison" in S.spells));
 const stoneName = () => tierAt(STONE)[1] + (S.cls === "Paladin" ? " Weightstone" : " Sharpening Stone");
 const hpPot = () => tierAt(HP_POT)[1], mpPot = () => (tierAt(MP_POT) || MP_POT[0])[1];
-const elixKey = () => isCaster() ? "INT" : cls().prime !== "INT" ? cls().prime : S.cls === "Shaman" ? "STR" : "AGI";
+// the stat that matters most for this class and spec (feral druids and enhancement shamans don't want intellect)
+const mainStat = () => isCaster() ? "INT" : cls().prime !== "INT" ? cls().prime : S.cls === "Shaman" ? "STR" : "AGI";
+const elixKey = mainStat;
 function elixirName() { const e = tierAt(ELIXIR[elixKey()]); return e && e[1]; }
 function flaskName() { return S.cls === "Priest" || (S.cls === "Druid" && S.spec === 2) || (S.cls === "Paladin" && S.spec === 0) ? "Flask of Distilled Wisdom" : isCaster() ? "Flask of Supreme Power" : "Flask of the Titans"; }
 
@@ -2481,7 +2483,7 @@ function renderLists() {
   $("hName").textContent = S.name; $("hName").style.color = c.color;
   $("tWhere").textContent = where();
   $("hSub").innerHTML = `Level <b>${S.level}</b> ${esc(S.race)} <b style="color:${c.color}">${esc(S.cls)}</b> · ${esc(c.trees[S.spec])}`;
-  $("stats").innerHTML = STATS.map(k => `<div class="stat ${k === c.prime ? "prime" : ""}"><span class="lbl">${k}</span><b>${S.stats[k]}</b></div>`).join("");
+  $("stats").innerHTML = STATS.map(k => `<div class="stat ${k === mainStat() ? "prime" : ""}"><span class="lbl">${k}</span><b>${S.stats[k]}</b></div>`).join("");
   $("vitals").innerHTML = [
     ["money", money(S.money)],
     ["mount", S.mount >= 2 ? race().epic : S.mount ? race().mount : S.level >= 40 ? "saving up…" : "on foot until 40"],
