@@ -105,17 +105,29 @@
   - Start simple: each member's gear is one gear level (what drives their damage and healing).
     Full gear sets per member could come later, if the guild tab should show their items
 - [ ] **Life at 60: goals, collections and things to do besides raiding**
-  - Goals the hero sets itself, a few at a time, shown on the character tab with progress bars, and the days between
-    raid nights fill up with whatever moves them along: "Saving for an epic mount: 412 / 1000g", "Exalted with
-    Timbermaw Hold", "Deathcharger's Reins (Stratholme, 1%)", "Pre-raid set: 6 / 8 pieces", "Master Angler".
-    A finished goal is a chronicle moment, then the next one comes up
+  - Goals: the player picks 3-5 from a list (or lets the hero pick), shown on the character tab with progress bars,
+    and the time between raid nights fills up with whatever moves them along. Something to do while waiting for the
+    raid, and a reason to run Stratholme far too often: "Saving for an epic mount: 412 / 1000g", "Exalted with
+    Timbermaw Hold", "Deathcharger's Reins (Stratholme, 1%)", "Pre-raid set: 6 / 8 pieces", "Master Angler",
+    "Collect 15 minipets". A finished goal is a chronicle moment, then pick the next one
+    - The list shows what each goal involves and roughly how long it takes; goals that need something first say so
+      (the Frostsaber needs Winterspring, the Deathcharger needs Stratholme open to your gear)
   - Collections, and a collections tab with a mount bar and a minipet bar (the empty slots say where each comes from):
     - Mounts: Deathcharger's Reins (Baron Rivendare, Stratholme), Swift Razzashi Raptor and Swift Zulian Tiger (Zul'Gurub),
       Winterspring Frostsaber (Wintersaber Trainers, Alliance), the other races' mounts at exalted with their city,
       the AQ40 Qiraji battle tanks, the PvP mounts (Frostwolf Howler, Stormpike Battle Charger) once PvP is in
-    - Minipets: the whelps (Dark and Crimson Whelpling in the Wetlands, Azure in Winterspring, Emerald in the Swamp of
-      Sorrows), the Booty Bay parrots (Hyacinth Macaw), Worg Pup and Smolderweb Hatchling (Lower Blackrock Spire),
-      Sprite Darter Hatchling (Feralas), the Mechanical Chicken (a quest), the holiday ones (Tiny Snowman, Winter Veil)
+    - Minipets, a big one, from early on (not only at 60):
+      - Bought from vendors while levelling, cheap and a nice first collectible around level 10: the cats in Elwynn
+        Forest (Bombay, Tabby, Siamese, Cornish Rex, Orange Tabby, Silver Tabby, from Donni Anthania), the Snowshoe
+        Rabbit in Dun Morogh, owls in Darnassus; for the Horde the Prairie Dog in Thunder Bluff, the snakes (Black,
+        Brown and Crimson Kingsnake) and the Cockroach in Undercity, the Hawk Owl and Great Horned Owl
+      - The other faction's vendor pets only through the neutral Auction House in Gadgetzan (or Booty Bay, Everlook),
+        at a markup: a reason to visit Tanaris
+      - Ground out: the Booty Bay parrots (Hyacinth Macaw from the pirates, rare), the whelps (Dark and Crimson
+        Whelpling in the Wetlands, Azure in Winterspring, Emerald in the Swamp of Sorrows), Worg Pup and Smolderweb
+        Hatchling (Lower Blackrock Spire), Sprite Darter Hatchling (Feralas)
+      - From quests and events: the Mechanical Chicken, the Darkmoon Faire turtles and frogs, the holiday ones
+        (Tiny Snowman at Winter Veil); Mr. Pinchy's Magical Crawdad as a rare nod (strictly The Burning Crusade)
     - The odd good-looking rare (world drop epics, Tabard of the Argent Dawn), shown with the collections
   - Farming runs as their own activity: herbs (Black Lotus routes in Winterspring and Burning Steppes), Thorium and
     Dark Iron, Runecloth, Righteous Orbs and Essence of Undeath for the top crafts, daily cooldowns (Arcanite
@@ -123,8 +135,10 @@
   - Reputation grinds, each with a reward: Argent Dawn (Scourgestones, the Naxxramas attunement), Timbermaw Hold,
     Thorium Brotherhood (Molten Core recipes), Hydraxian Waterlords (dousing the runes in Molten Core), Zandalar Tribe
     (Zul'Gurub enchants), Cenarion Circle, the Wintersaber Trainers, the other faction cities (their mounts)
-  - Fishing as the third secondary skill: fishing trips, Nat Pagle's quests, the Stranglethorn Fishing Extravaganza on
-    Sundays (Master Angler, the Arcanite Fishing Pole), the odd rare catch (Old Ironjaw)
+  - Fishing as the third secondary skill: fishing trips, Nat Pagle's quests, the odd rare catch (Old Ironjaw, Old Crafty)
+    - The Stranglethorn Fishing Extravaganza on Sundays: the first to bring 40 Speckled Tastyfish to Booty Bay wins
+      (the Arcanite Fishing Pole or the Glimmering Mithril Insignia, and Master Angler); the hero enters when it can
+      fish, wins now and then, and the chronicle makes a big deal of it
   - Pre-raid best-in-slot hunting: farming Upper Blackrock Spire, Stratholme and Scholomance for the dungeon set, then
     the long chain that upgrades it (Dungeon Set 2)
   - World events: Darkmoon Faire weeks (cards, tickets, the turtles), the holidays (Hallow's End, Winter Veil, Lunar
