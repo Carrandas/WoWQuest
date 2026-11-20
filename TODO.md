@@ -16,7 +16,9 @@
 - [x] **Scripted boss moments**: VanCleef, Ragnaros, Onyxia, Nefarian, Kel'Thuzad, Patchwerk, Majordomo
   - [ ] More bosses (Hakkar's Blood Siphon, C'Thun's eye phase, the Four Horsemen, Vaelastrasz)
 - [ ] **Wipes from the fight itself** (raid wipes are still a roll, now based on gear)
-- [ ] **Damage meter for dungeons and raids**
+- [x] **Damage meter for dungeons and raids** (damage and healing, this fight or the whole run; collapsible)
+  - [ ] Base your own damage on your actual casts instead of a share of the group's
+  - [ ] Raid numbers run low (about 125 dps/hps per player); raise raid boss health and heal sizes
 - [ ] **Expand the talent tree** (it only shows 0 / 0 / 25 right now)
 - [ ] **Guild system** (design still open)
 - [ ] **Expansion packs** (eventually)
