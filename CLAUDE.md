@@ -47,7 +47,17 @@ Plain HTML, CSS and vanilla JS: no build step, no dependencies, no modules. GitH
 
 ## Testing
 
-Quick checks run in Node, without a browser:
+Two checks to run after every change (both in Node, no browser, under 20 seconds):
+
+```
+node tools/check.js same [ref] [--long]   # refactors: seeded output must match main (or ref) exactly
+node tools/check.js balance [seeds]       # gameplay changes: new heroes of every profession pair, 40 hours each
+```
+
+- `same` runs the scenarios below on the saves in `saves/` and on new level 1 heroes, on this copy and on `main` (in a temporary worktree), and prints IDENTICAL or the first differing line. `--long` adds 40-hour runs.
+- `balance` checks levelling speed (about level 43 after 40 hours), deaths, solo deaths, gold, gear score per level, blue crafts and profession skill pace at levels 20/30/40 against the ranges in `EXPECT` at the top of `tools/check.js`, and prints OK / LOW / HIGH per profession pair. When a change is meant to move one of these, update its range in the same commit and say so.
+
+Single scenarios run in Node too:
 
 ```
 node tools/sim.js <save.json> <scenario> [seed]
@@ -66,8 +76,9 @@ chrome --headless=new --disable-gpu --hide-scrollbars --user-data-dir=<fresh dir
 - `SRC=<path to index.html>` tests another copy, e.g. `main` checked out with `git worktree add ../wq-main main`.
 - Scenario strings must stay on one line (no literal newlines); join output with `" | "`. Dungeon names with a ":" break the scenario parser.
 - Load errors show in red at the top of harness pages. The red "Cannot read properties of null" at the top of finished long runs is the harness tearing down, not a game error.
-- Refactors: seeded `sim.js` output (`run`, `econ`, `pulls`, `aoe`, `stats`, `elite`, `killlog`, `bosslog`, from the level-18, level-42 and level-60 saves) must match `main` exactly. If it doesn't, the change moved gameplay or the order of random rolls.
-- Balance changes: compare old against new with `run` / `econ` / `pulls` over several seeds. Keep levelling speed, solo deaths and wipe rates where they were unless the change is meant to move them.
+- Refactors: `check.js same` must say IDENTICAL. If it doesn't, the change moved gameplay or the order of random rolls.
+- Balance changes: `check.js balance` must stay OK (or its ranges move on purpose), and compare old against new with `run` / `econ` / `pulls` over several seeds for whatever the change touches. Keep levelling speed, solo deaths and wipe rates where they were unless the change is meant to move them.
+- `sim.js new <scenario>` starts without a save: create the hero in `PRE` (`newHero({race:"Orc",cls:"Rogue",spec:0,prof:"herb"})`).
 
 ## Working together
 

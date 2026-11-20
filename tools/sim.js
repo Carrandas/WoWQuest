@@ -1,5 +1,6 @@
 // runs a harness scenario in Node, without a browser, and prints its output:
-//   node tools/sim.js <save.json> <scenario> [seed]
+//   node tools/sim.js <save.json | new> <scenario> [seed]
+// ("new" starts without a save: create a hero in PRE, e.g. PRE='newHero({race:"Orc",cls:"Rogue",spec:0,prof:"herb"})')
 // The page is stubbed out (every element is a do-nothing stand-in), so only the game logic runs.
 // With a seed (default 1) the output is repeatable, which makes it the quick way to check that a
 // refactor changed nothing: SRC=old.html node tools/sim.js ... against node tools/sim.js ...
@@ -25,9 +26,9 @@ const ctx = {
   document: { body, title: "", getElementById: () => stub, querySelector: () => null, querySelectorAll: () => [], createElement: () => stub, addEventListener: () => {} },
 };
 ctx.window = ctx;
-const data = fs.readFileSync(save, "utf8");
+const data = save === "new" ? null : fs.readFileSync(save, "utf8");
 ctx.SAVE0 = data;
-ctx.claude = { hot: { data: { S: JSON.parse(data) } } };
+ctx.claude = { hot: { data: data ? { S: JSON.parse(data) } : {} } };
 vm.createContext(ctx);
 const html = gamePage(process.env.SRC || DEFAULT_SRC);
 for (const m of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) vm.runInContext(m[1], ctx);

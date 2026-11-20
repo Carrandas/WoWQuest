@@ -42,6 +42,8 @@ const setups = {
     const wk=(S.time-t0)/(7*86400000);const out={hours:H,level:L0+"->"+S.level,gold:((S.money-m0)/10000).toFixed(0),goldPerWeek:((S.money-m0)/10000/wk).toFixed(0),money:(S.money/10000).toFixed(0),deaths:S.deaths-d0,mount:S.mount,runs:S.runs,prof:S.prof?{p:S.prof.a+"+"+S.prof.b,sk:S.prof.sk,start:P}:null,spend:S.spend||null,gs:gearScore().toFixed(1)};
     document.body.innerHTML="<pre style='color:#fff;font-size:15px;white-space:pre-wrap'>"+JSON.stringify(out)+"</pre>";S=null;`,
   idle: `S.task={k:"move",d:"Heading out",t:20000};`,
+  // a hero played for HOURS (default 40): level, deaths, gold, gear, blue crafts and profession skills at levels 20/30/40/50 (used by check.js balance)
+  bal: `const H=+(window.HOURS||40),d0=S.deaths,marks={},seen=new Set();let solo=0;for(let i=0;i<H*60;i++){advance(60000);for(const T of [20,30,40,50])if(!marks[T]&&S.level>=T){const p=S.prof;marks[T]={a:p.sk[p.a],b:p.sk[p.b],fa:p.sk["First Aid"],ck:p.sk.Cooking};}for(const l of S.log.slice(0,20)){if(seen.has(l.id))continue;seen.add(l.id);if(/^Killed by/.test(l.txt))solo++;}}const p=S.prof;document.body.innerHTML=JSON.stringify({level:S.level+S.xp/xpNeed(S.level),deaths:S.deaths-d0,solo,gold:S.money/1e4,gs:gearScore(),blues:(p.count&&p.count.q3)||0,made:p.made,a:p.a,b:p.b,marks,mount:S.mount});S=null;`,
   boss: `S.queue.length=0;S.task=null;const d=instanceRow(BOSSDG);queueDungeon(d);S.loc="dungeon";S.dg.formed=true;const i=S.queue.findIndex(x=>x.k==="boss"&&x.boss===BOSSNAME);S.dg.killed=(d.bosses||d[6].split(",")).indexOf(BOSSNAME);S.task=S.queue[i];S.queue.splice(0,i+1);`,
   trash: `S.queue.length=0;S.task=null;const d=instanceRow(BOSSDG);queueDungeon(d);S.loc="dungeon";S.dg.formed=true;const i=S.queue.findIndex(x=>x.k==="trash");S.task=S.queue[i];S.queue.splice(0,i+1);`,
 };
@@ -54,7 +56,7 @@ function gamePage(src) {
     .replace(/<script src="([^":]+\.js)"><\/script>/g, (m, f) => `<script>\n${read(f)}</script>`);
 }
 // runs before the scenario: a seeded Math.random and a fresh copy of the save (SAVE0)
-const seedCode = seed => seed ? `Math.random=(s=>()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296})(${+seed});S=JSON.parse(SAVE0);migrate();` : "";
+const seedCode = seed => seed ? `Math.random=(s=>()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296})(${+seed});if(SAVE0){S=JSON.parse(SAVE0);migrate();}` : "";
 const DEFAULT_SRC = path.join(__dirname, "..", "index.html");
 module.exports = { setups, gamePage, seedCode, DEFAULT_SRC };
 
