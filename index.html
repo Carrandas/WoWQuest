@@ -86,8 +86,7 @@ button:disabled { cursor: not-allowed; }
 .foe .unit { text-align: right; }
 .foe .who { justify-content: flex-end; }
 .foe .who h1 { color: var(--foe); }
-.foe .meter .top { flex-direction: row-reverse; }
-.foe .bar > i { margin-left: auto; }
+.foe .meter .top { text-align: left; }
 .foe .rank { color: var(--gold); }
 .foe.boss .who h1 { color: #ff9a5c; }
 .foe.elite, .foe.boss { border-color: var(--gold-dk); }
@@ -100,7 +99,7 @@ button:disabled { cursor: not-allowed; }
 .adds .an { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
 .adds .an span { color: var(--foe); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .adds .an small { color: var(--dim); font-size: 13px; white-space: nowrap; }
-.adds .gbar > i { background: var(--foe); margin-left: auto; }
+.adds .gbar > i { background: var(--hp-ok); }
 .adds li.dead { opacity: .4; }
 .adds li.dead .an span { text-decoration: line-through; }
 .bigbar { position: relative; height: 22px; border-radius: 3px; background: #05070c; border: 1px solid #5a4a12; overflow: hidden; box-shadow: inset 0 2px 6px #000a; }
@@ -1796,6 +1795,8 @@ function foeIdle() {
   return q && q.mob ? `Next: ${q.mob}` : "";
 }
 
+// health bar colour, same as the hero's: green, yellow, orange, red
+const hpCol = f => f > 0.6 ? "var(--hp-ok)" : f > 0.35 ? "var(--hp-mid)" : f > 0.15 ? "var(--hp-low)" : "var(--hp-crit)";
 // the enemy frame mirrors the hero's: name, health, resource, what it's doing; the rest of the pack below
 const FOE_RANK = { elite: "Elite", boss: "Boss", "raid elite": "Elite", "raid boss": "Boss" };
 let foeSig = "", foeMain = -1, foeHtml = {};
@@ -1827,11 +1828,11 @@ function renderFoe() {
   }
   const hpNow = Math.round(s.hp * u.max);
   $("eHpV").textContent = `${hpNow.toLocaleString()} / ${u.max.toLocaleString()}`;
-  $("eHpB").style.width = (s.hp * 100).toFixed(1) + "%"; $("eHpB").style.background = "var(--foe)";
+  $("eHpB").style.width = (s.hp * 100).toFixed(1) + "%"; $("eHpB").style.background = hpCol(s.hp);
   $("eMpV").textContent = u.res === "Mana" ? `${s.res}%` : `${s.res} / 100`; $("eMpB").style.width = s.res + "%";
   const from = Math.max(0, s.ci - 3), acts = s.alive ? u.acts.slice(from, s.ci + 1) : [];
   setHtml("eCasts", s.alive ? (from ? "… › " : "") + acts.map((a, i) => `<span${i + from === s.ci ? ' class="cur"' : ""}>${esc(a)}</span>`).join(" › ") : '<span class="dead">dead</span>');
-  setHtml("eAdds", f.units.length > 1 ? f.units.map((x, i) => i === mi ? "" : `<li class="${st[i].alive ? "" : "dead"}"><div class="an"><span>${esc(x.name)}</span><small>${st[i].alive ? esc(st[i].act) : "dead"}</small></div><div class="gbar thin"><i style="width:${(st[i].hp * 100).toFixed(1)}%"></i></div></li>`).join("") : "");
+  setHtml("eAdds", f.units.length > 1 ? f.units.map((x, i) => i === mi ? "" : `<li class="${st[i].alive ? "" : "dead"}"><div class="an"><span>${esc(x.name)}</span><small>${st[i].alive ? esc(st[i].act) : "dead"}</small></div><div class="gbar thin"><i style="width:${(st[i].hp * 100).toFixed(1)}%;background:${hpCol(st[i].hp)}"></i></div></li>`).join("") : "");
   const left = st.filter(x => x.alive).length;
   setHtml("eInfo", [["target", esc(foeTarget())], f.units.length > 1 ? ["pack", `${left} of ${f.units.length} standing`] : null, ["health", u.max.toLocaleString()]]
     .filter(Boolean).map(([a, b]) => `<li><span class="k">${a}</span><span class="v">${b}</span></li>`).join(""));
