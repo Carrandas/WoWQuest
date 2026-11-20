@@ -9,8 +9,8 @@ Plain HTML, CSS and vanilla JS: no build step, no dependencies, no modules. GitH
 - `index.html`: the page shell. It loads `style.css` and the scripts in `js/`, in order.
 - `style.css`: all styles.
 - `js/`, in load order:
-  - `util.js`: small helpers (`R`, `pick`, `rnd`, `clamp`, `esc`, `money`, `$`)
-  - `data.js`: races, classes, zones, routes, dungeons, raids, dungeon quests, the time scale (`SPAN`, `sec`)
+  - `util.js`: small helpers (`R`, `pick`, `rnd`, `clamp`, `esc`, `money`, `$`, `onButton`), time constants (`MIN`, `HOUR`, `DAY`, `WEEK`)
+  - `data.js`: races, classes, zones, routes, dungeons, raids, dungeon quests, the time scale (`SPAN`, `sec`). Zones, dungeons and raids are written as compact rows and turned into objects at load: a zone is `{ min, max, hubA, hubH, mobs, quests }`, a dungeon or raid `{ name, min, max, side, abbr, trash, bosses, loot }` (find one with `instanceRow(name)`)
   - `hero.js`: the state `S` and browser saves, items and gear, spells and levels, quests, buffs and supplies, `newHero`
   - `professions.js`: gathering, crafting, gold (`spend`, `spendable`), enchants
   - `journal.js`: achievements, the zone and dungeon journal
@@ -42,7 +42,7 @@ Plain HTML, CSS and vanilla JS: no build step, no dependencies, no modules. GitH
 - Fights: `foeOf(t)` builds the enemies and their health curves from the hero's casts (`castWeight`); `soloFight(t)` plays solo pulls out hit by hit; `simFight(t)` does group fights. Boss wipes are still a roll (`wipeChance`).
 - Gear: items are `{ name, ilvl, q, slot }`; `power()` compares items, `gearScore()` (which also counts enchants) drives raid access, wipe chance, damage taken and kill speed (`gearFor()` is gear for the level).
 - Gold: purchases go through `spend(kind, c)` (weekly tracking) and must respect `spendable()` (keeps the mount savings).
-- `renderLists()` redraws when `dirty`; `renderBars()` runs every frame.
+- `renderLists()` redraws when `dirty` (one `render…` call per part of the page); `renderBars()` runs every frame. Page markup that repeats goes through the small template helpers at the top of `ui.js` (`unitFrame`, `poolBar`, `progMeter`, `foldBtn`).
 
 ## Testing
 
