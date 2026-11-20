@@ -129,4 +129,15 @@
   - The week at 60: raid when the lockout is open, otherwise battlegrounds or dungeons (maybe a PvP-mood setting)
   - Later with the guild: premades from guildmates win more often and show up in the chronicle
   - Order: Warsong Gulch first, then ranks and rewards, the PvP tab, then Arathi Basin and Alterac Valley
+- [ ] **Gold sinks while raiding** (gold piles up at 60 today; raiding should cost money like it did)
+  - Enchants: every new item wants an enchant, so each upgrade costs gold; shown on the item ("Enchanted: Crusader",
+    or "not enchanted" in grey) and the enchant adds its stats. The hero enchants new gear on the next city visit when
+    the gold is there, best slots first (weapon, chest), the expensive ones (Crusader) when it can afford them
+  - Flasks cost money: today the flask at the raid portal is free; buy them on the AH (or make them with Alchemy),
+    plus raid consumables (elixirs, potions, food), so each raid night has a supply bill
+  - Wipe bills: wipes already cost repairs; make raid repairs noticeably bigger than dungeon ones and show the bill
+    after the run ("Repairs after Molten Core: 38g")
+  - When gold runs low: skip the luxury (no flask, cheaper enchant), or go farming for a while ("Farming Thorium in
+    Winterspring", "Running Stratholme for gold"), so the gold actually matters
+  - A small money line on the character tab: gold spent this week on enchants, consumables and repairs
 - [ ] **Expansion packs** (eventually)
