@@ -3,7 +3,7 @@
 
 // ---------- planning ----------
 const needCity = () => S.level < 60 ? S.level >= S.nextCity : S.cycleQ >= 8;
-function travelVerb() { return S.mount >= 2 ? "Galloping on your " + race().epic : S.mount ? "Riding your " + race().mount : "Running"; }
+function travelVerb() { return S.mount >= 2 ? "Galloping on your " + rideName() : S.mount ? "Riding your " + rideName() : "Running"; }
 
 function plan() {
   const q = S.queue, z = curZone(), h = hub();

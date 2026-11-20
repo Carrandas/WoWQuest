@@ -125,6 +125,7 @@ const FINISH = {
     const q = findQuest(t.qid); if (!q) return;
     S.quests = S.quests.filter(x => x !== q);
     S.money += q.money; S.qdone++; S.cycleQ++;
+    mountQuest(q);
     if (q.name === "Mankrik's Wife" && !S.feats.includes(q.name)) S.feats.push(q.name);
     if (S.zones.find(x => x.z === q.zone)) zoneEntry(q.zone).q++;
     noteDone(q.name);
@@ -163,10 +164,10 @@ const FINISH = {
   },
   mount() {
     if (S.level >= 60 && S.mount < 2) {
-      if (S.money >= EPIC_MOUNT_COST) { S.money -= EPIC_MOUNT_COST; S.mount = 2; log(`Paid 1000 gold for epic riding and a ${race().epic}! The grind was worth it.`, "loot4"); }
+      if (S.money >= EPIC_MOUNT_COST) { S.money -= EPIC_MOUNT_COST; S.mount = 2; mountOwn(); log(`Paid 1000 gold for epic riding and a ${race().epic}! The grind was worth it.`, "loot4"); }
       else log(`Epic mount fund: ${moneyTxt(S.money)} of 1000g.`, "gold");
     } else if (S.mount < 1) {
-      if (S.money >= MOUNT_COST) { S.money -= MOUNT_COST; S.mount = 1; log(`Learned Apprentice Riding and bought a ${race().mount}! (90g)`, "loot3"); }
+      if (S.money >= MOUNT_COST) { S.money -= MOUNT_COST; S.mount = 1; mountOwn(); log(`Learned Apprentice Riding and bought a ${race().mount}! (90g)`, "loot3"); }
       else log(`Saving up for a mount: ${moneyTxt(S.money)} of 90g.`, "gold");
     }
   },
@@ -235,14 +236,14 @@ const FINISH = {
     }
     log(`${t.boss} has been defeated.`, "boss");
     (S.dq || []).filter(x => !x.done && x.boss === t.boss).forEach(x => { x.done = true; log(`Objective complete: ${x.obj} ("${x.name}").`, "quest"); });
-    gainXp(mobXp(S.level + 2) * 5); petAfterFight(t, null); minipetDrops([t.boss]);
+    gainXp(mobXp(S.level + 2) * 5); petAfterFight(t, null); minipetDrops([t.boss]); mountDrops(t.boss, t.dn);
     // a boss drops a few items for the whole group: in a raid the hero only now and then gets one
     if (Math.random() < (raid ? RAID_INFO[t.dn].size === 20 ? 0.2 : 0.12 : 0.4)) lootDrop(t.dn, t.boss);
     if (t.dn === "Naxxramas" && Math.random() < 0.1) atiesh();
   },
   buff(t) { applyBuff(t.b); },
   gather(t) { finishGather(t); },
-  craft() { finishCraft(); minipetCrafts(); },
+  craft() { mountTurnins(); finishCraft(); minipetCrafts(); }, // Runecloth turn-ins before the spare cloth is sold
   farm(t) {
     const c = Math.round(t.t / HOUR * 150000), g = ["Mining", "Herbalism", "Skinning"].find(hasProf);
     S.money += c;

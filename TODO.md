@@ -113,6 +113,7 @@
     - The list shows what each goal involves and roughly how long it takes; goals that need something first say so
       (the Frostsaber needs Winterspring, the Deathcharger needs Stratholme open to your gear)
   - Collections, and a collections tab with a mount bar and a minipet bar (the empty slots say where each comes from):
+    - **Done** (except the PvP mounts): mounts in the Collection tab, ridden by rarity
     - Mounts: Deathcharger's Reins (Baron Rivendare, Stratholme), Swift Razzashi Raptor and Swift Zulian Tiger (Zul'Gurub),
       Winterspring Frostsaber (Wintersaber Trainers, Alliance), the other races' mounts at exalted with their city,
       the AQ40 Qiraji battle tanks, the PvP mounts (Frostwolf Howler, Stormpike Battle Charger) once PvP is in

@@ -100,5 +100,5 @@ function renderCollection() {
   const got = MINIPETS.filter(m => hasMinipet(m.name)), order = got.slice().sort((a, b) => (S.minipets[b.name].p ?? 0) - (S.minipets[a.name].p ?? 0)).concat(MINIPETS.filter(m => !hasMinipet(m.name)));
   const row = m => { const e = S.minipets[m.name];
     return `<li class="${e ? "got" : "locked"}"><span class="ico">${e ? "✓" : "·"}</span><div><b>${esc(m.name)}${S.companion === m.name ? ' <small class="comp">companion</small>' : ""}</b><span>${esc(minipetWhere(m))}</span>${e ? `<time>${when(e.at, e.L, e.p)}</time>` : ""}</div></li>`; };
-  return `<li class="jhead">Minipets <small>${got.length} of ${MINIPETS.length}</small></li>` + order.map(row).join("");
+  return renderMounts() + `<li class="jhead">Minipets <small>${got.length} of ${MINIPETS.length}</small></li>` + order.map(row).join("");
 }

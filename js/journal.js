@@ -103,6 +103,12 @@ ACH.push(...[
   { id: "mpcats", name: "Crazy Cat Person", desc: "Collect all six cats: Bombay, Cornish Rex, Orange Tabby, Silver Tabby, White Kitten and Black Tabby.", test: () => mpHas(["Bombay Cat", "Cornish Rex Cat", "Orange Tabby Cat", "Silver Tabby Cat", "White Kitten", "Black Tabby Cat"]) },
   { id: "mpparrots", name: "Polly Want a Cracker", desc: "Collect all four parrots: Cockatiel, Senegal, Green Wing Macaw and Hyacinth Macaw.", test: () => mpHas(["Cockatiel", "Senegal", "Green Wing Macaw", "Hyacinth Macaw"]) },
   { id: "mpwhelps", name: "Whelp Wrangler", desc: "Collect all four whelplings: Dark, Crimson, Emerald and Azure.", test: () => mpHas(["Dark Whelpling", "Crimson Whelpling", "Emerald Whelpling", "Azure Whelpling"]) },
+  { id: "mt5", name: "Stable Master", desc: "Collect 5 mounts.", test: () => Object.keys(S.mounts || {}).length >= 5 },
+  { id: "mtbaron", name: "The Baron's Steed", desc: "Get Deathcharger's Reins from Baron Rivendare in Stratholme.", test: () => !!(S.mounts || {})["Deathcharger's Reins"] },
+  { id: "mtzg", name: "Pride of Zul'Gurub", desc: "Get the Swift Razzashi Raptor or the Swift Zulian Tiger.", test: () => !!((S.mounts || {})["Swift Razzashi Raptor"] || (S.mounts || {})["Swift Zulian Tiger"]) },
+  { id: "mtqiraji", name: "Bug Rider", desc: "Get a Qiraji Battle Tank in the Temple of Ahn'Qiraj.", test: () => Object.keys(S.mounts || {}).some(n => /Qiraji/.test(n)) },
+  { id: "mtamb", name: "Ambassador", desc: "Reach exalted with the other races of your faction.", test: () => S.rep && Object.keys(RACES).filter(r => RACES[r].f === S.faction && r !== S.race).every(r => (S.rep[RACE_REP[r]] || 0) >= RUNECLOTH_EXALTED) },
+  { id: "mtsaber", name: "Wintersaber", desc: "Earn the Winterspring Frostsaber from the Wintersaber Trainers.", show: () => S.faction === "Alliance", test: () => !!(S.mounts || {})["Winterspring Frostsaber"] },
 ].map(a => ({ ...a, cat: "coll" })));
 // pets
 const ps = () => S.petStats || { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 };

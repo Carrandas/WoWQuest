@@ -327,7 +327,7 @@ function renderHero() {
   $("stats").innerHTML = STATS.map(k => `<div class="stat ${k === mainStat() ? "prime" : ""}"><span class="lbl">${k}</span><b>${S.stats[k]}</b></div>`).join("");
   $("vitals").innerHTML = [
     ["money", money(S.money)],
-    ["mount", S.mount >= 2 ? race().epic : S.mount ? race().mount : S.level >= 40 ? "saving up…" : "on foot until 40"],
+    ["mount", S.mount ? esc(rideName()) : S.level >= 40 ? "saving up…" : "on foot until 40"],
     ...(S.companion ? [["companion", esc(S.companion)]] : []), ["kills", S.kills.toLocaleString()], ["quests done", S.qdone.toLocaleString()], ["deaths", S.deaths.toLocaleString()], ...spentRow(),
   ].map(([k, v]) => `<li><span class="k">${k}</span><span class="v">${v}</span></li>`).join("");
   const act = activeBuffs();
@@ -501,9 +501,9 @@ function renderJournal() {
   $("tab-ach").textContent = ` ${got.length}`; // the totals are in the line under the tabs
   $("tab-zones").textContent = ` ${S.zones.length}`;
   $("tab-dung").textContent = ` ${dl.filter(d => S.dungeons.includes(d.name)).length}`;
-  $("tab-coll").textContent = ` ${Object.keys(S.minipets).length}`;
+  $("tab-coll").textContent = ` ${Object.keys(S.minipets).length + Object.keys(S.mounts).length}`;
   $("log").hidden = uiTab !== "log"; $("quests").hidden = uiTab !== "quests"; $("journal").hidden = uiTab === "log" || uiTab === "quests";
-  $("elapsed").textContent = uiTab === "log" ? "/played " + fmtTime(S.time) : uiTab === "quests" ? `${S.quests.length + (S.dq || []).length} active` : uiTab === "ach" ? `${got.length} of ${shown.length} earned` : uiTab === "zones" ? `${doneZ} zones done` : uiTab === "coll" ? `${Object.keys(S.minipets).length} minipets` : `${dl.filter(d => S.dungeons.includes(d.name)).length} of ${dl.length} cleared`;
+  $("elapsed").textContent = uiTab === "log" ? "/played " + fmtTime(S.time) : uiTab === "quests" ? `${S.quests.length + (S.dq || []).length} active` : uiTab === "ach" ? `${got.length} of ${shown.length} earned` : uiTab === "zones" ? `${doneZ} zones done` : uiTab === "coll" ? `${Object.keys(S.mounts).length} mounts · ${Object.keys(S.minipets).length} minipets` : `${dl.filter(d => S.dungeons.includes(d.name)).length} of ${dl.length} cleared`;
   if (uiTab === "log" || uiTab === "quests") return;
   let h = "";
   if (uiTab === "ach") {
