@@ -73,4 +73,31 @@
     whole guild keeps up with your character. Raid loot goes to members through DKP
   - Start simple: each member's gear is one gear level (what drives their damage and healing).
     Full gear sets per member could come later, if the guild tab should show their items
+- [ ] **PvP: battlegrounds and honor ranks** (at 60, maybe a bracket now and then while levelling)
+  - Battlegrounds, played out like a dungeon run (queue, "X joined Warsong Gulch", a string of fights, win or loss):
+    - Warsong Gulch (10 vs 10): capture the flag, first to 3 caps ("Dalwyn picked up the Horde flag!", "2–1 Alliance")
+    - Arathi Basin (15 vs 15): five bases, a resource race to 2000, bases changing hands
+    - Alterac Valley (40 vs 40): towers and graveyards down the valley, ending in a boss fight against Vanndar
+      Stormpike or Drek'Thar (reuse the boss scripts)
+  - Enemy players in the enemy panel: real classes of the other faction with gear for the bracket and their own
+    rotations (healers heal, rogues stun, mages sheep); reuse the existing stun/heal machinery
+  - Win chance from both teams' gear plus how the hero does; dying respawns at the graveyard (not a real death,
+    the chronicle says "Died 3 times in Warsong Gulch")
+  - Scoreboard instead of the damage meter: both teams with killing blows, honorable kills, deaths, honor
+  - Honor ranks 1–14 (Private/Scout up to Grand Marshal/High Warlord): honor per game, turned into rank progress
+    each in-game week, slow decay when you stop; higher ranks need more honor, so rank 14 is a long goal
+  - Rewards (the point of doing it):
+    - Gear that helps you into raids: rank 7–9 blues (best-dungeon level), rank 10–13 epics (between Molten Core and
+      Blackwing Lair), rank 14 weapons (Blackwing Lair level). One gear system: rank items go in the normal pool and
+      are worn when they beat the slot, so they fill gaps and help reach a raid's gear score, then raid gear takes over
+    - Mounts: the rank 11 epic war mount (an epic mount without saving 1000 gold), the Alterac Valley mounts at
+      exalted (Stormpike Battle Charger / Frostwolf Howler)
+    - Pets: a small collection could start here (a battleground pet, a rank pet)
+    - Potions and bandages from Warsong Gulch / Arathi Basin reputation, rings and trinkets from Alterac Valley
+    - Titles next to the name ("Sergeant Ulenrath"), tabards, marks of honor to spend
+  - PvP tab: rank with a weekly progress bar (and the decay), wins and losses per battleground, flags captured,
+    bases taken, generals killed, killing blows, honorable kills, deaths, highest rank reached
+  - The week at 60: raid when the lockout is open, otherwise battlegrounds or dungeons (maybe a PvP-mood setting)
+  - Later with the guild: premades from guildmates win more often and show up in the chronicle
+  - Order: Warsong Gulch first, then ranks and rewards, the PvP tab, then Arathi Basin and Alterac Valley
 - [ ] **Expansion packs** (eventually)
