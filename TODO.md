@@ -192,7 +192,7 @@
     Tarren Mill against Southshore, Stranglethorn Vale, a level 60 camping the flight path. Mostly chronicle moments,
     sometimes a fight with another player (a player-like unit with a class and gear) and a corpse run
   - At 60: raids on the other faction's towns (Crossroads, Southshore, Astranaar), the big ones on a capital (an
-    Alliance raid on Orgrimmar to kill Thrall, a Horde raid on Stormwind for King Varian... Bolvar), with the city
+    Alliance raid on Orgrimmar to kill Thrall, a Horde raid on Stormwind for Highlord Bolvar Fordragon, since King Varian was missing in vanilla), with the city
     guards as trash
   - Dragging a raid boss to town: Kazzak or the Emerald Dragons pulled into a city or a quest hub, and the chaos after
   - Later with the guild: guild members join, a world PvP night on the guild calendar
