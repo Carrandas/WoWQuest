@@ -1,6 +1,35 @@
 # TODO
 
-- [ ] **Professions**
+- [ ] **Professions** (gathering + crafting; a third way to gear up, next to dungeons and PvP)
+  - Skill tiers like back then: Apprentice 75, Journeyman 150 (level 10), Expert 225 (level 20), Artisan 300 (level 35);
+    recipes orange/yellow/green/grey; pacing target roughly skill = level × 5, so 300 at 60
+  - Picking (keep it simple, one pair per character, chosen at creation with a sensible default):
+    - Anyone: Herbalism + Alchemy, or Mining + Engineering
+    - By armor: Tailoring + Enchanting (cloth), Skinning + Leatherworking (leather/mail), Mining + Blacksmithing (plate)
+  - Gathering while questing, as short tasks between mobs: "Picking a Peacebloom", "Mining a Copper Vein",
+    "Skinning the Ridge Stalker" (after beast kills); nodes follow the zone (Copper → Tin → Iron → Mithril → Thorium,
+    Peacebloom → Kingsblood → Sungrass → Dreamfoil), so the skill keeps up with the zones by itself.
+    Cloth drops from humanoids (Linen → Wool → Silk → Mageweave → Runecloth); spare materials sell on the AH
+  - Crafting in the city, on the normal city visit: train the next tier, then "Crafting at the anvil: 4× Heavy Copper
+    Maul (Blacksmithing 87 → 96)"; buy missing materials on the AH to catch up
+  - It should always craft something useful: an upgrade for an empty or weak slot, potions you'd otherwise buy,
+    bags; skill-up fodder that isn't useful gets sold or disenchanted
+    - Blacksmithing / Leatherworking / Tailoring: gear in the normal gear system, a bit below dungeon blues while levelling
+    - Tailoring: bags too (more bag space, fewer selling trips)
+    - Alchemy: your own potions and elixirs (cheaper supplies), flasks at 300 (cheaper raiding)
+    - Enchanting: disenchant greens that aren't upgrades, enchant your own gear (stats on the item)
+    - Engineering: bombs / sapper charges as burst cooldowns, target dummy as a shield, your own mechanostrider
+  - Recipes as dungeon drops ("Plans: Lionheart Helm") make dungeon loot more exciting
+  - Secondary for everyone: First Aid (bandages, shorter rests), Cooking ("Well Fed" buffs), Fishing (a fishing trip now and then)
+  - Strongest while levelling and right at 60; it drops off once raiding starts, except for the expensive top end:
+    - A few raid-level crafts (Lionheart Helm, Arcanite Reaper, the Flarecore set) needing rare materials
+    - The odd bind-on-equip epic on the AH (raid trash and world drops)
+    - Expensive and rare on purpose: no decking out in bought gear, but one great craft or one great BoE piece is
+      a good use of gold at 60
+  - Enchants for everyone, crafter or not: buy them in the city (Crusader on the weapon, stats on chest/bracers/boots);
+    the good ones are expensive, so the hero saves up for them
+  - Professions tab: skill bars (x / 300 with the tier name), known recipes, materials, recent crafts, gold made on the AH;
+    the chronicle notes skill-ups at round numbers and every useful craft
 - [x] **Clean up the GUI**
   - Put the character on the left
   - Remove the backpack at the top (it isn't needed and duplicates the bags)
