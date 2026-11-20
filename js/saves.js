@@ -13,6 +13,9 @@ function migrate() {
   S.parts = S.parts || {}; S.legendaries = S.legendaries || []; S.lock = S.lock || {}; S.cd = S.cd || {}; S.runs = S.runs || 0; S.trip = S.trip || 0;
   // heroes from before professions pick up their class's pair, already on pace for their level
   if (!S.prof) { S.prof = newProf(PAIR_FOR[S.cls], S.level); if (S.prof.cap) log(`Picked up ${S.prof.a} and ${S.prof.b} (${S.prof.sk[S.prof.b]} / ${S.prof.cap}).`, "spell"); }
+  S.prof.count = S.prof.count || {};
+  // profession achievements came later: the ones already earned are noted quietly instead of all at once
+  if (!S.achProf) { S.achProf = 1; checkAch(true, "prof"); }
 }
 
 // ---------- save files: the same data as the browser save, as a download ----------

@@ -112,7 +112,7 @@ const FINISH = {
     S.bags = S.bags.filter(b => {
       if (b.name !== t.name) return true;
       // enchanters disenchant their greens and blues instead of selling them
-      if (de && b.q >= 2) { addMat("Dust", clamp(Math.floor((S.level - 5) / 11), 0, 4), b.q >= 3 ? 3 : 1 + R(2)); return false; }
+      if (de && b.q >= 2) { addMat("Dust", clamp(Math.floor((S.level - 5) / 11), 0, 4), b.q >= 3 ? 3 : 1 + R(2)); bump("de"); return false; }
       sum += b.val; return false;
     });
     S.money += sum; S.trip += sum;
@@ -226,7 +226,8 @@ const FINISH = {
   craft() { finishCraft(); },
   farm(t) {
     const c = Math.round(t.t / HOUR * 150000), g = ["Mining", "Herbalism", "Skinning"].find(hasProf);
-    S.money += c; if (g) addMat(g, 4, 6 + R(8));
+    S.money += c;
+    if (g) { const n = 6 + R(8); addMat(g, 4, n); bump(g, n); bump("top:" + g, n); }
     log(`${t.d.replace(/^\w+ing/, m => m === "Running" ? "Ran" : "Farmed")}: ${moneyTxt(c)}${g ? ` and some ${MATS[g][4]}` : ""}.`, "gold");
   },
   conjure(t) { S.cons[t.kind] = Math.max(S.cons[t.kind] || 0, 20); },

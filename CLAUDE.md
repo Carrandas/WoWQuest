@@ -42,6 +42,7 @@ Plain HTML, CSS and vanilla JS: no build step, no dependencies, no modules. GitH
 - Fights: `foeOf(t)` builds the enemies and their health curves from the hero's casts (`castWeight`); `soloFight(t)` plays solo pulls out hit by hit; `simFight(t)` does group fights. Boss wipes are still a roll (`wipeChance`).
 - Gear: items are `{ name, ilvl, q, slot }`; `power()` compares items, `gearScore()` (which also counts enchants) drives raid access, wipe chance, damage taken and kill speed (`gearFor()` is gear for the level).
 - Gold: purchases go through `spend(kind, c)` (weekly tracking) and must respect `spendable()` (keeps the mount savings).
+- Achievements: entries in `ACH` (`journal.js`) with `test()`, optional `show()` and `cat` (profession ones have `cat: "prof"` and their own heading). Achievements that old saves may already meet are granted quietly once in `migrate()` (`checkAch(true, cat)` behind a flag like `S.achProf`), so they don't all pop at once. Profession totals live in `S.prof.count` (`bump(key)`, `profCount(key)`).
 - `renderLists()` redraws when `dirty` (one `render…` call per part of the page); `renderBars()` runs every frame. Page markup that repeats goes through the small template helpers at the top of `ui.js` (`unitFrame`, `poolBar`, `progMeter`, `foldBtn`).
 
 ## Testing

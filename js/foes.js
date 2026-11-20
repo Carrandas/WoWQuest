@@ -157,7 +157,7 @@ function useCooldowns(t) {
     if (cdType(x.name) === "burst" && t.k === "kill") t.t = Math.round(t.t * 0.88); // the pull goes down faster
   });
   // an engineer opens with a bomb
-  if (S.cons.bomb > 0 && t.casts.length > 2) { S.cons.bomb--; t.casts.splice(Math.min(t.casts.length - 1, 1 + t.cds.length), 0, profItem(BOMBS, "Engineering")); }
+  if (S.cons.bomb > 0 && t.casts.length > 2) { S.cons.bomb--; bump("bombs"); t.casts.splice(Math.min(t.casts.length - 1, 1 + t.cds.length), 0, profItem(BOMBS, "Engineering")); }
 }
 // how hard a hero cast hits the target (buffs and heals barely count)
 const castWeight = s => LOST.test(s) ? 0 : /Bomb|Grenade|Dynamite/.test(s) ? 1.6 : CD_TYPE[s] ? 0.15 : FREE_ATK.test(s) ? 0.5

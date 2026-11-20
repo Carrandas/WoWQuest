@@ -53,10 +53,53 @@ const ACH = [
   ...RAIDS.map(r => ({ id: "raid-" + r.abbr, name: r.name, desc: `Defeat ${RAID_INFO[r.name].last} (${RAID_INFO[r.name].size}-man raid).`, test: () => S.dungeons.includes(r.name) })),
   { id: "raidall", name: "Raider", desc: "Clear every raid, from Molten Core to Naxxramas.", test: () => RAIDS.every(r => S.dungeons.includes(r.name)) },
 ];
-function checkAch(quiet) {
+// ---------- profession achievements: under their own heading, and only for the hero's own professions ----------
+const PROF_NOUN = { Mining: "Miner", Herbalism: "Herbalist", Skinning: "Skinner", Blacksmithing: "Blacksmith", Leatherworking: "Leatherworker", Tailoring: "Tailor", Alchemy: "Alchemist", Enchanting: "Enchanter", Engineering: "Engineer" };
+const GATHER_ACH = {
+  Mining: ["First Ore", "Thorium Strike", "Thorium Ore", "Rock Collector", "Deep Miner"],
+  Herbalism: ["Flower Picker", "Dreamfoil", "Dreamfoil", "Flower Power", "Master Herbalist"],
+  Skinning: ["First Skin", "Rugged Hide", "Rugged Leather", "Hide and Seek", "Master Skinner"],
+};
+const madeCount = () => (S.prof && S.prof.made) || 0;
+const makesGear = () => crafts().some(c => c !== "Alchemy" && c !== "Enchanting");
+const PROF_ACH = [
+  ...Object.entries(PROF_NOUN).flatMap(([n, who]) => [[150, "Journeyman"], [225, "Expert"], [300, "Artisan"]].map(([v, tier]) =>
+    ({ id: `p-${n}-${v}`, name: `${tier} ${who}`, desc: `Reach ${v} in ${n}.`, show: () => hasProf(n), test: () => profSkill(n) >= v }))),
+  { id: "p-fa300", name: "Field Medic", desc: "Reach 300 in First Aid.", test: () => profSkill("First Aid") >= 300 },
+  { id: "p-cook300", name: "Artisan Cook", desc: "Reach 300 in Cooking.", test: () => profSkill("Cooking") >= 300 },
+  ...Object.entries(GATHER_ACH).flatMap(([n, [first, top, topMat, c100, c1k]]) => [
+    { id: `p-${n}-1`, name: first, desc: `Gather with ${n} for the first time.`, show: () => hasProf(n), test: () => profCount(n) >= 1 },
+    { id: `p-${n}-top`, name: top, desc: `Gather your first ${topMat}.`, show: () => hasProf(n), test: () => profCount("top:" + n) >= 1 },
+    { id: `p-${n}-100`, name: c100, desc: `Gather 100 materials with ${n}.`, show: () => hasProf(n), test: () => profCount(n) >= 100 },
+    { id: `p-${n}-1k`, name: c1k, desc: `Gather 1,000 materials with ${n}.`, show: () => hasProf(n), test: () => profCount(n) >= 1000 },
+  ]),
+  { id: "p-made1", name: "Handmade", desc: "Craft your first item.", test: () => madeCount() >= 1 },
+  { id: "p-made100", name: "Busy Hands", desc: "Craft 100 items.", test: () => madeCount() >= 100 },
+  { id: "p-made1k", name: "Master Crafter", desc: "Craft 1,000 items.", test: () => madeCount() >= 1000 },
+  { id: "p-wear", name: "Made to Measure", desc: "Wear a piece of gear you crafted yourself.", show: makesGear, test: () => eq(it => it.made) },
+  { id: "p-green", name: "Fine Craftsmanship", desc: "Craft a green piece of gear.", show: makesGear, test: () => profCount("q2") >= 1 },
+  { id: "p-blue", name: "A Cut Above", desc: "Craft a blue piece of gear (from skill 150).", show: makesGear, test: () => profCount("q3") >= 1 },
+  { id: "p-epic", name: "Masterwork", desc: "Craft an epic at skill 300.", show: () => crafts().some(c => MASTER[c]), test: () => profCount("q4") >= 1 },
+  { id: "p-bag1", name: "Sewn Together", desc: "Sew your first bag.", show: () => hasProf("Tailoring"), test: () => profCount("bags") >= 1 },
+  { id: "p-bag4", name: "All Homemade", desc: "Sew four bags.", show: () => hasProf("Tailoring"), test: () => profCount("bags") >= 4 },
+  { id: "p-pots", name: "Brewmaster", desc: "Brew 100 potions and elixirs.", show: () => hasProf("Alchemy"), test: () => profCount("pots") >= 100 },
+  { id: "p-flask", name: "Flask in Hand", desc: "Make your first flask.", show: () => hasProf("Alchemy"), test: () => profCount("flask") >= 1 },
+  { id: "p-ench", name: "Self-Enchanted", desc: "Enchant your own gear.", show: () => hasProf("Enchanting"), test: () => profCount("selfEnch") >= 1 },
+  { id: "p-de", name: "Dust to Dust", desc: "Disenchant 50 items.", show: () => hasProf("Enchanting"), test: () => profCount("de") >= 50 },
+  { id: "p-bomb", name: "Fire in the Hole", desc: "Throw your first bomb in a fight.", show: () => hasProf("Engineering"), test: () => profCount("bombs") >= 1 },
+  { id: "p-band", name: "Patched Up", desc: "Use 100 bandages.", test: () => profCount("band") >= 100 },
+  { id: "p-meals", name: "Hearty Appetite", desc: "Eat 100 meals for the Well Fed buff.", test: () => profCount("meals") >= 100 },
+  { id: "p-ah100", name: "Auction House Regular", desc: "Earn 100 gold selling materials on the Auction House.", test: () => ((S.prof && S.prof.ah) || 0) >= 1000000 },
+  { id: "p-ah1k", name: "Tycoon", desc: "Earn 1,000 gold selling materials on the Auction House.", test: () => ((S.prof && S.prof.ah) || 0) >= 10000000 },
+  { id: "p-crusader", name: "Crusader", desc: "Get Crusader on your weapon, bought or enchanted yourself.", test: () => eq(it => it.ench && it.ench.name === "Crusader") },
+];
+ACH.push(...PROF_ACH.map(a => ({ ...a, cat: "prof" })));
+// quiet: mark what's already earned without announcing it (pre: what came later, for the journal text);
+// cat: only that category
+function checkAch(quiet, cat) {
   for (const a of ACH) {
-    if (S.ach[a.id] || !a.test()) continue;
-    S.ach[a.id] = quiet ? { at: null, p: null, L: null } : stamp();
+    if (S.ach[a.id] || (cat && a.cat !== cat) || !a.test()) continue;
+    S.ach[a.id] = quiet ? { at: null, p: null, L: null, ...(cat ? { pre: cat } : {}) } : stamp();
     if (!quiet) log(`Achievement earned: [${a.name}]`, "ach");
   }
 }

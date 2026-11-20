@@ -57,6 +57,7 @@ function gameShell() {
         <div class="cpane" data-c="tal"><div class="tabmeta"><small id="talPts"></small></div><div class="talsum" id="talSum"></div><div class="seg ttabs" id="talTabs"></div><ul class="tal" id="tal"></ul></div>
         <div class="cpane" data-c="spells"><div class="tabmeta"><small id="spCount"></small></div><ul class="rows" id="spells"></ul></div>
         <div class="cpane" data-c="prof"><div class="tabmeta"><small id="profMeta"></small></div><ul class="rows profs" id="profs"></ul>
+          <h3 class="paneh">Totals</h3><ul class="rows vitals" id="pTotals"></ul>
           <h3 class="paneh">Materials</h3><ul class="rows" id="mats"></ul>
           <h3 class="paneh">Recent crafts</h3><ul class="rows" id="crafts"></ul></div>
       </div>
@@ -400,7 +401,16 @@ function spentRow() {
 // the professions tab: skill bars, materials, the last things made
 function renderProfs() {
   const p = S.prof; if (!p) return;
-  $("profMeta").textContent = p.cap ? `${pairLabel(p.pair)} · ${p.made} made · ${moneyTxt(p.ah)} on the AH` : "trainers teach professions from level 5";
+  $("profMeta").textContent = p.cap ? pairLabel(p.pair) : "trainers teach professions from level 5";
+  const c = k => profCount(k), gear = [[c("q2"), "green"], [c("q3"), "blue"], [c("q4"), "epic"]].filter(x => x[0]).map(([n, q]) => `${n} ${q}`).join(" · ");
+  const totals = [
+    ["crafted", p.made.toLocaleString()], ["gear crafted", gear],
+    ...["Mining", "Herbalism", "Skinning"].filter(hasProf).map(n => [`${n.toLowerCase()} gathered`, c(n).toLocaleString()]),
+    ["bags sewn", c("bags")], ["potions brewed", c("pots")], ["flasks made", c("flask")], ["disenchanted", c("de")],
+    ["own gear enchanted", c("selfEnch")], ["bombs thrown", c("bombs")], ["bandages used", c("band")], ["meals eaten", c("meals")],
+    ["sold on the AH", p.ah ? money(p.ah) : 0],
+  ].filter(([k, v]) => v || k === "crafted");
+  $("pTotals").innerHTML = totals.map(([k, v]) => `<li><span class="k">${k}</span><span class="v">${v}</span></li>`).join("");
   $("profs").innerHTML = [p.a, p.b, ...SECONDARY].map((n, i) => `<li class="prow${i > 1 ? " sec2" : ""}"><span class="l">${esc(n)}</span><span class="rank">${p.cap ? tierName(p.cap) : "untrained"}</span><span class="v">${p.sk[n]} / ${p.cap || 0}</span><div class="gbar thin"><i style="width:${(p.sk[n] / 300 * 100).toFixed(1)}%"></i><b style="left:${(p.cap / 300 * 100).toFixed(1)}%"></b></div></li>`).join("");
   const mats = Object.entries(p.mats).filter(x => x[1] > 0);
   $("mats").innerHTML = mats.map(([k, n]) => `<li><span class="l">${esc(k)}</span><span class="rank">×${n}</span></li>`).join("") || `<li><span class="empty">nothing gathered yet</span></li>`;
@@ -472,7 +482,7 @@ const TABS = [["log", "Chronicle"], ["quests", "Quests"], ["ach", "Achievements"
 let uiTab = "log";
 const fmtDate = t => new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 const shortPlayed = ms => { const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor(m / 60) % 24; return d ? `${d}d ${h}h` : h ? `${h}h ${m % 60}m` : `${m % 60}m`; };
-const when = (at, L, p) => at ? `${fmtDate(at)}${L ? " · level " + L : ""}${p != null ? " · " + shortPlayed(p) + " played" : ""}` : "earned before the journal existed";
+const when = (at, L, p, pre) => at ? `${fmtDate(at)}${L ? " · level " + L : ""}${p != null ? " · " + shortPlayed(p) + " played" : ""}` : pre === "prof" ? "earned before profession achievements existed" : "earned before the journal existed";
 function renderJournal() {
   const shown = ACH.filter(a => !a.show || a.show()), got = shown.filter(a => S.ach[a.id]);
   const r = route(), legs = [...new Set(r.map(l => l.z))], extra = S.zones.filter(e => !legs.includes(e.z));
@@ -486,8 +496,12 @@ function renderJournal() {
   if (uiTab === "log" || uiTab === "quests") return;
   let h = "";
   if (uiTab === "ach") {
-    const order = got.slice().sort((a, b) => (S.ach[b.id].p ?? -1) - (S.ach[a.id].p ?? -1)).concat(shown.filter(a => !S.ach[a.id]));
-    h = order.map(a => { const e = S.ach[a.id]; return `<li class="${e ? "got" : "locked"}"><span class="ico">${e ? "★" : "☆"}</span><div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span>${e ? `<time>${when(e.at, e.L, e.p)}</time>` : ""}</div></li>`; }).join("");
+    // earned first (latest on top), then the ones still to get; profession achievements under their own heading
+    const order = as => as.filter(a => S.ach[a.id]).sort((a, b) => (S.ach[b.id].p ?? -1) - (S.ach[a.id].p ?? -1)).concat(as.filter(a => !S.ach[a.id]));
+    const row = a => { const e = S.ach[a.id]; return `<li class="${e ? "got" : "locked"}"><span class="ico">${e ? "★" : "☆"}</span><div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span>${e ? `<time>${when(e.at, e.L, e.p, e.pre)}</time>` : ""}</div></li>`; };
+    const prof = shown.filter(a => a.cat === "prof");
+    h = order(shown.filter(a => a.cat !== "prof")).map(row).join("")
+      + (prof.length ? `<li class="jhead">Professions <small>${prof.filter(a => S.ach[a.id]).length} of ${prof.length}</small></li>` + order(prof).map(row).join("") : "");
   } else if (uiTab === "zones") {
     const row = (z, e, cur) => { const { min: a, max: b } = ZONES[z] || { min: 0, max: 0 };
       const st = cur ? "in progress" : e ? "done" : "ahead";

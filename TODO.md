@@ -131,6 +131,8 @@
   - The week at 60: raid when the lockout is open, otherwise battlegrounds or dungeons (maybe a PvP-mood setting)
   - Later with the guild: premades from guildmates win more often and show up in the chronicle
   - Order: Warsong Gulch first, then ranks and rewards, the PvP tab, then Arathi Basin and Alterac Valley
+- [x] **Profession achievements**: skill tiers, firsts and totals for gathering and crafting, AH gold, Crusader;
+  blue crafts from skill 150 (two signature slots per craft); totals on the professions tab
 - [x] **Gold sinks while raiding** (gold piles up at 60 today; raiding should cost money like it did)
   - Enchants: every new item wants an enchant, so each upgrade costs gold; shown on the item ("Enchanted: Crusader",
     or "not enchanted" in grey) and the enchant adds its stats. The hero enchants new gear on the next city visit when

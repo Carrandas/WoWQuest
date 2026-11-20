@@ -200,7 +200,7 @@ function rationName(k) {
 }
 // a rest task that eats from the bags, or a slow rest when they are empty
 function restTask() {
-  if (S.cons.band > 0 && (S.hpF ?? 1) < 0.6) { S.cons.band--; return { k: "rest", d: `Using ${article(profItem(BANDAGES, "First Aid"))} and catching a breath`, t: sec(9) }; }
+  if (S.cons.band > 0 && (S.hpF ?? 1) < 0.6) { S.cons.band--; bump("band"); return { k: "rest", d: `Using ${article(profItem(BANDAGES, "First Aid"))} and catching a breath`, t: sec(9) }; }
   const have = restKinds().filter(k => S.cons[k] > 0);
   have.forEach(k => S.cons[k]--);
   if (!have.length) return { k: "rest", d: cls().mp ? "Out of food and water. Sitting down to recover slowly" : "Out of food. Sitting down to recover slowly", t: sec(26) };
@@ -275,7 +275,7 @@ function wantedBuffs() {
 const buffUp = n => (S.buffs[n] || 0) > S.time;
 function missingBuff() { return wantedBuffs().find(b => !buffUp(b.name)); }
 function applyBuff(b) {
-  if (b.item) { if (!(S.cons[b.item] > 0)) return; S.cons[b.item]--; }
+  if (b.item) { if (!(S.cons[b.item] > 0)) return; S.cons[b.item]--; if (b.item === "feast") bump("meals"); }
   S.buffs[b.name] = b.min ? S.time + b.min * MIN : FOREVER;
 }
 function activeBuffs() { return Object.keys(S.buffs).filter(buffUp); }
@@ -325,7 +325,7 @@ function newHero(f) {
     loc: "start", arrived: null, quests: [], zq: {}, done: [], dungeons: [], nextCity: 2, cycleQ: 0, mount: 0,
     buffs: {}, cons: { hp: 0, mp: 0, elix: 0, stone: 0, food: 10, drink: CLASSES[f.cls].mp ? 10 : 0, band: 0, bomb: 0, feast: 0, flask: 0 },
     prof: newProf(pairsFor(f.cls).includes(f.prof) ? f.prof : PAIR_FOR[f.cls], 1), elites: [], feats: [], zones: [], dstat: {}, ach: {},
-    parts: {}, legendaries: [], lock: {}, runs: 0, trip: 0, cd: {},
+    parts: {}, legendaries: [], lock: {}, runs: 0, trip: 0, cd: {}, achProf: 1,
     kills: 0, deaths: 0, qdone: 0, qid: 0, since: 0, curQ: 0, repair: 0, dg: null, time: 0, log: [], logId: 0, task: null, queue: [], speed: 1, savedAt: Date.now() };
   SLOTS.forEach(s => S.equip[s] = null);
   S.equip["Main Hand"] = { name: c.start, ilvl: 2, q: 1, slot: "Main Hand" };

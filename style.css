@@ -296,6 +296,8 @@ button:disabled { cursor: not-allowed; }
 .journal li.got b { color: var(--text); }
 .journal li.cur b, .journal li.cur em { color: var(--good); }
 .journal li.locked { opacity: .5; } .journal li.locked .ico { color: var(--dim); }
+.journal li.jhead { display: block; border-bottom: 0; padding: 16px 0 2px; font-family: var(--label); font-weight: 700; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; color: var(--gold); }
+.journal li.jhead small { font-family: var(--body); font-weight: 400; font-size: 12.5px; letter-spacing: 0; text-transform: none; color: var(--dim); margin-left: 4px; }
 .rows .buff { color: #8fd0ff; }
 .quests .done { color: var(--good); }
 .quests .cur::before { content: "▸ "; color: var(--gold); }

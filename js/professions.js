@@ -53,8 +53,12 @@ const takeMat = (src, t, n) => { const k = MATS[src][t]; S.prof.mats[k] -= n; if
 function newProf(pair, L = 1) {
   const [a, b] = PROF_PAIRS[pair], cap = trainCap(L), on = sk => Math.max(0, Math.min(cap, sk));
   const sk = {}; [a, b, ...SECONDARY].forEach(n => sk[n] = on(L * 5 - 5));
-  return { pair, a, b, cap, sk, mats: {}, recent: [], ah: 0, made: 0 };
+  return { pair, a, b, cap, sk, mats: {}, recent: [], ah: 0, made: 0, count: {} };
 }
+// running totals for the professions tab and achievements: gathered per gathering skill ("top:" for the top tier),
+// crafted gear by quality (q2, q3, q4), pots, flask, bags, selfEnch, de (disenchanted), band, meals, bombs
+const bump = (k, n = 1) => { const c = S.prof && S.prof.count; if (c) c[k] = (c[k] || 0) + n; };
+const profCount = k => (S.prof && S.prof.count && S.prof.count[k]) || 0;
 
 // out in the field: a node or a skinnable beast after a kill
 function gatherTasks(t) {
@@ -81,7 +85,7 @@ function profLoot(t) {
 }
 function finishGather(t) {
   const n = t.prof === "Skinning" ? 1 + R(2) : 1 + R(3);
-  addMat(t.prof, t.tier, n);
+  addMat(t.prof, t.tier, n); bump(t.prof, n); if (t.tier === 4) bump("top:" + t.prof, n);
   skillUp(t.prof, MAT_REQ[t.tier]);
 }
 
@@ -135,6 +139,7 @@ function buyMats(src, t, n, why) {
 // The steps share a run: what's been made, materials bought on the AH (notes), and how many crafts
 function craftRun(craft, primary) {
   const p = S.prof, run = { craft, p, src: CRAFT_SRC[craft], made: [], notes: {}, crafts: 0 }, sk0 = p.sk[craft];
+  craftBlue(run);
   craftGear(run);
   craftConsumables(run);
   if (craft === "Tailoring") sewBag(run);
@@ -164,7 +169,36 @@ function craftGear(run) {
     const slot = slots.filter(s => power(craftItem(craft, r, s)) > power(S.equip[s])).sort((a, b) => power(S.equip[a]) - power(S.equip[b]))[0];
     if (!slot) break;
     if (!canCraft(run, r) && !buyMats(run.src, r.t, r.n - matCount(run.src, r.t), run.notes)) break;
-    useRecipe(run, r); const it = craftItem(craft, r, slot); gain(it, "Crafted"); p.made++; run.made.push(it.name);
+    useRecipe(run, r); const it = craftItem(craft, r, slot); gain(it, "Crafted"); p.made++; bump("q" + it.q); run.made.push(it.name);
+  }
+}
+// blue crafts: a few signature pieces per craft, from skill 150 (a new one at 200 and 250), a little below
+// dungeon blues. An extra on top of the green levelling gear: made once a piece beats what's worn
+const BLUE_REQ = [150, 200, 250];
+function blueRecipes(craft) {
+  const a = armorType(), out = [], add = (slot, names) => out.push({ slot, names });
+  if (craft === "Blacksmithing") {
+    add("Main Hand", ["Massive Iron Axe", "Moonsteel Broadsword", "Truesilver Champion"]);
+    if (a === "Plate" || a === "Mail") add("Chest", ["Golden Scale Cuirass", "Truesilver Breastplate", "Imperial Plate Chest"]);
+  } else if (craft === "Leatherworking") {
+    add("Back", ["Guardian Cloak", "Black Whelp Cloak", "Onyxia Scale Cloak"]);
+    if (a === "Leather") add("Chest", ["Guardian Armor", "Nightscape Tunic", "Wicked Leather Armor"]);
+    if (a === "Mail") add("Chest", ["Turtle Scale Breastplate", "Green Dragonscale Breastplate", "Blue Dragonscale Breastplate"]);
+  } else if (craft === "Tailoring") {
+    add("Back", ["Cloak of Fire", "Cindercloth Cloak", "Gaea's Embrace"]);
+    if (a === "Cloth") add("Chest", ["Robe of Power", "Frostweave Robe", "Robe of Winter Night"]);
+  } else if (craft === "Engineering") add("Head", ["Fire Goggles", "Green Lens", "Spellpower Goggles Xtreme"]);
+  return out;
+}
+function craftBlue(run) {
+  const { craft, p } = run, t = BLUE_REQ.filter(r => p.sk[craft] >= r).length - 1;
+  if (t < 0) return;
+  const req = BLUE_REQ[t], mt = skillTier(req);
+  for (const { slot, names } of blueRecipes(craft)) {
+    const it = { name: names[t], ilvl: Math.round(req / 5 + 7), q: 3, slot, made: true };
+    if (power(it) <= power(S.equip[slot]) || !topUp(run, mt, 8)) continue;
+    takeMat(run.src, mt, 8); run.crafts++; skillUp(craft, req);
+    gain(it, "Crafted"); p.made++; bump("q3"); run.made.push(it.name);
   }
 }
 // consumables: refill what the hero uses (potions, bandages, food, bombs, flasks)
@@ -176,6 +210,7 @@ function craftConsumables(run) {
       const r = recipes(run.craft).filter(x => canCraft(run, x)).pop(); if (!r) break;
       if (k === "flask") { if (r.t < 4 || spendable() < BLACK_LOTUS * 2) break; spend("mats", BLACK_LOTUS); } // a flask needs a Black Lotus
       useRecipe(run, r); S.cons[k] = (S.cons[k] || 0) + (k === "band" || k === "feast" ? 2 : 1); n++;
+      if (k === "flask") bump("flask"); else if (k === "hp" || k === "mp" || k === "elix") bump("pots");
     }
     if (n) { run.made.push(`${n}× ${name}`); run.p.made += n; }
   }
@@ -185,7 +220,7 @@ function sewBag(run) {
   const { craft, p, src } = run;
   const bag = BAGS.filter(b => b.lvl <= S.level).pop(), r = bag && recipes(craft).filter(x => x.t <= BAGS.indexOf(bag) && p.sk[craft] >= x.req).pop();
   if (!bag || !r || !bagUpgrade(bag) || !topUp(run, r.t, 6)) return;
-  takeMat(src, r.t, 6); run.crafts++; skillUp(craft, r.req); giveBag(bag, "Sewed"); run.made.push(bag.name);
+  takeMat(src, r.t, 6); run.crafts++; skillUp(craft, r.req); giveBag(bag, "Sewed"); bump("bags"); run.made.push(bag.name);
 }
 // skill-ups: orange and yellow recipes while the materials last (bought when behind), sold to a vendor after.
 // Returns how many were made
@@ -236,7 +271,7 @@ function masterwork(craft) {
   if (power(it) <= power(S.equip[m.slot]) || spendable() < m.cost) return;
   spend("mats", m.cost);
   log(`Bought the ${m.mat} for ${moneyTxt(m.cost)} and crafted ${m.name}!`, "loot4");
-  gain(it, "Crafted"); p.made++; p.recent.unshift({ n: m.name, L: S.level });
+  gain(it, "Crafted"); p.made++; bump("q4"); p.recent.unshift({ n: m.name, L: S.level });
 }
 
 // ---------- gold: what's spare, and where it went this week ----------
@@ -281,7 +316,7 @@ function enchantGear(self, made) {
     if (enchanter) {
       const dt = Math.min(4, Math.floor(e[0] / 13)), need = 2 + (t >= 4 ? 4 : 0);
       if (matCount("Dust", dt) < need && !buyMats("Dust", dt, need - matCount("Dust", dt), {})) continue;
-      takeMat("Dust", dt, need); skillUp("Enchanting", e[0] * 5);
+      takeMat("Dust", dt, need); skillUp("Enchanting", e[0] * 5); bump("selfEnch");
     } else {
       const c = enchPrice(e[0]); if (spendable() < c * (S.level >= 60 ? 3 : 4)) continue;
       spend("ench", c);
