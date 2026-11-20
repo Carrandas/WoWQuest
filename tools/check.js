@@ -5,6 +5,11 @@
 //     temporary worktree) and compares the output line for line. "IDENTICAL" means gameplay didn't move.
 //     --long adds 40-hour runs. Uses the saves in saves/ that exist, plus brand-new heroes.
 //
+//   node tools/check.js specs [seeds]
+//     For balance between classes. Every class and spec (27) from level 1 to 60, then 40 hours of endgame
+//     (default 2 seeds each): hours to 60, deaths, gold and gear at 60, raids reached, raid wipe rate, rank on
+//     the meter. Flags specs that stand out from the median of all specs. Takes a few minutes.
+//
 //   node tools/check.js balance [seeds]
 //     For gameplay changes. Plays new heroes of every profession pair for 40 hours (default 4 seeds each) and
 //     checks levelling speed, deaths, gold, gear, blue crafts and profession skill pace against the ranges in
@@ -102,6 +107,54 @@ async function balance(seeds) {
   return ok;
 }
 
+// ---------- specs: every class and spec from level 1 to 60, then raiding ----------
+// race, class, profession pair and the three specs; the role comes from the spec (as in the game's ROLE_SPECS)
+const SPEC_HEROES = [["Human", "Warrior", "smith", ["Arms", "Fury", "Protection"]], ["Dwarf", "Paladin", "smith", ["Holy", "Protection", "Retribution"]],
+  ["Night Elf", "Hunter", "leather", ["Beast Mastery", "Marksmanship", "Survival"]], ["Undead", "Rogue", "herb", ["Assassination", "Combat", "Subtlety"]],
+  ["Troll", "Priest", "tailor", ["Discipline", "Holy", "Shadow"]], ["Orc", "Shaman", "leather", ["Elemental", "Enhancement", "Restoration"]],
+  ["Gnome", "Mage", "tailor", ["Arcane", "Fire", "Frost"]], ["Undead", "Warlock", "eng", ["Affliction", "Demonology", "Destruction"]],
+  ["Tauren", "Druid", "herb", ["Balance", "Feral", "Restoration"]]];
+const ROLE_OF = { Warrior: { 2: "tank" }, Paladin: { 0: "heal", 1: "tank" }, Priest: { 0: "heal", 1: "heal" }, Shaman: { 2: "heal" }, Druid: { 1: "tank", 2: "heal" } };
+async function specs(seeds) {
+  const jobs = [];
+  for (const [race, cls, prof, trees] of SPEC_HEROES) for (let spec = 0; spec < 3; spec++) for (let s = 1; s <= seeds; s++)
+    jobs.push({ key: `${cls} ${trees[spec]}`, role: (ROLE_OF[cls] || {})[spec] || "dps", run: () => sim("new", "spec60", s, { PRE: newHero([race, cls, spec, prof]) }) });
+  console.log(`Playing ${jobs.length} heroes (${SPEC_HEROES.length * 3} specs x ${seeds}) from level 1 to 60, then 40 hours of raiding…`);
+  const outs = await pool(jobs.map(j => j.run));
+  const avg = a => { a = a.filter(x => x != null); return a.length ? a.reduce((x, y) => x + y, 0) / a.length : null; };
+  const rows = [];
+  for (const key of [...new Set(jobs.map(j => j.key))]) {
+    const rs = outs.filter((o, i) => jobs[i].key === key).map(o => { try { return JSON.parse(o.split("\n")[0]); } catch (e) { console.log(key + ": bad output " + o.slice(0, 200)); return null; } }).filter(Boolean);
+    if (!rs.length) continue;
+    const role = jobs.find(j => j.key === key).role, raids = avg(rs.map(r => Object.keys(r.end.runs).length)), bosses = avg(rs.map(r => r.end.kills + r.end.wipes));
+    rows.push({ key, role, reached: rs.filter(r => r.L.level >= 60).length / rs.length, hours: avg(rs.map(r => r.L.hours)), deaths: avg(rs.map(r => r.L.deaths)), solo: avg(rs.map(r => r.L.solo)),
+      gold: avg(rs.map(r => r.L.gold)), gs: avg(rs.map(r => r.L.gs)), raids, wipe: bosses ? avg(rs.map(r => r.end.wipes)) / bosses : null, gsEnd: avg(rs.map(r => r.end.gs)),
+      endDeaths: avg(rs.map(r => r.end.deaths)), rank: avg(rs.map(r => role === "heal" ? r.end.healRank : r.end.dmgRank)) });
+  }
+  // flags: against the median of all specs (and the median of the same role for the meter rank)
+  const med = (a) => { a = a.filter(x => x != null).sort((x, y) => x - y); return a.length ? a[a.length >> 1] : null; };
+  const M = k => med(rows.map(r => r[k])), mh = M("hours"), md = M("deaths"), ms = M("solo"), mw = M("wipe"), mr = M("raids");
+  const rankMed = role => med(rows.filter(r => r.role === role).map(r => r.rank));
+  let ok = true;
+  const f = (v, d = 0) => v == null ? "   -" : v.toFixed(d);
+  console.log("spec                      role  hours to 60  deaths  solo  gold@60  gs@60 | raids  wipe%  gs end  deaths  meter rank  flags");
+  for (const r of rows) {
+    const flags = [];
+    if (r.reached < 1) flags.push("DIDN'T REACH 60");
+    if (r.hours > mh * 1.12) flags.push("SLOW"); if (r.hours < mh * 0.88) flags.push("FAST");
+    if (r.solo > Math.max(3, ms * 2.5)) flags.push("SOLO DEATHS");
+    if (r.deaths > Math.max(md * 1.6, md + 6)) flags.push("DEATHS");
+    if (!r.raids) flags.push("NO RAIDS"); else if (r.raids < mr - 2) flags.push("FEW RAIDS");
+    if (r.wipe != null && mw != null && r.wipe > mw + 0.08) flags.push("WIPES");
+    const rm = rankMed(r.role); if (r.rank != null && rm != null && r.rank > rm * 1.5 + 1) flags.push("LOW ON METER");
+    if (flags.length) ok = false;
+    console.log(`${r.key.padEnd(26)}${r.role.padEnd(6)}${f(r.hours).padStart(11)}  ${f(r.deaths, 1).padStart(6)}  ${f(r.solo, 1).padStart(4)}  ${f(r.gold).padStart(7)}  ${f(r.gs, 1).padStart(5)} | ${f(r.raids, 1).padStart(5)}  ${f(r.wipe == null ? null : r.wipe * 100).padStart(5)}  ${f(r.gsEnd, 1).padStart(6)}  ${f(r.endDeaths, 1).padStart(6)}  ${f(r.rank, 1).padStart(10)}  ${flags.join(", ")}`);
+  }
+  console.log(`median: ${f(mh)} hours to 60 (${f(mh / 24, 1)} days), ${f(md, 1)} deaths, ${f(mw == null ? null : mw * 100)}% raid wipes, ${f(mr, 1)} raids in 40 hours`);
+  console.log(ok ? "SPECS OK" : "SOME SPECS STAND OUT (see flags)");
+  return ok;
+}
+
 const [mode = "same", arg] = process.argv.slice(2);
-(mode === "balance" ? balance(+arg || 4) : same(arg && !arg.startsWith("--") ? arg : "main", process.argv.includes("--long")))
+(mode === "balance" ? balance(+arg || 4) : mode === "specs" ? specs(+arg || 2) : same(arg && !arg.startsWith("--") ? arg : "main", process.argv.includes("--long")))
   .then(good => process.exit(good ? 0 : 1));

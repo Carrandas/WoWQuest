@@ -53,10 +53,12 @@ Two checks to run after every change (both in Node, no browser, under 20 seconds
 ```
 node tools/check.js same [ref] [--long]   # refactors: seeded output must match main (or ref) exactly
 node tools/check.js balance [seeds]       # gameplay changes: new heroes of every profession pair, 40 hours each
+node tools/check.js specs [seeds]         # class balance: all 27 specs from level 1 to 60, then 40 hours of raiding (~40 s)
 ```
 
 - `same` runs the scenarios below on the saves in `saves/` and on new level 1 heroes, on this copy and on `main` (in a temporary worktree), and prints IDENTICAL or the first differing line. `--long` adds 40-hour runs.
 - `balance` checks levelling speed (about level 43 after 40 hours), deaths, solo deaths, gold, gear score per level, blue crafts and profession skill pace at levels 20/30/40 against the ranges in `EXPECT` at the top of `tools/check.js`, and prints OK / LOW / HIGH per profession pair. When a change is meant to move one of these, update its range in the same commit and say so.
+- `specs` plays every class and spec from level 1 to 60 and then 40 hours at 60, and prints hours to 60, deaths, solo deaths, gold and gear at 60, raids reached, raid wipe rate, gear at the end and the hero's rank on the raid meter (damage, or healing for healers; pets count toward their owner). It flags specs that stand out from the median of all specs (SLOW, SOLO DEATHS, WIPES, LOW ON METER…). Run it after changes to classes, talents, fights or the economy.
 
 Single scenarios run in Node too:
 
