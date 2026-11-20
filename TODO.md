@@ -15,6 +15,12 @@
   - Stuns, fears and interrupts; enemy heals; floating damage and healing numbers
 - [x] **Scripted boss moments**: VanCleef, Ragnaros, Onyxia, Nefarian, Kel'Thuzad, Patchwerk, Majordomo
   - [ ] More bosses (Hakkar's Blood Siphon, C'Thun's eye phase, the Four Horsemen, Vaelastrasz)
+- [ ] **Area of effect for the hero and the group** (from 3 or more enemies at once)
+  - Classes that can AoE switch to it on 3+ mobs: mages (Arcane Explosion, Flamestrike, Blizzard, Frost Nova + Cone of Cold),
+    warlocks (Rain of Fire, Hellfire), paladins (Consecration), warriors (Whirlwind, Cleave, Thunder Clap),
+    druids (Hurricane, Swipe), hunters (Multi-Shot, Volley), priests (Holy Nova)
+  - AoE damages the whole pack at once, so packs die faster and closer together instead of one by one
+  - Applies to 3-mob pulls while questing and to dungeon/raid packs; in groups the AoE classes also switch
 - [ ] **Wipes from the fight itself** (raid wipes are still a roll, now based on gear)
 - [x] **Damage meter for dungeons and raids** (damage and healing, this fight or the whole run; collapsible)
   - [ ] Base your own damage on your actual casts instead of a share of the group's
