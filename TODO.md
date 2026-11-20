@@ -34,4 +34,14 @@
   - Each member has their own gear; raid loot goes to members, so the guild visibly gets stronger
     (wiping on Onyxia, dungeons for gear, killing Onyxia, better gear, Molten Core, and so on)
   - Each member's gear drives their damage and healing on the damage meter
+  - Keep it simple: guildies roughly follow your own level
+  - A small personality per member ("always late", "Leeroy type", "loves pets") that shows up in the chronicle
+    ("Stabbyjoe pulled the extra pack again.")
+  - Members come and go: someone quits after five wipes, and the guild posts "LFM tank for MC, on Baron Geddon",
+    which can bring in a new member; mid-run swaps too ("X has to go, Y joins")
+  - A roster of about 50 for 40 raid spots, so some members sit out each week
+  - DKP: points earned per raid, building up across raids, spent to buy the items members want
+    ("Thrall wins [Perdition's Blade] for 120 DKP")
+  - Guild bank: flasks before a raid, spare gear for new members and alts, gold for repairs
+  - Guild achievements (low priority, overlaps with the current achievements)
 - [ ] **Expansion packs** (eventually)
