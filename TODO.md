@@ -116,7 +116,8 @@
     - Mounts: Deathcharger's Reins (Baron Rivendare, Stratholme), Swift Razzashi Raptor and Swift Zulian Tiger (Zul'Gurub),
       Winterspring Frostsaber (Wintersaber Trainers, Alliance), the other races' mounts at exalted with their city,
       the AQ40 Qiraji battle tanks, the PvP mounts (Frostwolf Howler, Stormpike Battle Charger) once PvP is in
-    - Minipets, a big one, from early on (not only at 60):
+    - Minipets, a big one, from early on (not only at 60). **Done**: 29 pets (vendor, Gadgetzan AH, Narkk, rare drops,
+      OOX, engineering), the companion, the Collection tab and six achievements; still to come: the event pets and Mr. Pinchy
       - Bought from vendors while levelling, cheap and a nice first collectible around level 10: the cats in Elwynn
         Forest (Bombay, Tabby, Siamese, Cornish Rex, Orange Tabby, Silver Tabby, from Donni Anthania), the Snowshoe
         Rabbit in Dun Morogh, owls in Darnassus; for the Horde the Prairie Dog in Thunder Bluff, the snakes (Black,

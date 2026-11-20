@@ -73,7 +73,7 @@ const FINISH = {
     if (before > S.quests.length) log(`Abandoned ${before - S.quests.length} unfinished quest${before - S.quests.length > 1 ? "s" : ""} from the last zone.`);
     const z = ZONES[t.zone]; zoneEntry(t.zone);
     log(`Entered ${t.zone} (levels ${z.min}–${z.max}).`, "zone");
-    petArrive(t.zone);
+    petArrive(t.zone); minipetArrive(t.zone);
   },
   field() { flushTrip(); S.loc = "field"; },
   hub() { S.loc = "hub"; },
@@ -105,6 +105,7 @@ const FINISH = {
     if (S.prof) { profLoot(t); if (Math.random() < 0.4) addBag({ name: pick(GREYS), val: junk(), q: 0 }); }
     else if (Math.random() < 0.55) addBag({ name: Math.random() < 0.4 ? CLOTH[clamp(Math.floor(L / 12), 0, 4)] : pick(GREYS), val: junk(), q: 0 });
     S.queue.unshift(...gatherTasks(t));
+    minipetDrops(t.mobs || [t.mob]);
     const r = Math.random();
     if (r < 0.003) gain(makeItem(pick(SLOTS), t.mobL + 2, 3), `The ${t.mob} dropped`);
     else if (r < 0.025 || t.elite) gain(makeItem(pick(SLOTS), t.mobL, 2), `The ${t.mob} dropped`);
@@ -144,6 +145,7 @@ const FINISH = {
   repair() { const c = Math.min(S.repair, S.money); spend("rep", c); S.repair = 0; if (c) log(`Repaired everything for ${moneyTxt(c)}.`, "gold"); },
   shop() {
     const L = S.level;
+    minipetShop(); // a cheap vendor pet comes before the rest of the shopping
     buySupplies(spendable() * 0.5); // potions and the like come first: half of the spare gold may go to supplies
     const bag = BAGS.filter(b => b.lvl <= L).pop();
     // tailors sew their own bags
@@ -205,7 +207,7 @@ const FINISH = {
     S.dq = null;
   },
   dtravel(t) { S.loc = "dungeon"; log(`Entering ${t.dn}.`, "dung"); },
-  trash(t) { if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); petAfterFight(t, null); },
+  trash(t) { if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); petAfterFight(t, null); minipetDrops(t.mobs || []); },
   boss(t) {
     if (t.foe) t.foe.units.forEach(u => (u.phases || []).forEach(p => { if (p.say) log(p.say, "boss"); }));
     const raid = !!(S.dg && S.dg.raid);
@@ -233,14 +235,14 @@ const FINISH = {
     }
     log(`${t.boss} has been defeated.`, "boss");
     (S.dq || []).filter(x => !x.done && x.boss === t.boss).forEach(x => { x.done = true; log(`Objective complete: ${x.obj} ("${x.name}").`, "quest"); });
-    gainXp(mobXp(S.level + 2) * 5); petAfterFight(t, null);
+    gainXp(mobXp(S.level + 2) * 5); petAfterFight(t, null); minipetDrops([t.boss]);
     // a boss drops a few items for the whole group: in a raid the hero only now and then gets one
     if (Math.random() < (raid ? RAID_INFO[t.dn].size === 20 ? 0.2 : 0.12 : 0.4)) lootDrop(t.dn, t.boss);
     if (t.dn === "Naxxramas" && Math.random() < 0.1) atiesh();
   },
   buff(t) { applyBuff(t.b); },
   gather(t) { finishGather(t); },
-  craft() { finishCraft(); },
+  craft() { finishCraft(); minipetCrafts(); },
   farm(t) {
     const c = Math.round(t.t / HOUR * 150000), g = ["Mining", "Herbalism", "Skinning"].find(hasProf);
     S.money += c;

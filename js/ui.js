@@ -119,6 +119,7 @@ const TAB_ICONS = {
   quests: '<path d="M12 4v10"/><circle cx="12" cy="19" r="1.3" fill="currentColor" stroke="none"/>',
   ach: '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4M9 21h6M10 17h4"/>',
   zones: '<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',
+  coll: '<circle cx="7" cy="9" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="17" cy="9" r="2"/><path d="M8 18c0-3 1.8-5 4-5s4 2 4 5c0 1.5-1.5 2-4 2s-4-.5-4-2z"/>',
   dung: '<path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-5a3 3 0 0 1 6 0v5"/>',
   prof: '<path d="M14.5 4.5l5 5-2 2-5-5z"/><path d="M13.5 7.5L4 17l3 3 9.5-9.5"/><path d="M3 21h7"/>',
 };
@@ -327,7 +328,7 @@ function renderHero() {
   $("vitals").innerHTML = [
     ["money", money(S.money)],
     ["mount", S.mount >= 2 ? race().epic : S.mount ? race().mount : S.level >= 40 ? "saving up…" : "on foot until 40"],
-    ["kills", S.kills.toLocaleString()], ["quests done", S.qdone.toLocaleString()], ["deaths", S.deaths.toLocaleString()], ...spentRow(),
+    ...(S.companion ? [["companion", esc(S.companion)]] : []), ["kills", S.kills.toLocaleString()], ["quests done", S.qdone.toLocaleString()], ["deaths", S.deaths.toLocaleString()], ...spentRow(),
   ].map(([k, v]) => `<li><span class="k">${k}</span><span class="v">${v}</span></li>`).join("");
   const act = activeBuffs();
   $("bCount").textContent = `${act.length} active`;
@@ -487,7 +488,7 @@ function startGame() {
 }
 
 // ---------- journal tabs: achievements, zones, dungeons ----------
-const TABS = [["log", "Chronicle"], ["quests", "Quests"], ["ach", "Achievements"], ["zones", "Zones"], ["dung", "Dungeons"]];
+const TABS = [["log", "Chronicle"], ["quests", "Quests"], ["ach", "Achievements"], ["zones", "Zones"], ["dung", "Dungeons"], ["coll", "Collection"]];
 let uiTab = "log";
 const fmtDate = t => new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 const shortPlayed = ms => { const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor(m / 60) % 24; return d ? `${d}d ${h}h` : h ? `${h}h ${m % 60}m` : `${m % 60}m`; };
@@ -497,20 +498,23 @@ function renderJournal() {
   const r = route(), legs = [...new Set(r.map(l => l.z))], extra = S.zones.filter(e => !legs.includes(e.z));
   const doneZ = S.zones.filter(e => e.z !== S.arrived || S.leg >= r.length).length;
   const dl = factionDungeons().concat(RAIDS).sort((a, b) => a.min - b.min);
-  $("tab-ach").textContent = ` ${got.length}/${shown.length}`;
+  $("tab-ach").textContent = ` ${got.length}`; // the totals are in the line under the tabs
   $("tab-zones").textContent = ` ${S.zones.length}`;
-  $("tab-dung").textContent = ` ${dl.filter(d => S.dungeons.includes(d.name)).length}/${dl.length}`;
+  $("tab-dung").textContent = ` ${dl.filter(d => S.dungeons.includes(d.name)).length}`;
+  $("tab-coll").textContent = ` ${Object.keys(S.minipets).length}`;
   $("log").hidden = uiTab !== "log"; $("quests").hidden = uiTab !== "quests"; $("journal").hidden = uiTab === "log" || uiTab === "quests";
-  $("elapsed").textContent = uiTab === "log" ? "/played " + fmtTime(S.time) : uiTab === "quests" ? `${S.quests.length + (S.dq || []).length} active` : uiTab === "ach" ? `${got.length} of ${shown.length} earned` : uiTab === "zones" ? `${doneZ} zones done` : `${S.dungeons.length} cleared`;
+  $("elapsed").textContent = uiTab === "log" ? "/played " + fmtTime(S.time) : uiTab === "quests" ? `${S.quests.length + (S.dq || []).length} active` : uiTab === "ach" ? `${got.length} of ${shown.length} earned` : uiTab === "zones" ? `${doneZ} zones done` : uiTab === "coll" ? `${Object.keys(S.minipets).length} minipets` : `${dl.filter(d => S.dungeons.includes(d.name)).length} of ${dl.length} cleared`;
   if (uiTab === "log" || uiTab === "quests") return;
   let h = "";
   if (uiTab === "ach") {
-    // earned first (latest on top), then the ones still to get; profession achievements under their own heading
+    // earned first (latest on top), then the ones still to get; professions and collections under their own headings
     const order = as => as.filter(a => S.ach[a.id]).sort((a, b) => (S.ach[b.id].p ?? -1) - (S.ach[a.id].p ?? -1)).concat(as.filter(a => !S.ach[a.id]));
     const row = a => { const e = S.ach[a.id]; return `<li class="${e ? "got" : "locked"}"><span class="ico">${e ? "★" : "☆"}</span><div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span>${e ? `<time>${when(e.at, e.L, e.p, e.pre)}</time>` : ""}</div></li>`; };
-    const prof = shown.filter(a => a.cat === "prof");
-    h = order(shown.filter(a => a.cat !== "prof")).map(row).join("")
-      + (prof.length ? `<li class="jhead">Professions <small>${prof.filter(a => S.ach[a.id]).length} of ${prof.length}</small></li>` + order(prof).map(row).join("") : "");
+    const CATS = [["prof", "Professions"], ["coll", "Collections"]];
+    h = order(shown.filter(a => !a.cat)).map(row).join("") + CATS.map(([c, title]) => {
+      const as = shown.filter(a => a.cat === c);
+      return as.length ? `<li class="jhead">${title} <small>${as.filter(a => S.ach[a.id]).length} of ${as.length}</small></li>` + order(as).map(row).join("") : "";
+    }).join("");
   } else if (uiTab === "zones") {
     const row = (z, e, cur) => { const { min: a, max: b } = ZONES[z] || { min: 0, max: 0 };
       const st = cur ? "in progress" : e ? "done" : "ahead";
@@ -518,6 +522,8 @@ function renderJournal() {
       return `<li class="${st === "ahead" ? "locked" : st === "in progress" ? "cur" : "got"}"><span class="ico">${st === "done" ? "✓" : st === "in progress" ? "▸" : "·"}</span><div><b>${esc(z)}</b><span>${det}</span></div><em>${st}</em></li>`; };
     h = legs.map(z => row(z, S.zones.find(x => x.z === z), z === curZone() && S.leg < r.length)).join("")
       + extra.map(e => row(e.z, e, e.z === curZone())).join("");
+  } else if (uiTab === "coll") {
+    h = renderCollection();
   } else {
     h = dl.map(d => { const e = S.dstat[d.name], raid = RAIDS.includes(d), done = S.dungeons.includes(d.name) && e;
       const loot = done && e.loot.length ? `<span class="loot">${e.loot.map(x => `<i class="q${x.q}">${esc(x.n)}</i>`).join(", ")}</span>` : "";

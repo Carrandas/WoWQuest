@@ -329,7 +329,7 @@ function newHero(f) {
     buffs: {}, cons: { hp: 0, mp: 0, elix: 0, stone: 0, food: 10, drink: CLASSES[f.cls].mp ? 10 : 0, band: 0, bomb: 0, feast: 0, flask: 0 },
     prof: newProf(pairsFor(f.cls).includes(f.prof) ? f.prof : PAIR_FOR[f.cls], 1), elites: [], feats: [], zones: [], dstat: {}, ach: {},
     parts: {}, legendaries: [], lock: {}, runs: 0, trip: 0, cd: {}, achProf: 1,
-    bossKills: {}, runs60: 0, pet: null, demons: {}, petStats: { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 }, rareHunt: null,
+    bossKills: {}, runs60: 0, minipets: {}, companion: null, oox: [], pet: null, demons: {}, petStats: { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 }, rareHunt: null,
     kills: 0, deaths: 0, qdone: 0, qid: 0, since: 0, curQ: 0, repair: 0, dg: null, time: 0, log: [], logId: 0, task: null, queue: [], speed: 1, savedAt: Date.now() };
   SLOTS.forEach(s => S.equip[s] = null);
   S.equip["Main Hand"] = { name: c.start, ilvl: 2, q: 1, slot: "Main Hand" };

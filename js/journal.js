@@ -94,6 +94,16 @@ const PROF_ACH = [
   { id: "p-crusader", name: "Crusader", desc: "Get Crusader on your weapon, bought or enchanted yourself.", test: () => eq(it => it.ench && it.ench.name === "Crusader") },
 ];
 ACH.push(...PROF_ACH.map(a => ({ ...a, cat: "prof" })));
+// minipets
+const mp = () => S.minipets || {}, mpHas = names => names.every(n => mp()[n]);
+ACH.push(...[
+  { id: "mp1", name: "A Friend for the Road", desc: "Get your first minipet.", test: () => Object.keys(mp()).length >= 1 },
+  { id: "mp10", name: "Plenty of Pets", desc: "Collect 10 minipets.", test: () => Object.keys(mp()).length >= 10 },
+  { id: "mp20", name: "Menagerie", desc: "Collect 20 minipets.", test: () => Object.keys(mp()).length >= 20 },
+  { id: "mpcats", name: "Crazy Cat Person", desc: "Collect all six cats: Bombay, Cornish Rex, Orange Tabby, Silver Tabby, White Kitten and Black Tabby.", test: () => mpHas(["Bombay Cat", "Cornish Rex Cat", "Orange Tabby Cat", "Silver Tabby Cat", "White Kitten", "Black Tabby Cat"]) },
+  { id: "mpparrots", name: "Polly Want a Cracker", desc: "Collect all four parrots: Cockatiel, Senegal, Green Wing Macaw and Hyacinth Macaw.", test: () => mpHas(["Cockatiel", "Senegal", "Green Wing Macaw", "Hyacinth Macaw"]) },
+  { id: "mpwhelps", name: "Whelp Wrangler", desc: "Collect all four whelplings: Dark, Crimson, Emerald and Azure.", test: () => mpHas(["Dark Whelpling", "Crimson Whelpling", "Emerald Whelpling", "Azure Whelpling"]) },
+].map(a => ({ ...a, cat: "coll" })));
 // pets
 const ps = () => S.petStats || { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 };
 ACH.push(

@@ -15,6 +15,7 @@ Plain HTML, CSS and vanilla JS: no build step, no dependencies, no modules. GitH
   - `professions.js`: gathering, crafting, gold (`spend`, `spendable`), enchants
   - `journal.js`: achievements, the zone and dungeon journal
   - `group.js`: dungeon and raid groups, their rotations, group fights (`simFight`, `partyFight`), wipe chance
+  - `minipets.js`: minipets to collect (`MINIPETS`, `S.minipets`, `S.companion`): vendor pets on city visits, the other faction's through the Gadgetzan AH, rare drops, the OOX escorts, engineering builds; the Collection tab
   - `pets.js`: hunter pets and warlock demons (`S.pet`): taming and summoning, tanking and damage share in fights, happiness, rare tames, demon specials, Infernal and Doomguard, the pet frame
   - `plan.js`: what the hero does next (`plan`, `killTask`, `queueCity`, `queueDungeon`), rotations, area of effect
   - `finish.js`: loot, `FINISH` (what each finished task does), the clock (`advance`, `catchUp`)
