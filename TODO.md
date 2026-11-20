@@ -26,9 +26,12 @@
   - [ ] Base your own damage on your actual casts instead of a share of the group's
   - [ ] Raid numbers run low (about 125 dps/hps per player); raise raid boss health and heal sizes
 - [ ] **Expand the talent tree** (it only shows 0 / 0 / 25 right now)
-- [ ] **Guild system** (design still open)
-  - Idea: the guild is the raid. The same 40 members come back every week, loot that drops goes to them,
-    and the guild gets stronger over time: wiping on Onyxia, running dungeons for gear, killing Onyxia,
-    better gear, Molten Core, and so on. Each member has their own gear, which drives their damage and healing.
-  - Open question: dungeons are 5-man, so who from the guild comes along (or pickup players as now)
+- [ ] **Guild system**
+  - The guild grows with you: at some level your character founds a guild with a name
+  - Members join over time, enough for a 5-man dungeon first; dungeon groups are then made from the guild
+  - Keep recruiting until there are 40 members at level 60, then raiding starts
+  - Guild tab: name, class and spec, level, gear level for each member
+  - Each member has their own gear; raid loot goes to members, so the guild visibly gets stronger
+    (wiping on Onyxia, dungeons for gear, killing Onyxia, better gear, Molten Core, and so on)
+  - Each member's gear drives their damage and healing on the damage meter
 - [ ] **Expansion packs** (eventually)
