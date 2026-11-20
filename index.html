@@ -162,6 +162,14 @@ button:disabled { cursor: not-allowed; }
 .gcast { font-size: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.4em; }
 .gcast .cur { color: var(--gold); }
 .gcast .dead { color: var(--hp-crit); font-style: italic; }
+/* floating damage (red) and healing (green) numbers */
+.unit, .gcard, .rcell { position: relative; }
+.bub { position: absolute; top: 34%; z-index: 5; pointer-events: none; font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px #000, 0 0 5px #000; transform: translateX(-50%); animation: bub 1.3s ease-out forwards; }
+.bub.dn { color: #ff5a4f; } .bub.up { color: #5ce65c; }
+.gcard .bub { font-size: 14px; top: 28%; } .rcell .bub { font-size: 11px; top: 10%; }
+@keyframes bub { from { opacity: 0; transform: translate(-50%, 6px); } 15% { opacity: 1; } to { opacity: 0; transform: translate(-50%, -28px); } }
+@media (prefers-reduced-motion: reduce) { .bub { animation: bubfade 1.3s linear forwards; } @keyframes bubfade { from { opacity: 1; } to { opacity: 0; } } }
 .group.raid .gcards { display: block; }
 .rgroups { display: grid; grid-template-columns: repeat(var(--ng), minmax(0, 1fr)); gap: 8px; }
 .rgroup { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
@@ -1126,9 +1134,17 @@ function simFight(t) {
   // the enemy's hits: single-target ones on whoever it is attacking, aoe on everyone. Members it never
   // hits this pull (no aoe) keep taking their usual splash damage on their own casts
   const fe = foeEvents(t), tn = foeTarget(), ti = tn === "you" ? 0 : Math.max(0, P.findIndex(p => p.name === tn));
+  // the one it's attacking takes all of its share from the enemy's hits; everyone else gets a slice from
+  // area hits (more area hits, bigger slice) and the rest as the usual splash on their own casts
+  const nAoe = fe.filter(e => e[2]).length;
+  // hits are sized by the time since the last one (so damage flows evenly through the pull, even when
+  // a pack of adds is up at the start) and by how strong the ability is
   P.forEach((p, i) => {
-    const hs = fe.filter(e => e[2] || i === ti), W = hs.reduce((a, e) => a + e[1], 0), budget = p.hit * (p.casts.length || 1);
-    p.fromFoe = W > 0; hs.forEach(e => ev.push([e[0], i, -1, budget * e[1] / W]));
+    const hs = fe.filter(e => e[2] || i === ti), budget = p.hit * (p.casts.length || 1);
+    const share = !hs.length ? 0 : i === ti ? 1 : Math.min(0.5, 0.1 * nAoe);
+    p.splash = 1 - share; if (!share) return;
+    let last = 0; const wt = hs.map(e => { const dt = Math.max(0.01, e[0] - last); last = e[0]; return dt * (0.5 + 0.5 * e[1]); }), W = wt.reduce((a, b) => a + b, 0);
+    hs.forEach((e, j) => ev.push([e[0], i, -1, budget * share * wt[j] / W]));
   });
   ev.sort((a, b) => a[0] - b[0]);
   const put = (p, at, v) => { p.cur = Math.min(1, Math.max(0.05, v)); p.tl.push([at, p.cur]); };
@@ -1136,7 +1152,7 @@ function simFight(t) {
     const p = P[i];
     if (k < 0) { put(p, at, p.cur - amt); continue; }
     const s = p.casts[k];
-    if (!p.fromFoe) put(p, at, p.cur - p.hit * (0.6 + Math.random() * 0.8));
+    if (p.splash > 0) put(p, at, p.cur - p.hit * p.splash * (0.6 + Math.random() * 0.8));
     if (p.role !== "heal" || !isHeal(s)) continue;
     const hurt = P.map((q, j) => [1 - q.cur + (q.role === "tank" ? 0.08 : 0), j]).sort((a, b) => b[0] - a[0]);
     if (GROUP_HEALS.test(s)) { hurt.slice(0, 5).forEach(([, x]) => put(P[x], at, P[x].cur + 0.07)); continue; }
@@ -1923,6 +1939,19 @@ function foeIdle() {
   return q && q.mob ? `Next: ${q.mob}` : "";
 }
 
+// floating numbers: red for damage, green for healing, on whoever's health just changed in a fight
+const bubPrev = {};
+function bubble(key, el, val, max, fight) {
+  const prev = bubPrev[key]; bubPrev[key] = val;
+  if (!fight || prev == null || !el) return;
+  const d = Math.round((val - prev) * max);
+  if (!d || Math.abs(d) < max * 0.004) return;
+  const b = document.createElement("span"); b.className = "bub " + (d > 0 ? "up" : "dn");
+  b.textContent = (d > 0 ? "+" : "−") + Math.abs(d).toLocaleString();
+  b.style.left = (25 + Math.random() * 50) + "%";
+  el.appendChild(b); setTimeout(() => b.remove(), 1300);
+}
+const memberMax = (c, L) => CLASSES[c].hp * L + (20 + 2 * L) * 10;
 // health bar colour, same as the hero's: green, yellow, orange, red
 const hpCol = f => f > 0.6 ? "var(--hp-ok)" : f > 0.35 ? "var(--hp-mid)" : f > 0.15 ? "var(--hp-low)" : "var(--hp-crit)";
 // the enemy frame mirrors the hero's: name, health, resource, what it's doing; the rest of the pack below
@@ -1954,6 +1983,7 @@ function renderFoe() {
     const p = foePool(u.name, u.kind, u.rank), ab = [...new Set([...p.open, ...p.fill, ...p.extra, p.end])];
     setHtml("eAbil", ab.map(a => `<li>${esc(a)}</li>`).join(""));
   }
+  bubble("e" + foeSig + "|" + mi, box.querySelector(".unit"), s.hp, u.max, true);
   const hpNow = Math.round(s.hp * u.max);
   $("eHpV").textContent = `${hpNow.toLocaleString()} / ${u.max.toLocaleString()}`;
   $("eHpB").style.width = (s.hp * 100).toFixed(1) + "%"; $("eHpB").style.background = hpCol(s.hp);
@@ -2046,6 +2076,7 @@ function renderBars() {
     const cs = t.casts || [], ci = Math.min(cs.length - 1, Math.floor(p * cs.length));
     const from = Math.max(0, ci - 5); $("tCasts").innerHTML = (from ? "… › " : "") + cs.slice(from, ci + 1).map((s, i) => `<span${i + from === ci ? ' class="cur"' : ""}>${esc(s)}</span>`).join(" › "); $("tFill").style.width = (p * 100).toFixed(1) + "%"; $("tPct").textContent = Math.floor(p * 100) + "%"; }
   const [hf, mf] = vitalsNow(), hm = hpMax(), poolCol = f => f > 0.6 ? "var(--hp-ok)" : f > 0.35 ? "var(--hp-mid)" : f > 0.15 ? "var(--hp-low)" : "var(--hp-crit)";
+  bubble("hero", document.querySelector(".unit.hero"), hf, hm, !!(t && FIGHTS.includes(t.k)));
   if (hf <= 0 && t && FIGHTS.includes(t.k)) $("tCasts").innerHTML = '<span class="dead">dead</span>';
   $("hpV").textContent = `${Math.round(hf * hm).toLocaleString()} / ${hm.toLocaleString()}`;
   $("hpB").style.width = (hf * 100).toFixed(1) + "%"; $("hpB").style.background = poolCol(hf);
@@ -2091,7 +2122,8 @@ function renderGroup(hf, mf) {
       <div class="gcast" id="gc${i}"></div></div>`).join("");
   }
   const poolCol = f => f > 0.6 ? "var(--hp-ok)" : f > 0.35 ? "var(--hp-mid)" : f > 0.15 ? "var(--hp-low)" : "var(--hp-crit)";
-  const paint = (i, c, hp, mp, fight, p, cast) => {
+  const paint = (i, c, hp, mp, fight, p, cast, L) => {
+    bubble("g" + box.dataset.sig + "|" + i, $("gh" + i).closest(".gcard,.rcell"), hp, memberMax(c, L), fight);
     const C = CLASSES[c], v = C.mp ? Math.round(mp * 100) : pool2(C.res, fight, p), key = Math.round(hp * 1000) + "|" + v + "|" + cast;
     if (gCache[i] === key) return; gCache[i] = key;
     $("gh" + i).style.width = (hp * 100).toFixed(1) + "%"; $("gh" + i).style.background = poolCol(hp); $("ghv" + i).textContent = Math.round(hp * 100) + "%";
@@ -2101,8 +2133,8 @@ function renderGroup(hf, mf) {
   const raidUi = box.classList.contains("raid"), t = S.task, castHtml = (cs, ci) => ci < 0 ? "&nbsp;" : (ci > 0 && !raidUi ? `<span>${esc(cs[ci - 1])}</span> › ` : "") + `<span class="cur">${esc(cs[ci])}</span>`;
   const hc = t && t.casts && FIGHTS.includes(t.k) ? t.casts : [], hci = hc.length ? Math.min(hc.length - 1, Math.floor(Math.min(1, t.el / t.t) * hc.length)) : -1;
   const dead = '<span class="dead">dead</span>';
-  paint(0, S.cls, hf, mf, hc.length > 0, t ? poolProgress(t) : 0, hf <= 0 && hc.length ? dead : castHtml(hc, hci));
-  S.party.forEach((m, i) => { const n = memberNow(i); paint(i + 1, m.cls, n.hp, n.mp, n.fight, n.p, n.hp <= 0 && n.fight ? dead : castHtml(n.casts, n.ci)); });
+  paint(0, S.cls, hf, mf, hc.length > 0, t ? poolProgress(t) : 0, hf <= 0 && hc.length ? dead : castHtml(hc, hci), S.level);
+  S.party.forEach((m, i) => { const n = memberNow(i); paint(i + 1, m.cls, n.hp, n.mp, n.fight, n.p, n.hp <= 0 && n.fight ? dead : castHtml(n.casts, n.ci), m.L); });
 }
 
 let rafId = 0, lastNow = 0, saveTimer = 0;

@@ -7,10 +7,14 @@
   - Give equipment three tabs: Equipment | Supplies & bags | Talents
   - Move the buffs to the character
 - [ ] **Save to Google** (save the game to a Google account)
-- [ ] **Proper enemies**
+- [x] **Proper enemies**
   - Each enemy has its own health bar and a mana, energy or rage bar
   - Each enemy has its own rotation: simple ones by type (fighter, mage, thief) and fancier ones for special bosses
-  - Maybe add packs in dungeons and raids, and the occasional group of two or three mobs out in the world
+  - Packs in dungeons and raids, boss adds, and the occasional group of two or three mobs out in the world
+  - Real damage: enemy hits sized by level, reduced by armor and gear; deaths come from the fight
+  - Stuns, fears and interrupts; enemy heals; floating damage and healing numbers
+- [ ] **Scripted boss moments** (Ragnaros submerging, Onyxia's Deep Breath phase, VanCleef calling his guards at half health)
+- [ ] **Wipes from the fight itself** (raid wipes are still a roll, now based on gear)
 - [ ] **Damage meter for dungeons and raids**
 - [ ] **Expand the talent tree** (it only shows 0 / 0 / 25 right now)
 - [ ] **Guild system** (design still open)
