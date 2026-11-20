@@ -19,3 +19,5 @@ const moneyTxt = c => { c = Math.max(0, Math.floor(c)); const g = Math.floor(c /
   return [g ? g + "g" : "", s ? s + "s" : "", k || (!g && !s) ? k + "c" : ""].filter(Boolean).join(" "); };
 
 const $ = id => document.getElementById(id);
+// a click on any (enabled) button inside an element calls fn with that button
+const onButton = (id, fn) => $(id).addEventListener("click", e => { const b = e.target.closest("button"); if (b && !b.disabled) fn(b); });

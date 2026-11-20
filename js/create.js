@@ -26,11 +26,11 @@ function showCreate() {
   $("cRandName").onclick = () => { draft.name = randomName(); $("cName").value = draft.name; };
   $("cGo").onclick = () => { newHero(draft); draft = null; startGame(); };
   $("cLoad").onclick = pickSaveFile;
-  $("cFac").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; draft.faction = b.dataset.f; draft.race = Object.keys(RACES).find(r => RACES[r].f === draft.faction); fixClass(); drawCreate(); });
-  $("cRace").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; draft.race = b.dataset.r; fixClass(); drawCreate(); });
-  $("cCls").addEventListener("click", e => { const b = e.target.closest("button"); if (!b || b.disabled) return; draft.cls = b.dataset.c; draft.spec = 0; drawCreate(); });
-  $("cSpec").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; draft.spec = +b.dataset.s; drawCreate(); });
-  $("cProf").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; draft.prof = b.dataset.p; drawCreate(); });
+  onButton("cFac", b => { draft.faction = b.dataset.f; draft.race = Object.keys(RACES).find(r => RACES[r].f === draft.faction); fixClass(); drawCreate(); });
+  onButton("cRace", b => { draft.race = b.dataset.r; fixClass(); drawCreate(); });
+  onButton("cCls", b => { draft.cls = b.dataset.c; draft.spec = 0; drawCreate(); });
+  onButton("cSpec", b => { draft.spec = +b.dataset.s; drawCreate(); });
+  onButton("cProf", b => { draft.prof = b.dataset.p; drawCreate(); });
   drawCreate();
 }
 function fixClass() { if (!ALLOWED[draft.race].includes(draft.cls)) { draft.cls = ALLOWED[draft.race][0]; draft.spec = 0; } }

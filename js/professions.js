@@ -131,58 +131,76 @@ function buyMats(src, t, n, why) {
   const b = why[k] || (why[k] = [0, 0]); b[0] += n; b[1] += c;
   return true;
 }
-// one profession at the crafting station: useful things first, then skill-ups with what's left
+// one profession at the crafting station: useful things first, then skill-ups with what's left.
+// The steps share a run: what's been made, materials bought on the AH (notes), and how many crafts
 function craftRun(craft, primary) {
-  const p = S.prof, src = CRAFT_SRC[craft], sk0 = p.sk[craft], made = [], notes = {};
-  let crafts = 0, vend = 0;
-  const can = r => p.sk[craft] >= r.req && matCount(src, r.t) >= r.n;
-  const best = () => recipes(craft).filter(r => p.sk[craft] >= r.req).pop();
-  const behind = () => p.sk[craft] < Math.min(p.cap, S.level * 5) - 10;
-  const use = r => { takeMat(src, r.t, r.n); crafts++; skillUp(craft, r.req); };
-  // gear: the best recipe, for a slot where it beats what's worn
-  const slots = craftSlots(craft).filter(s => !(craft === "Engineering" && s === "Head" && S.level < 20));
-  if (slots.length) {
-    for (let i = 0; i < 2; i++) {
-      const r = best(); if (!r) break;
-      const slot = slots.filter(s => power(craftItem(craft, r, s)) > power(S.equip[s])).sort((a, b) => power(S.equip[a]) - power(S.equip[b]))[0];
-      if (!slot) break;
-      if (!can(r) && !buyMats(src, r.t, r.n - matCount(src, r.t), notes)) break;
-      use(r); const it = craftItem(craft, r, slot); gain(it, "Crafted"); p.made++; made.push(it.name);
-    }
-  }
-  // consumables: refill what the hero uses
-  const want = CONS_CRAFT[craft] ? CONS_CRAFT[craft]() : [];
-  for (const [k, name, top] of want) {
-    let n = 0;
-    while ((S.cons[k] || 0) < top) {
-      const r = recipes(craft).filter(can).pop(); if (!r) break;
-      if (k === "flask") { if (r.t < 4 || spendable() < BLACK_LOTUS * 2) break; spend("mats", BLACK_LOTUS); } // a flask needs a Black Lotus
-      use(r); S.cons[k] = (S.cons[k] || 0) + (k === "band" || k === "feast" ? 2 : 1); n++; }
-    if (n) { made.push(`${n}× ${name}`); p.made += n; }
-  }
-  // bags from the loom
-  if (craft === "Tailoring") {
-    const bag = BAGS.filter(b => b[0] <= S.level).pop(), r = bag && recipes(craft).filter(x => x.t <= BAGS.indexOf(bag) && p.sk[craft] >= x.req).pop();
-    if (bag && r && bagUpgrade(bag) && (matCount(src, r.t) >= 6 || buyMats(src, r.t, 6 - matCount(src, r.t), notes))) { takeMat(src, r.t, 6); crafts++; skillUp(craft, r.req); giveBag(bag, "Sewed"); made.push(bag[1]); }
-  }
+  const p = S.prof, run = { craft, p, src: CRAFT_SRC[craft], made: [], notes: {}, crafts: 0 }, sk0 = p.sk[craft];
+  craftGear(run);
+  craftConsumables(run);
+  if (craft === "Tailoring") sewBag(run);
   // enchanters enchant their own gear for the cost of the dust
-  if (craft === "Enchanting") enchantGear(true, made);
-  // skill-ups: orange and yellow recipes while the materials last (bought when behind), sold to a vendor after
-  let ups = 0;
-  for (let i = 0; i < 12; i++) {
-    const r = recipes(craft).filter(x => p.sk[craft] >= x.req && skillChance(p.sk[craft], x.req) >= 0.5).pop() || recipes(craft).filter(x => p.sk[craft] >= x.req && skillChance(p.sk[craft], x.req) > 0).pop();
-    if (!r) break;
-    if (!can(r) && !(behind() && buyMats(src, r.t, r.n - matCount(src, r.t), notes))) break;
-    use(r); ups++; vend += Math.round((r.t + 1) * (r.t + 1) * 300 * (r.v + 1));
-  }
-  if (vend) S.money += vend;
-  if (!crafts) return;
-  const gained = p.sk[craft] - sk0;
+  if (craft === "Enchanting") enchantGear(true, run.made);
+  const ups = craftPractice(run);
+  if (!run.crafts) return;
+  const { made, notes } = run, gained = p.sk[craft] - sk0;
   const practice = ups ? `${made.length ? ", plus" : ":"} ${ups} practice piece${ups > 1 ? "s" : ""}` : "";
   const bought = Object.keys(notes).length ? " Bought " + Object.entries(notes).map(([k, [n, c]]) => `${n} ${k} for ${moneyTxt(c)}`).join(", ") + " on the AH." : "";
   log(`${craft}${made.length ? ": made " + made.join(", ") : ""}${practice}${gained ? ` (${craft} ${sk0} → ${p.sk[craft]})` : ""}.${bought}`, primary ? "spell" : "");
   if (primary) p.recent.unshift(...made.map(n => ({ n, L: S.level })));
   if (p.recent.length > 8) p.recent.length = 8;
+}
+// helpers for a run: has the skill and the materials for a recipe, and crafting one
+const canCraft = (run, r) => run.p.sk[run.craft] >= r.req && matCount(run.src, r.t) >= r.n;
+const useRecipe = (run, r) => { takeMat(run.src, r.t, r.n); run.crafts++; skillUp(run.craft, r.req); };
+// buys what's missing for a recipe on the AH (when there's gold for it)
+const topUp = (run, t, n) => matCount(run.src, t) >= n || buyMats(run.src, t, n - matCount(run.src, t), run.notes);
+// gear: the best recipe, for a slot where it beats what's worn (up to two pieces)
+function craftGear(run) {
+  const { craft, p } = run;
+  const slots = craftSlots(craft).filter(s => !(craft === "Engineering" && s === "Head" && S.level < 20));
+  if (!slots.length) return;
+  for (let i = 0; i < 2; i++) {
+    const r = recipes(craft).filter(x => p.sk[craft] >= x.req).pop(); if (!r) break;
+    const slot = slots.filter(s => power(craftItem(craft, r, s)) > power(S.equip[s])).sort((a, b) => power(S.equip[a]) - power(S.equip[b]))[0];
+    if (!slot) break;
+    if (!canCraft(run, r) && !buyMats(run.src, r.t, r.n - matCount(run.src, r.t), run.notes)) break;
+    useRecipe(run, r); const it = craftItem(craft, r, slot); gain(it, "Crafted"); p.made++; run.made.push(it.name);
+  }
+}
+// consumables: refill what the hero uses (potions, bandages, food, bombs, flasks)
+function craftConsumables(run) {
+  const want = CONS_CRAFT[run.craft] ? CONS_CRAFT[run.craft]() : [];
+  for (const [k, name, top] of want) {
+    let n = 0;
+    while ((S.cons[k] || 0) < top) {
+      const r = recipes(run.craft).filter(x => canCraft(run, x)).pop(); if (!r) break;
+      if (k === "flask") { if (r.t < 4 || spendable() < BLACK_LOTUS * 2) break; spend("mats", BLACK_LOTUS); } // a flask needs a Black Lotus
+      useRecipe(run, r); S.cons[k] = (S.cons[k] || 0) + (k === "band" || k === "feast" ? 2 : 1); n++;
+    }
+    if (n) { run.made.push(`${n}× ${name}`); run.p.made += n; }
+  }
+}
+// tailors sew the best bag for their level when it beats the smallest one carried
+function sewBag(run) {
+  const { craft, p, src } = run;
+  const bag = BAGS.filter(b => b[0] <= S.level).pop(), r = bag && recipes(craft).filter(x => x.t <= BAGS.indexOf(bag) && p.sk[craft] >= x.req).pop();
+  if (!bag || !r || !bagUpgrade(bag) || !topUp(run, r.t, 6)) return;
+  takeMat(src, r.t, 6); run.crafts++; skillUp(craft, r.req); giveBag(bag, "Sewed"); run.made.push(bag[1]);
+}
+// skill-ups: orange and yellow recipes while the materials last (bought when behind), sold to a vendor after.
+// Returns how many were made
+function craftPractice(run) {
+  const { craft, p, src } = run, sk = () => p.sk[craft];
+  const behind = () => sk() < Math.min(p.cap, S.level * 5) - 10;
+  let ups = 0, vend = 0;
+  for (let i = 0; i < 12; i++) {
+    const r = recipes(craft).filter(x => sk() >= x.req && skillChance(sk(), x.req) >= 0.5).pop() || recipes(craft).filter(x => sk() >= x.req && skillChance(sk(), x.req) > 0).pop();
+    if (!r) break;
+    if (!canCraft(run, r) && !(behind() && buyMats(src, r.t, r.n - matCount(src, r.t), run.notes))) break;
+    useRecipe(run, r); ups++; vend += Math.round((r.t + 1) * (r.t + 1) * 300 * (r.v + 1));
+  }
+  if (vend) S.money += vend;
+  return ups;
 }
 // materials nobody here will use go to the Auction House
 function sellMats() {

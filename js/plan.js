@@ -13,33 +13,39 @@ function plan() {
     q.push({ k: "arrive", d: first ? `Getting your bearings in ${z}` : S.level >= 10 ? `Taking the flight path to ${h}, ${z}` : `${travelVerb()} to ${h}, ${z}`, t: sec(first ? 6 : S.level >= 10 ? 140 : 60), zone: z });
     return;
   }
-  // 2. out in the field: go back when the bags are full, the quests are done, or it's time to train
-  if (S.loc === "field") {
-    const open = S.quests.filter(x => !questDone(x));
-    if (S.bags.length >= bagCap() || !open.length || needCity()) {
-      q.push({ k: "hub", d: S.bags.length >= bagCap() ? `Bags full. ${travelVerb()} back to ${h}` : `${travelVerb()} back to ${h} to turn in`, t: sec(35 * mountF()) });
-      return;
-    }
-    const mb = missingBuff();
-    if (mb) { q.push({ k: "buff", d: mb.cast, t: sec(2.5), b: mb }); return; }
-    if (S.since > 3 + R(6) || (S.hpF ?? 1) < 0.45 || (cls().mp && (S.mpF ?? 1) < 0.3)) {
-      const dry = restKinds().find(k => !(S.cons[k] > 0) && canConjure(k));
-      if (dry) { q.push(...rationTasks(h).filter(x => x.k === "conjure")); return; }
-      S.since = 0; q.push(restTask()); return;
-    }
-    let quest = S.quests.find(x => x.id === S.curQ && !questDone(x)) || open[0];
-    // a new quest: walk to its mobs (an elite needs a group, and an elixir first)
-    if (quest.id !== S.curQ) {
-      S.curQ = quest.id;
-      const elite = quest.type === "elite";
-      if (elite && elixirName() && S.cons.elix > 0) q.push({ k: "elixir", d: `Drinking ${article(elixirName())} before the fight`, t: sec(3) });
-      q.push({ k: "move", d: elite ? `Looking for a group to kill ${quest.mob}` : `Heading out to find ${plural(quest.mob)} for "${quest.name}"`, t: sec((elite ? 40 : 20) * mountF()) });
-      return;
-    }
-    q.push(killTask(quest));
+  // 2. out in the field
+  if (S.loc === "field") return planField(q, h);
+  // 3. at the quest hub
+  planHub(q, z, h);
+}
+// out in the field: go back when the bags are full, the quests are done, or it's time to train;
+// otherwise buff, rest, walk to the next quest's mobs, or fight
+function planField(q, h) {
+  const open = S.quests.filter(x => !questDone(x));
+  if (S.bags.length >= bagCap() || !open.length || needCity()) {
+    q.push({ k: "hub", d: S.bags.length >= bagCap() ? `Bags full. ${travelVerb()} back to ${h}` : `${travelVerb()} back to ${h} to turn in`, t: sec(35 * mountF()) });
     return;
   }
-  // 3. at the quest hub: sell, turn in, then pick up new quests or go train
+  const mb = missingBuff();
+  if (mb) { q.push({ k: "buff", d: mb.cast, t: sec(2.5), b: mb }); return; }
+  if (S.since > 3 + R(6) || (S.hpF ?? 1) < 0.45 || (cls().mp && (S.mpF ?? 1) < 0.3)) {
+    const dry = restKinds().find(k => !(S.cons[k] > 0) && canConjure(k));
+    if (dry) { q.push(...rationTasks(h).filter(x => x.k === "conjure")); return; }
+    S.since = 0; q.push(restTask()); return;
+  }
+  let quest = S.quests.find(x => x.id === S.curQ && !questDone(x)) || open[0];
+  // a new quest: walk to its mobs (an elite needs a group, and an elixir first)
+  if (quest.id !== S.curQ) {
+    S.curQ = quest.id;
+    const elite = quest.type === "elite";
+    if (elite && elixirName() && S.cons.elix > 0) q.push({ k: "elixir", d: `Drinking ${article(elixirName())} before the fight`, t: sec(3) });
+    q.push({ k: "move", d: elite ? `Looking for a group to kill ${quest.mob}` : `Heading out to find ${plural(quest.mob)} for "${quest.name}"`, t: sec((elite ? 40 : 20) * mountF()) });
+    return;
+  }
+  q.push(killTask(quest));
+}
+// at the quest hub: sell, turn in, then pick up new quests or go train
+function planHub(q, z, h) {
   const sells = groupBags();
   sells.forEach(g => q.push({ k: "sell", d: `Selling ${g.name}${g.n > 1 ? " ×" + g.n : ""}`, t: sec(1.5 + g.n * 0.4, 1), name: g.name }));
   S.quests.filter(questDone).forEach(x => q.push({ k: "turnin", d: `Turning in "${x.name}"`, t: sec(5), qid: x.id }));

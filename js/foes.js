@@ -170,20 +170,27 @@ function heroWeights(t, casts, N) {
   (t.cds || []).filter(c => c.type === "burst").forEach(c => { for (let i = c.at + 1; i <= c.at + 3 && i < N; i++) w[i] *= 1.8; });
   return w;
 }
+// one enemy: name, level, rank ("", elite, boss, raid elite, raid boss) and kind (from the name)
+const foeUnit = (name, L, rank) => ({ name, L, rank, kind: foeKind(name) });
+// who the hero fights in a task: the pulled mobs, a dungeon pack, or a boss with its adds (boss last)
+function foeUnits(t, raid) {
+  const d = dungeonRow(), top = d ? d.max : S.level, units = [];
+  if (t.k === "kill") (t.mobs || [t.mob]).forEach(n => units.push(foeUnit(n, t.mobL || S.level, t.elite ? "elite" : "")));
+  else if (t.k === "trash") {
+    // tasks from old saves only have the description: "Clearing a pack of Defias Miners"
+    const names = t.mobs || (() => { const m = /pack of (.+)$/.exec(t.d || ""), n = m ? m[1].replace(/ies$/, "y").replace(/ves$/, "f").replace(/s$/, "") : "Enemy"; return [n, n, n]; })();
+    names.forEach(n => units.push(foeUnit(n, raid ? 61 + R(2) : top - 1 + R(2), raid ? "raid elite" : "elite")));
+  } else {
+    (t.adds || BOSS_ADDS[t.boss] || []).forEach(n => units.push(foeUnit(n, raid ? 62 : top, raid ? "raid elite" : "elite")));
+    units.push(foeUnit(t.boss, raid ? 63 : top + 1, raid ? "raid boss" : "boss"));
+  }
+  return units;
+}
 // everyone the hero is fighting in this task, built once and kept on the task
 function foeOf(t) {
   if (!t || !FIGHTS.includes(t.k)) return null;
   if (t.foe) return t.foe;
-  const casts = t.casts || [], N = Math.max(1, casts.length), d = dungeonRow(), raid = !!(S.dg && S.dg.raid), units = [];
-  const top = d ? d.max : S.level, mk = (name, L, rank) => ({ name, L, rank, kind: foeKind(name) });
-  if (t.k === "kill") (t.mobs || [t.mob]).forEach(n => units.push(mk(n, t.mobL || S.level, t.elite ? "elite" : "")));
-  else if (t.k === "trash") {
-    const names = t.mobs || (() => { const m = /pack of (.+)$/.exec(t.d || ""), n = m ? m[1].replace(/ies$/, "y").replace(/ves$/, "f").replace(/s$/, "") : "Enemy"; return [n, n, n]; })();
-    names.forEach(n => units.push(mk(n, raid ? 61 + R(2) : top - 1 + R(2), raid ? "raid elite" : "elite")));
-  } else {
-    (t.adds || BOSS_ADDS[t.boss] || []).forEach(n => units.push(mk(n, raid ? 62 : top, raid ? "raid elite" : "elite")));
-    units.push(mk(t.boss, raid ? 63 : top + 1, raid ? "raid boss" : "boss"));
-  }
+  const casts = t.casts || [], N = Math.max(1, casts.length), raid = !!(S.dg && S.dg.raid), units = foeUnits(t, raid);
   // the fight as a run of chunks, each one bringing one enemy from one health level to another, in order.
   // Packs and adds go down one by one; a scripted boss pauses at its thresholds while its adds are dealt with
   const addW = raid ? 0.07 : 0.14, boss = t.k === "boss" ? units[units.length - 1] : null, sc = boss ? BOSS_SCRIPT[t.boss] || [] : [];
@@ -207,7 +214,7 @@ function foeOf(t) {
       if (p.at <= end) return;
       chunks.push({ u: boss, from: hp, to: p.at, wt: hp - p.at }); hp = p.at;
       const m = { p, at: chunks.length, adds: [] };
-      (p.adds ? startAdds : []).concat((p.spawn || []).map(n => { const a = mk(n, boss.L - 1, raid ? "raid elite" : "elite"); units.splice(units.length - 1, 0, a); return a; }))
+      (p.adds ? startAdds : []).concat((p.spawn || []).map(n => { const a = foeUnit(n, boss.L - 1, raid ? "raid elite" : "elite"); units.splice(units.length - 1, 0, a); return a; }))
         .forEach(a => { m.adds.push(a); chunks.push({ u: a, from: 1, to: 0, wt: addW }); });
       m.end = chunks.length; marks.push(m);
     });

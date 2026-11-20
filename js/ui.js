@@ -4,6 +4,15 @@
 // ---------- rendering: game ----------
 
 const SPEEDS = [1, 10, 100, 1000];
+// pieces of the page: a collapse button, a progress meter (top row), a health or resource bar, a unit frame
+const foldBtn = (k, what) => `<button type="button" class="fold" data-fold="${k}" aria-expanded="true" aria-label="Collapse ${what}" title="Collapse"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>`;
+const progMeter = (cls, p, label, lblId) => `<div class="meter ${cls}"><div class="top"><span class="lbl"${lblId ? ` id="${lblId}"` : ""}>${label}</span><span class="val" id="${p}V"></span></div><div class="name" id="${p}N"></div><div class="bar"><i id="${p}B"></i></div></div>`;
+const poolBar = (p, label, lblId) => `<div class="meter"><div class="top"><span class="lbl"${lblId ? ` id="${lblId}"` : ""}>${label}</span><span class="val" id="${p}V"></span></div><div class="bar"><i id="${p}B"></i></div></div>`;
+// u: the id prefixes for name, subtitle, health, resource (and its label), casts
+const unitFrame = (cls, u) => `<div class="unit${cls ? " " + cls : ""}"><div class="who"><h1 id="${u.name}"></h1><span class="sub" id="${u.sub}"></span></div>
+          <div class="pools">${poolBar(u.hp, "health")}
+          ${poolBar(u.res, u.resLabel, u.res + "L")}</div>
+          <div class="casts" id="${u.casts}"></div></div>`;
 
 function gameShell() {
   $("app").innerHTML = `
@@ -18,28 +27,25 @@ function gameShell() {
       <span class="saved" id="saved"></span>
     </div>
   </div>
-  <section class="meters" data-fold-box="meters"><button type="button" class="fold" data-fold="meters" aria-expanded="true" aria-label="Collapse progress" title="Collapse"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
-    <div class="meter m-xp"><div class="top"><span class="lbl" id="xpL">experience</span><span class="val" id="xpV"></span></div><div class="name" id="xpN"></div><div class="bar"><i id="xpB"></i></div></div>
-    <div class="meter m-zone"><div class="top"><span class="lbl" id="zL">zone</span><span class="val" id="zV"></span></div><div class="name" id="zN"></div><div class="bar"><i id="zB"></i></div></div>
-    <div class="meter m-quest"><div class="top"><span class="lbl">quest</span><span class="val" id="qV"></span></div><div class="name" id="qN"></div><div class="bar"><i id="qB"></i></div></div>
+  <section class="meters" data-fold-box="meters">${foldBtn("meters", "progress")}
+    ${progMeter("m-xp", "xp", "experience", "xpL")}
+    ${progMeter("m-zone", "z", "zone", "zL")}
+    ${progMeter("m-quest", "q", "quest")}
   </section>
   <section class="now">
     <div class="lbl" id="tWhere"></div>
     <div class="desc" id="tDesc"></div>
     <div class="bigbar"><div class="fill" id="tFill"></div><div class="pct" id="tPct"></div></div>
   </section>
-  <section class="group" id="group" hidden><div class="ghead" data-fold-box="group"><h2 id="gTitle">Group</h2><button type="button" class="fold" data-fold="group" aria-expanded="true" aria-label="Collapse group frames" title="Collapse"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button></div><div class="gcards" id="gcards"></div>
+  <section class="group" id="group" hidden><div class="ghead" data-fold-box="group"><h2 id="gTitle">Group</h2>${foldBtn("group", "group frames")}</div><div class="gcards" id="gcards"></div>
     <div class="dmeter" data-fold-box="meter"><div class="dmh"><span class="lbl">Damage meter</span><small id="dmNote"></small>
       <div class="seg" id="dmMode"><button type="button" data-m="dmg">Damage</button><button type="button" data-m="heal">Healing</button></div>
-      <div class="seg" id="dmScope"><button type="button" data-s="fight">This fight</button><button type="button" data-s="run">Whole run</button></div><button type="button" class="fold" data-fold="meter" aria-expanded="true" aria-label="Collapse damage meter" title="Collapse"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button></div>
+      <div class="seg" id="dmScope"><button type="button" data-s="fight">This fight</button><button type="button" data-s="run">Whole run</button></div>${foldBtn("meter", "damage meter")}</div>
       <ol class="dmrows" id="dmRows"></ol></div></section>
   <section class="main">
     <div class="col">
       <div class="sec">
-        <div class="unit hero"><div class="who"><h1 id="hName"></h1><span class="sub" id="hSub"></span></div>
-          <div class="pools"><div class="meter"><div class="top"><span class="lbl">health</span><span class="val" id="hpV"></span></div><div class="bar"><i id="hpB"></i></div></div>
-          <div class="meter"><div class="top"><span class="lbl" id="mpL">mana</span><span class="val" id="mpV"></span></div><div class="bar"><i id="mpB"></i></div></div></div>
-          <div class="casts" id="tCasts"></div></div>
+        ${unitFrame("hero", { name: "hName", sub: "hSub", hp: "hp", res: "mp", resLabel: "mana", casts: "tCasts" })}
         <div class="tabs ctabs" role="tablist" id="ctabs">${CTABS.map(([k, n]) => `<button type="button" role="tab" data-c="${k}" aria-selected="${k === charTab}" aria-label="${n}" title="${n}">${tabIcon(k)}<span class="tl">${n}</span></button>`).join("")}</div>
         <div class="cpane" data-c="char"><div class="stats" id="stats"></div>
         <ul class="rows vitals" id="vitals"></ul>
@@ -64,27 +70,24 @@ function gameShell() {
     </div>
     <div class="col c-foe">
       <div class="sec foe idle" id="foe">
-        <div class="unit"><div class="who"><h1 id="eName"></h1><span class="sub" id="eSub"></span></div>
-          <div class="pools"><div class="meter"><div class="top"><span class="lbl">health</span><span class="val" id="eHpV"></span></div><div class="bar"><i id="eHpB"></i></div></div>
-          <div class="meter"><div class="top"><span class="lbl" id="eMpL">resource</span><span class="val" id="eMpV"></span></div><div class="bar"><i id="eMpB"></i></div></div></div>
-          <div class="casts" id="eCasts"></div></div>
+        ${unitFrame("", { name: "eName", sub: "eSub", hp: "eHp", res: "eMp", resLabel: "resource", casts: "eCasts" })}
         <ul class="adds" id="eAdds"></ul>
         <div class="edetail"><ul class="rows vitals" id="eInfo"></ul><h3 class="paneh">Abilities</h3><ul class="chips" id="eAbil"></ul></div>
       </div>
     </div>
   </section>`;
-  $("speed").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; speed = S.speed = +b.dataset.s; renderSpeed(); });
+  onButton("speed", b => { speed = S.speed = +b.dataset.s; renderSpeed(); });
   $("retire").addEventListener("click", confirmRetire);
   $("exportSave").addEventListener("click", exportSave);
   $("importSave").addEventListener("click", pickSaveFile);
-  $("tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; uiTab = b.dataset.t; document.querySelectorAll("#tabs button").forEach(x => x.setAttribute("aria-selected", String(x === b))); dirty = true; });
-  $("ctabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; charTab = b.dataset.c; renderCharTab(); });
+  onButton("tabs", b => { uiTab = b.dataset.t; document.querySelectorAll("#tabs button").forEach(x => x.setAttribute("aria-selected", String(x === b))); dirty = true; });
+  onButton("ctabs", b => { charTab = b.dataset.c; renderCharTab(); });
   $("brand").addEventListener("click", brandTap);
-  $("talTabs").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { talTab = +b.dataset.tt; renderTalents(); } });
+  onButton("talTabs", b => { talTab = +b.dataset.tt; renderTalents(); });
   document.querySelectorAll(".fold").forEach(b => b.addEventListener("click", () => toggleFold(b.dataset.fold)));
   renderFolds();
-  $("dmMode").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { dmMode = b.dataset.m; renderMeter(true); } });
-  $("dmScope").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { dmScope = b.dataset.s; renderMeter(true); } });
+  onButton("dmMode", b => { dmMode = b.dataset.m; renderMeter(true); });
+  onButton("dmScope", b => { dmScope = b.dataset.s; renderMeter(true); });
   renderSpeed(); renderCharTab();
 }
 // collapsible boxes (progress meters, group frames, damage meter), remembered in this browser
@@ -153,14 +156,15 @@ function bubble(key, el, val, max, fight) {
   if (!fight || prev == null || !el) return;
   const d = Math.round((val - prev) * max);
   if (!d || Math.abs(d) < max * 0.004) return;
-  const b = document.createElement("span"); b.className = "bub " + (d > 0 ? "up" : "dn");
-  b.textContent = (d > 0 ? "+" : "−") + Math.abs(d).toLocaleString();
-  b.style.left = (25 + Math.random() * 50) + "%";
-  el.appendChild(b); setTimeout(() => b.remove(), 1300);
+  floatText(el, d > 0 ? "up" : "dn", (d > 0 ? "+" : "−") + Math.abs(d).toLocaleString(), 25 + Math.random() * 50);
 }
 function xpBubble(el, n) {
-  const b = document.createElement("span"); b.className = "bub up xp";
-  b.textContent = "+" + n.toLocaleString() + " xp"; b.style.left = (55 + Math.random() * 30) + "%";
+  floatText(el, "up xp", "+" + n.toLocaleString() + " xp", 55 + Math.random() * 30);
+}
+// a number that floats up from an element and fades (left: % across it)
+function floatText(el, cls, text, left) {
+  const b = document.createElement("span"); b.className = "bub " + cls;
+  b.textContent = text; b.style.left = left + "%";
   el.appendChild(b); setTimeout(() => b.remove(), 1300);
 }
 const memberMax = (c, L) => CLASSES[c].hp * L + (20 + 2 * L) * 10;
@@ -299,7 +303,12 @@ function legInfo() {
 }
 
 let lastLogId = 0;
+// redraws everything that changes when something happens (when dirty): one function per part of the page
 function renderLists() {
+  renderHero(); renderGear(); renderProfs(); renderTalents(); renderSpells(); renderBags(); renderQuests(); renderJournal(); renderLog(); renderMeterNames();
+}
+// the character tab: name, stats, money and counts, buffs
+function renderHero() {
   const c = cls();
   $("hName").textContent = S.name; $("hName").style.color = c.color;
   $("tWhere").textContent = where();
@@ -310,31 +319,43 @@ function renderLists() {
     ["mount", S.mount >= 2 ? race().epic : S.mount ? race().mount : S.level >= 40 ? "saving up…" : "on foot until 40"],
     ["kills", S.kills.toLocaleString()], ["quests done", S.qdone.toLocaleString()], ["deaths", S.deaths.toLocaleString()], ...spentRow(),
   ].map(([k, v]) => `<li><span class="k">${k}</span><span class="v">${v}</span></li>`).join("");
+  const act = activeBuffs();
+  $("bCount").textContent = `${act.length} active`;
+  $("buffs").innerHTML = act.map(n => { const left = S.buffs[n] - S.time; return `<li><span class="l buff">${esc(n)}</span><span class="rank">${left > 1e13 ? "" : Math.max(1, Math.ceil(left / MIN)) + " min"}</span></li>`; }).join("") || `<li><span class="empty">none right now</span></li>`;
+}
+function renderGear() {
   $("gs").textContent = `avg item level ${Math.round(SLOTS.reduce((a, s) => a + (S.equip[s] ? S.equip[s].ilvl : 0), 0) / SLOTS.length)}`;
   $("equip").innerHTML = SLOTS.map(s => { const it = S.equip[s]; return `<li><span class="k">${s.toLowerCase()}</span><span class="v">${it ? `<span class="q${it.q}">${esc(it.name)}</span><span class="ilvl">${it.ilvl}</span>${it.ench ? `<small class="ench">${esc(it.ench.name)}</small>` : ENCH[s] && it.q >= 2 && S.level >= 20 ? '<small class="ench no">not enchanted</small>' : ""}` : '<span class="empty">empty</span>'}</span></li>`; }).join("");
-  renderProfs();
-  renderTalents();
+}
+function renderSpells() {
+  const c = cls();
   const known = c.list.filter(sp => spellName(sp.name) in S.spells).reverse();
   const tsp = talentSpells().filter(x => !known.some(sp => spellName(sp.name) === x.name));
   $("spCount").textContent = `${known.length + tsp.length} known`;
   $("spells").innerHTML = tsp.map(x => `<li><span class="l talent">${esc(x.name)}</span><span class="rank">talent</span></li>`).join("")
     + known.map(sp => { const n = spellName(sp.name), r = S.spells[n]; return `<li><span class="l">${esc(n)}</span><span class="rank">${sp.max > 1 ? "Rank " + r : ""}</span></li>`; }).join("") || `<li><span class="empty">nothing yet</span></li>`;
+}
+// the bags tab: supplies and loot to sell
+function renderBags() {
   $("money").innerHTML = `${S.bags.length >= bagCap() ? '<span class="full">full</span> ' : ""}${S.bags.length} / ${bagCap()} slots · ${money(S.money)}`;
   const groups = groupBags();
   $("bags").innerHTML = groups.length ? groups.map(g => { const b = S.bags.find(x => x.name === g.name); return `<li><span class="l q${b.q}">${esc(g.name)}${g.n > 1 ? ` <span class="ilvl">×${g.n}</span>` : ""}</span></li>`; }).join("") : `<li><span class="empty">empty</span></li>`;
+  const sup = [...restKinds().map(k => [k, rationName(k)]), ["hp", hpPot()], ["mp", cls().mp && S.level >= 5 ? mpPot() : null], ["elix", elixirName()], ["stone", usesStone() ? stoneName() : null], ["flask", flaskName()],
+    ["band", profItem(BANDAGES, "First Aid")], ["feast", profItem(DISHES, "Cooking")], ["bomb", profItem(BOMBS, "Engineering")]].filter(x => x[1] && S.cons[x[0]] > 0);
+  $("supplies").innerHTML = sup.map(([k, n]) => `<li><span class="l">${esc(n)}</span><span class="rank">×${S.cons[k]}</span></li>`).join("") || `<li><span class="empty">restocks in the capital</span></li>`;
+}
+function renderQuests() {
   const dqs = S.dq || [];
   $("tab-quests").textContent = ` ${S.quests.length + dqs.length}`;
   const qs = dqs.map(x => `<li><span class="l">${esc(x.name)} <span class="ilvl">(${x.raid ? "raid" : "dungeon"})</span><br><small style="color:var(--dim)">${esc(x.obj)} ${x.done ? 1 : 0}/1</small></span>${x.done ? '<span class="done">✓</span>' : ""}</li>`).concat(S.quests.map(q => `<li><span class="l ${q.id === S.curQ && !questDone(q) ? "cur" : ""}">${esc(q.name)}<br><small style="color:var(--dim)">${esc(questText(q))}</small></span>${questDone(q) ? '<span class="done">✓</span>' : ""}</li>`));
   $("quests").innerHTML = qs.join("") || `<li><span class="empty">no quests right now</span></li>`;
-  const act = activeBuffs();
-  $("bCount").textContent = `${act.length} active`;
-  $("buffs").innerHTML = act.map(n => { const left = S.buffs[n] - S.time; return `<li><span class="l buff">${esc(n)}</span><span class="rank">${left > 1e13 ? "" : Math.max(1, Math.ceil(left / MIN)) + " min"}</span></li>`; }).join("") || `<li><span class="empty">none right now</span></li>`;
-  const sup = [...restKinds().map(k => [k, rationName(k)]), ["hp", hpPot()], ["mp", cls().mp && S.level >= 5 ? mpPot() : null], ["elix", elixirName()], ["stone", usesStone() ? stoneName() : null], ["flask", flaskName()],
-    ["band", profItem(BANDAGES, "First Aid")], ["feast", profItem(DISHES, "Cooking")], ["bomb", profItem(BOMBS, "Engineering")]].filter(x => x[1] && S.cons[x[0]] > 0);
-  $("supplies").innerHTML = sup.map(([k, n]) => `<li><span class="l">${esc(n)}</span><span class="rank">×${S.cons[k]}</span></li>`).join("") || `<li><span class="empty">restocks in the capital</span></li>`;
-  renderJournal();
+}
+function renderLog() {
   $("log").innerHTML = S.log.map(l => `<li class="${l.k}${l.id > lastLogId && lastLogId ? " fresh" : ""}"><time>${fmtTime(l.t)}</time><span>${esc(l.txt)}</span></li>`).join("");
   lastLogId = S.log.length ? S.log[0].id : 0;
+}
+// the names on the three progress meters (their bars move in renderBars)
+function renderMeterNames() {
   $("xpL").textContent = S.level >= 60 ? "raids" : "experience";
   $("xpN").textContent = S.level >= 60 ? raidGoal().name : `Level ${S.level} → ${S.level + 1}`; $("xpN").title = $("xpN").textContent;
   const qm = questMeter();
@@ -385,6 +406,10 @@ function renderProfs() {
   $("mats").innerHTML = mats.map(([k, n]) => `<li><span class="l">${esc(k)}</span><span class="rank">×${n}</span></li>`).join("") || `<li><span class="empty">nothing gathered yet</span></li>`;
   $("crafts").innerHTML = p.recent.map(x => `<li><span class="l">${esc(x.n)}</span><span class="rank">level ${x.L}</span></li>`).join("") || `<li><span class="empty">nothing made yet</span></li>`;
 }
+// a group member's health, resource and cast lines (filled in by renderGroup's paint)
+const memberBars = i => `<div class="gbar"><i id="gh${i}"></i><span id="ghv${i}"></span></div>
+        <div class="gbar thin"><i id="gm${i}"></i><span id="gmv${i}"></span></div>
+        <div class="gcast" id="gc${i}"></div>`;
 // party / raid frames: the hero plus the companions
 let gCache = {};
 function renderGroup(hf, mf) {
@@ -401,16 +426,12 @@ function renderGroup(hf, mf) {
       const groups = []; for (let g = 0; g * 5 < all.length; g++) groups.push(all.slice(g * 5, g * 5 + 5).map((m, k) => [m, g * 5 + k]));
       $("gcards").innerHTML = `<div class="rgroups" style="--ng:${groups.length}">${groups.map((g, gi) => `<div class="rgroup"><div class="rgh">Group ${gi + 1}</div>${g.map(([m, i]) => `<div class="rcell r-${m.role}${m.me ? " me" : ""}" title="${esc(m.name)}: level ${m.L} ${esc(m.race)} ${m.cls} (${ROLE_NAME[m.role]})">
         <div class="rname" style="color:${CLASSES[m.cls].color}">${esc(m.name)}</div>
-        <div class="gbar"><i id="gh${i}"></i><span id="ghv${i}"></span></div>
-        <div class="gbar thin"><i id="gm${i}"></i><span id="gmv${i}"></span></div>
-        <div class="gcast" id="gc${i}"></div></div>`).join("")}</div>`).join("")}</div>`;
+        ${memberBars(i)}</div>`).join("")}</div>`).join("")}</div>`;
     } else
     $("gcards").innerHTML = all.map((m, i) => `<div class="gcard r-${m.role}${m.me ? " me" : ""}">
       <div class="gtop"><span class="gname" style="color:${CLASSES[m.cls].color}">${esc(m.name)}</span><span class="grole">${ROLE_NAME[m.role]}</span></div>
       <div class="gsub">Level ${m.L} ${esc(m.race)} ${m.cls}${m.me ? " · you" : ""}</div>
-      <div class="gbar"><i id="gh${i}"></i><span id="ghv${i}"></span></div>
-      <div class="gbar thin"><i id="gm${i}"></i><span id="gmv${i}"></span></div>
-      <div class="gcast" id="gc${i}"></div></div>`).join("");
+      ${memberBars(i)}</div>`).join("");
   }
   const paint = (i, c, hp, mp, fight, p, cast, L) => {
     bubble("g" + box.dataset.sig + "|" + i, $("gh" + i).closest(".gcard,.rcell"), hp, memberMax(c, L), fight);
