@@ -60,7 +60,7 @@ function addMinipet(name, text) {
 function minipetShop() {
   if (S.level < 10) return;
   const own = MINIPETS.filter(m => m.src === "vendor" && ownFaction(m) && !hasMinipet(m.name));
-  if (own.length && Math.random() < 0.5) {
+  if (own.length && (goalWith("pets:") || Math.random() < 0.5)) {
     const m = pick(own), [who, where, price] = m.x;
     if (spendable() >= price + 1000) { spend("gear", price); addMinipet(m.name, `Bought ${article(m.name)} from ${who} in ${where} for ${moneyTxt(price)}.`); }
   }

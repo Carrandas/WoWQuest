@@ -5,9 +5,10 @@
 
 const RUNECLOTH_EXALTED = 30;     // Runecloth turn-ins (20 cloth each, one every 12 hours of play) to reach exalted with a race
 const WINTERSABER_EXALTED = 240;  // Wintersaber Trainers quests done in Winterspring to buy the Frostsaber (weeks of it)
+const WINTERSABER_DAY = 24;       // at most this many count per day of play (the trainers' quests run out)
 // the reputation each race's mounts need (the trolls and gnomes have their own factions, not a capital)
 const RACE_REP = { Human: "Stormwind", Dwarf: "Ironforge", "Night Elf": "Darnassus", Gnome: "Gnomeregan Exiles", Orc: "Orgrimmar", Undead: "Undercity", Tauren: "Thunder Bluff", Troll: "Darkspear Trolls" };
-const RACE_MOUNT_COST = 80000, RACE_EPIC_COST = 100000; // another race's mount at exalted: 8g, the epic one 100g (with epic riding)
+const RACE_MOUNT_COST = 80000, RACE_EPIC_COST = 1000000; // another race's mount at exalted: 8g, the epic one 100g (with epic riding)
 // rare drops: boss, mount, 1 in n (the tanks: one of the three colours, the red one much rarer)
 const MOUNT_DROPS = [
   ["Baron Rivendare", "Deathcharger's Reins", 100], ["Bloodlord Mandokir", "Swift Razzashi Raptor", 100], ["High Priest Thekal", "Swift Zulian Tiger", 100],
@@ -61,9 +62,9 @@ function mountDrops(boss, dn) {
 // a city visit at 60: one stack of 20 Runecloth for the next race not yet exalted, and the mounts it opens up
 function mountTurnins() {
   if (S.level < 60 || !S.prof) return;
-  const next = otherRaces().map(o => RACE_REP[o]).find(c => (S.rep[c] || 0) < RUNECLOTH_EXALTED);
+  const gr = goalWith("rep:"), next = gr ? gr.id.slice(4) : otherRaces().map(o => RACE_REP[o]).find(c => (S.rep[c] || 0) < RUNECLOTH_EXALTED);
   const k = MATS.Cloth[4];
-  if (next && (S.prof.mats[k] || 0) >= 20 && S.time - (S.turnin || 0) >= 12 * HOUR) {
+  if (next && (S.prof.mats[k] || 0) >= 20 && S.time - (S.turnin || 0) >= (gr ? GOAL_TURNIN : 12 * HOUR)) {
     S.prof.mats[k] -= 20; S.turnin = S.time; if (!S.prof.mats[k]) delete S.prof.mats[k];
     S.rep[next] = (S.rep[next] || 0) + 1;
     if (S.rep[next] === RUNECLOTH_EXALTED) log(`Exalted with ${next}! They'll sell you their mounts now.`, "ach");
@@ -79,7 +80,10 @@ function mountTurnins() {
 // a quest done in Winterspring at 60 (Alliance): the Wintersaber Trainers, toward the Frostsaber
 function mountQuest(q) {
   if (S.faction !== "Alliance" || S.level < 60 || q.zone !== "Winterspring" || hasMount("Winterspring Frostsaber")) return;
-  S.wintersaber = (S.wintersaber || 0) + 1;
+  const day = Math.floor(S.time / DAY);
+  if (!S.wsToday || S.wsToday.d !== day) S.wsToday = { d: day, n: 0 };
+  if (S.wsToday.n >= WINTERSABER_DAY) return;
+  S.wsToday.n++; S.wintersaber = (S.wintersaber || 0) + 1;
   if (S.wintersaber >= WINTERSABER_EXALTED) addMount("Winterspring Frostsaber", "Exalted with the Wintersaber Trainers: Rivern Frostwind hands over the reins of a Winterspring Frostsaber.");
   else if (S.wintersaber % 15 === 0) log(`The Wintersaber Trainers warm up to you (${S.wintersaber} of ${WINTERSABER_EXALTED}).`, "quest");
 }

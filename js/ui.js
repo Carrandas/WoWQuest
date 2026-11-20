@@ -50,6 +50,7 @@ function gameShell() {
         <div class="tabs ctabs" role="tablist" id="ctabs">${CTABS.map(([k, n]) => `<button type="button" role="tab" data-c="${k}" aria-selected="${k === charTab}" aria-label="${n}" title="${n}">${tabIcon(k)}<span class="tl">${n}</span></button>`).join("")}</div>
         <div class="cpane" data-c="char"><div class="stats" id="stats"></div>
         <ul class="rows vitals" id="vitals"></ul>
+        <h3 class="paneh" id="goalsH">Goals <small id="gCount"></small></h3><ul class="rows goals" id="goals"></ul>
         <h3 class="paneh">Buffs <small id="bCount"></small></h3><ul class="rows" id="buffs"></ul></div>
         <div class="cpane" data-c="equip"><div class="tabmeta"><small id="gs"></small></div><ul class="rows" id="equip"></ul></div>
         <div class="cpane" data-c="bags"><div class="tabmeta"><small id="money"></small></div>
@@ -84,6 +85,7 @@ function gameShell() {
   $("importSave").addEventListener("click", pickSaveFile);
   onButton("tabs", b => { uiTab = b.dataset.t; document.querySelectorAll("#tabs button").forEach(x => x.setAttribute("aria-selected", String(x === b))); dirty = true; });
   onButton("ctabs", b => { charTab = b.dataset.c; renderCharTab(); });
+  onButton("goals", goalClick);
   $("brand").addEventListener("click", brandTap);
   onButton("talTabs", b => { talTab = +b.dataset.tt; renderTalents(); });
   document.querySelectorAll(".fold").forEach(b => b.addEventListener("click", () => toggleFold(b.dataset.fold)));
@@ -330,6 +332,7 @@ function renderHero() {
     ["mount", S.mount ? esc(rideName()) : S.level >= 40 ? "saving up…" : "on foot until 40"],
     ...(S.companion ? [["companion", esc(S.companion)]] : []), ["kills", S.kills.toLocaleString()], ["quests done", S.qdone.toLocaleString()], ["deaths", S.deaths.toLocaleString()], ...spentRow(),
   ].map(([k, v]) => `<li><span class="k">${k}</span><span class="v">${v}</span></li>`).join("");
+  renderGoals();
   const act = activeBuffs();
   $("bCount").textContent = `${act.length} active`;
   $("buffs").innerHTML = act.map(n => { const left = S.buffs[n] - S.time; return `<li><span class="l buff">${esc(n)}</span><span class="rank">${left > 1e13 ? "" : Math.max(1, Math.ceil(left / MIN)) + " min"}</span></li>`; }).join("") || `<li><span class="empty">none right now</span></li>`;

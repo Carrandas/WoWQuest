@@ -13,6 +13,8 @@ const factionDungeons = () => DUNGEONS.filter(d => d.side === "B" || d.side === 
 const ACH = [
   ...[10, 20, 30, 40, 50].map(n => ({ id: "L" + n, name: `Level ${n}`, desc: `Reach level ${n}.`, test: () => S.level >= n })),
   { id: "L60", name: "Level 60", desc: "Reach the level cap.", test: () => S.level >= 60 },
+  { id: "goal1", name: "Something to Aim For", desc: "Reach a goal at level 60.", test: () => Object.keys(S.goalsDone || {}).length >= 1 },
+  { id: "goal10", name: "Goal Getter", desc: "Reach 10 goals at level 60.", test: () => Object.keys(S.goalsDone || {}).length >= 10 },
   { id: "kill1", name: "First Blood", desc: "Win your first fight.", test: () => S.kills >= 1 },
   { id: "kill1k", name: "Seasoned Fighter", desc: "Kill 1,000 enemies.", test: () => S.kills >= 1000 },
   { id: "kill10k", name: "Exterminator", desc: "Kill 10,000 enemies.", test: () => S.kills >= 10000 },

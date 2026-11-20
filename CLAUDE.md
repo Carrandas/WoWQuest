@@ -17,6 +17,7 @@ Plain HTML, CSS and vanilla JS: no build step, no dependencies, no modules. GitH
   - `group.js`: dungeon and raid groups, their rotations, group fights (`simFight`, `partyFight`), wipe chance
   - `minipets.js`: minipets to collect (`MINIPETS`, `S.minipets`, `S.companion`): vendor pets on city visits, the other faction's through the Gadgetzan AH, rare drops, the OOX escorts, engineering builds; the Collection tab
   - `mounts.js`: mounts to collect (`mountList`, `S.mounts`, `rideName`): own and class mounts, the other races' at exalted (Runecloth turn-ins, `S.rep`), the Winterspring Frostsaber, the rare drops (Deathcharger, Zul'Gurub, Qiraji tanks); the Mounts part of the Collection tab
+  - `goals.js`: goals at 60 (`goalDefs`, `S.goals`, `hasGoal`, `goalWith`): the player picks up to 4 (or the hero picks 3, `S.goalAuto`), each steers what the hero does between raid nights (`goalZone`, `goalFarm`, `goalRaid`, `goalDungeon`); the Goals list on the character tab and the picker
   - `pets.js`: hunter pets and warlock demons (`S.pet`): taming and summoning, tanking and damage share in fights, happiness, rare tames, demon specials, Infernal and Doomguard, the pet frame
   - `plan.js`: what the hero does next (`plan`, `killTask`, `queueCity`, `queueDungeon`), rotations, area of effect
   - `finish.js`: loot, `FINISH` (what each finished task does), the clock (`advance`, `catchUp`)

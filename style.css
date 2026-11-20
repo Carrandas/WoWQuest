@@ -345,6 +345,23 @@ button:disabled { cursor: not-allowed; }
 .modal .box { background: var(--panel); border: 1px solid var(--gold-dk); border-radius: 8px; padding: 20px; max-width: 380px; width: 100%; display: flex; flex-direction: column; gap: 14px; }
 .modal h3 { margin: 0; font-family: var(--display); font-size: 24px; color: var(--gold); }
 .modal p { margin: 0; color: var(--dim); }
+.rows li.goal { align-items: center; }
+.goal .gl { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.goal .gl small { color: var(--dim); font-size: 12px; }
+.goal .bar > i { background: var(--gold); }
+.gx { background: none; border: 0; color: var(--dim); font-size: 18px; line-height: 1; padding: 2px 6px; }
+.gx:hover { color: var(--text); }
+.rows li.gaddrow { justify-content: flex-start; align-items: center; }
+.gaddrow small { color: var(--dim); font-size: 12px; }
+.goals[hidden], #goalsH[hidden] { display: none; }
+.modal .gpick { max-width: 520px; max-height: calc(100vh - 32px); }
+.gopts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 0; }
+.gopts button { width: 100%; text-align: left; background: var(--panel-2); border: 1px solid var(--rim); border-radius: 6px; padding: 8px 10px; color: var(--text); display: flex; flex-direction: column; gap: 2px; font: inherit; }
+.gopts button:hover:not(:disabled) { border-color: var(--gold-dk); }
+.gopts button b { color: var(--gold); }
+.gopts button span { color: var(--dim); font-size: 13px; }
+.gopts button small { color: #e07a5f; font-size: 12px; }
+.gopts button:disabled { opacity: .55; cursor: default; }
 .modal .acts { display: flex; gap: 10px; justify-content: flex-end; }
 .danger { background: #a3241b; border: 0; color: var(--text); border-radius: 6px; padding: 6px 14px; font-family: var(--label); font-weight: 700; letter-spacing: .05em; }
 

@@ -175,10 +175,12 @@ const FINISH = {
   choose() {
     const r = route(), old = curZone();
     while (S.leg < r.length && S.level >= r[S.leg].until) S.leg++;
-    if (S.level >= 60) { S.cycleQ = 0; const pool = ENDGAME_ZONES.filter(z => z !== S.endZone); S.endZone = pick(pool); }
+    if (S.level >= 60) { S.cycleQ = 0; const pool = ENDGAME_ZONES.filter(z => z !== S.endZone); S.endZone = goalZone() || pick(pool); }
     S.nextCity = S.level + 2;
     if (S.level >= 10 || curZone() !== old) S.arrived = null; else S.loc = "hub";
-    if (S.level >= 60 && S.money < 500000) {
+    const gf = S.level >= 60 ? goalFarm(pick(["Winterspring", "Eastern Plaguelands", "Silithus", "Burning Steppes"])) : null;
+    if (gf && gf.cloth) S.queue.push({ k: "farm", d: gf.d, t: sec(240), cloth: true });
+    else if (S.level >= 60 && (S.money < 500000 || gf)) {
       const g = ["Mining", "Herbalism", "Skinning"].find(hasProf), z = pick(["Winterspring", "Eastern Plaguelands", "Silithus", "Burning Steppes"]);
       const d = g === "Mining" ? `Farming Thorium in ${z}` : g === "Herbalism" ? `Farming Dreamfoil in ${z}` : g ? `Farming Rugged Leather in ${z}` : pick(["Running Stratholme for gold", `Farming Runecloth in ${z}`]);
       S.queue.push({ k: "farm", d, t: sec(240) });
@@ -245,8 +247,9 @@ const FINISH = {
   gather(t) { finishGather(t); },
   craft() { mountTurnins(); finishCraft(); minipetCrafts(); }, // Runecloth turn-ins before the spare cloth is sold
   farm(t) {
-    const c = Math.round(t.t / HOUR * 150000), g = ["Mining", "Herbalism", "Skinning"].find(hasProf);
+    const c = Math.round(t.t / HOUR * (t.cloth ? 20000 : 150000)), g = ["Mining", "Herbalism", "Skinning"].find(hasProf); // Runecloth runs (a reputation goal) are for the cloth
     S.money += c;
+    if (t.cloth && S.prof) { addMat("Cloth", 4, 20 + R(15)); log(`Farmed Runecloth: ${moneyTxt(c)} and a stack of Runecloth for the turn-ins.`, "gold"); return; }
     if (g) { const n = 6 + R(8); addMat(g, 4, n); bump(g, n); bump("top:" + g, n); }
     log(`${t.d.replace(/^\w+ing/, m => m === "Running" ? "Ran" : "Farmed")}: ${moneyTxt(c)}${g ? ` and some ${MATS[g][4]}` : ""}.`, "gold");
   },
@@ -286,6 +289,7 @@ function finish(t) {
   const ve = vitalEnd(t); S.hpF = ve[0]; S.mpF = ve[1]; partyFinish(t);
   if (FINISH[t.k]) FINISH[t.k](t);
   petTick(t);
+  goalCheck();
   checkAch();
   dirty = true;
 }

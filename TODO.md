@@ -112,6 +112,10 @@
     "Collect 15 minipets". A finished goal is a chronicle moment, then pick the next one
     - The list shows what each goal involves and roughly how long it takes; goals that need something first say so
       (the Frostsaber needs Winterspring, the Deathcharger needs Stratholme open to your gear)
+    - **Done**: up to 4 goals on the character tab at 60 (the hero picks 3 until the player does): epic mount, a fat
+      purse (2000g), clear the next raids, Deathcharger's Reins, a Zul'Gurub mount, the Frostsaber, exalted with each
+      other race, collect N minipets. Each one steers the days (farming, Stratholme, Winterspring, Runecloth). Still to
+      come once those systems exist: Timbermaw and Argent Dawn reputation, the pre-raid set, Master Angler
   - Collections, and a collections tab with a mount bar and a minipet bar (the empty slots say where each comes from):
     - **Done** (except the PvP mounts): mounts in the Collection tab, ridden by rarity
     - Mounts: Deathcharger's Reins (Baron Rivendare, Stratholme), Swift Razzashi Raptor and Swift Zulian Tiger (Zul'Gurub),
@@ -145,6 +149,10 @@
     the long chain that upgrades it (Dungeon Set 2)
   - World events: Darkmoon Faire weeks (cards, tickets, the turtles), the holidays (Hallow's End, Winter Veil, Lunar
     Festival elders), world bosses (Azuregos, Kazzak, the Emerald Dragons) and the Gurubashi Arena chest
+  - The Gates of Ahn'Qiraj: the server-wide war effort (both factions hand in supplies for weeks), the Scepter of the
+    Shifting Sands quest line (Anachronos, the Green Dragonflight, the Nefarian and Vaelastrasz parts), and the one who
+    bangs the gong in Silithus gets the Black Qiraji Resonating Crystal, the black battle tank, the rarest mount of all.
+    The Ten Hours War follows, and only then do Ruins and Temple of Ahn'Qiraj open (they'd start locked)
   - Doing things for fun, mostly chronicle flavour: guild chat, duels outside Orgrimmar or Ironforge, world PvP in
     Hillsbrad, a lap around the world, /dance on the Ironforge bank
   - Achievements for the collections (10 / 25 minipets, 5 mounts, Deathcharger, Exalted with 5 factions)

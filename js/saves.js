@@ -23,7 +23,8 @@ function migrate() {
   // pets used to be a buff; now they're the real thing (pets.js)
   if (S.pet === undefined) S.pet = null;
   if (!S.mounts) { S.mounts = {}; mountOwn(true); }
-  S.rep = S.rep || {}; S.wintersaber = S.wintersaber || 0;
+  S.rep = S.rep || {}; S.wintersaber = S.wintersaber || 0; if (S.wsToday === undefined) S.wsToday = null;
+  S.goals = S.goals || []; S.goalsDone = S.goalsDone || {}; if (S.goalAuto === undefined) S.goalAuto = true;
   S.minipets = S.minipets || {}; S.oox = S.oox || []; if (S.companion === undefined) S.companion = null;
   S.demons = S.demons || {}; S.petStats = S.petStats || { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 }; S.rareHunt = S.rareHunt || null;
   ["Call Pet", "Summon Imp", "Summon Voidwalker", "Summon Succubus", "Summon Felhunter"].forEach(n => delete S.buffs[n]);
