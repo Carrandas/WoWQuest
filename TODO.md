@@ -25,7 +25,7 @@
 - [x] **Damage meter for dungeons and raids** (damage and healing, this fight or the whole run; collapsible)
   - [ ] Base your own damage on your actual casts instead of a share of the group's
   - [ ] Raid numbers run low (about 125 dps/hps per player); raise raid boss health and heal sizes
-- [ ] **Expand the talent tree** (it only shows 0 / 0 / 25 right now)
+- [x] **Talent trees**: real talents per tree, talent spells, effects, cooldowns
 - [ ] **Guild system**
   - The guild grows with you: at some level your character founds a guild with a name
   - Members join over time, enough for a 5-man dungeon first; dungeon groups are then made from the guild
