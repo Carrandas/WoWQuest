@@ -21,4 +21,8 @@
   - [ ] Raid numbers run low (about 125 dps/hps per player); raise raid boss health and heal sizes
 - [ ] **Expand the talent tree** (it only shows 0 / 0 / 25 right now)
 - [ ] **Guild system** (design still open)
+  - Idea: the guild is the raid. The same 40 members come back every week, loot that drops goes to them,
+    and the guild gets stronger over time: wiping on Onyxia, running dungeons for gear, killing Onyxia,
+    better gear, Molten Core, and so on. Each member has their own gear, which drives their damage and healing.
+  - Open question: dungeons are 5-man, so who from the guild comes along (or pickup players as now)
 - [ ] **Expansion packs** (eventually)

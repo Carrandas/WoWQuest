@@ -1056,6 +1056,9 @@ function randName(taken) {
 }
 // 5-man: 1/1/3; 20-man: 3 tanks, 5 healers; 40-man: 5 tanks, 12 healers
 const RAID_ROLES = { 5: [1, 1], 20: [3, 5], 40: [5, 12] };
+// how well geared pickup players are for the content: about level-appropriate in dungeons, about what the
+// raid asks for in raids (Molten Core lightly, Naxxramas heavily), give or take 15% per player
+const contentGear = () => { const ri = S.dg && RAID_INFO[S.dg.name]; return (ri ? ri.gs / 60 : 1) * (0.85 + Math.random() * 0.3); };
 function makeParty(raid) {
   const size = raid && S.dg && RAID_INFO[S.dg.name] ? RAID_INFO[S.dg.name].size : 5, [nt, nh] = RAID_ROLES[size] || RAID_ROLES[5];
   const roles = [...Array(nt).fill("tank"), ...Array(nh).fill("heal")]; while (roles.length < size) roles.push("dps");
@@ -1065,7 +1068,7 @@ function makeParty(raid) {
     const c = pick(ROLE_CLASSES[role].filter(k => k !== "Paladin" || S.faction === "Alliance").filter(k => k !== "Shaman" || S.faction === "Horde"));
     const race = pick(Object.keys(ALLOWED).filter(r => RACES[r].f === S.faction && ALLOWED[r].includes(c)));
     const name = randName(taken); taken.push(name);
-    return { name, race, cls: c, role, spec: ROLE_SPEC[role][c], L: raid ? 60 : clamp(S.level + R(5) - 2, 1, 60), hp: 1, mp: 1 };
+    return { name, race, cls: c, role, spec: ROLE_SPEC[role][c], L: raid ? 60 : clamp(S.level + R(5) - 2, 1, 60), hp: 1, mp: 1, gear: contentGear() };
   });
   // spread tanks, then healers, round-robin over the groups; dps fill the gaps
   const nG = Math.ceil(size / 5), groups = Array.from({ length: nG }, () => []);
@@ -2138,8 +2141,9 @@ function meterFight(t) {
   if (!t || !S.party || !(t.k === "trash" || t.k === "boss")) return null;
   let m = DMF.get(t); if (m) return m;
   const pf = partyFight(t); if (!pf || !pf.hero || !foeOf(t)) return null;
-  const P = [pf.hero, ...pf.m], all = [{ role: heroRole(), L: S.level, gear: clamp(gearScore() / Math.max(1, S.level), 0.5, 1.4) }, ...S.party.map(x => ({ role: x.role, L: x.L, gear: 1 }))];
-  const w = all.map(a => (DM_ROLE[a.role] || 0.5) * a.gear * (a.L / Math.max(1, S.level)) * (0.75 + Math.random() * 0.5)), ws = w.reduce((a, b) => a + b, 0) || 1;
+  // your gear against theirs: both measured as gear for the level, so being over- or undergeared shows
+  const P = [pf.hero, ...pf.m], all = [{ role: heroRole(), L: S.level, gear: clamp(gearScore() / Math.max(1, S.level), 0.5, 2) }, ...S.party.map(x => ({ role: x.role, L: x.L, gear: x.gear ?? (x.gear = contentGear()) }))];
+  const w = all.map(a => (DM_ROLE[a.role] || 0.5) * a.gear * (a.L / Math.max(1, S.level)) * (0.85 + Math.random() * 0.3)), ws = w.reduce((a, b) => a + b, 0) || 1;
   m = { share: w.map(x => x / ws), heal: P.map(p => p.healEv || []) };
   DMF.set(t, m); return m;
 }
