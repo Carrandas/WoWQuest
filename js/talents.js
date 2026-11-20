@@ -48,6 +48,12 @@ const TAL_FX = { d: "damage", t: "damage taken", m: "mana cost", h: "health", l:
 const TAL_SCALE = 2;
 const talTree = (c, i) => (talTree.cache[c + i] ||= TALENTS[c][i].split(";").map(x => { const [name, max, fx, per, tier] = x.split("/"); return { name, max: +max, fx, per: +per * TAL_SCALE, tier: +tier }; }));
 talTree.cache = {};
+// active talents (an attack, a cooldown or the 31-point talent) instead of a passive bonus
+const isTalentSpell = tl => /[acu]/.test(tl.fx);
+// the classes that heal (their healing talents count)
+const HEAL_CLASSES = /Paladin|Priest|Shaman|Druid/;
+// calls fn(talent, rank, tree) for every talent in a build (split: points per tree)
+function forRanks(c, split, fn) { for (let i = 0; i < 3; i++) talentRanks(c, i, split[i]).forEach((r, k) => fn(talTree(c, i)[k], r, i)); }
 // points per tree at a level (the main spec first to 31, then the next tree up to 20)
 function talentSplit(L, spec) {
   const pts = Math.max(0, L - 9), t = [0, 0, 0], second = (spec + 1) % 3;
@@ -61,7 +67,7 @@ const TAL_FXC = {};
 function talentFx(c, L, spec) {
   const key = c + L + "|" + spec; if (TAL_FXC[key]) return TAL_FXC[key];
   const fx = { d: 0, t: 0, m: 0, h: 0, l: 0 }, split = talentSplit(L, spec);
-  for (let i = 0; i < 3; i++) talentRanks(c, i, split[i]).forEach((r, k) => { const tl = talTree(c, i)[k]; if (r && tl.fx in fx) fx[tl.fx] += r * tl.per / 100; });
+  forRanks(c, split, (tl, r) => { if (r && tl.fx in fx) fx[tl.fx] += r * tl.per / 100; });
   return (TAL_FXC[key] = fx);
 }
 // the average build at a level: what the game was tuned for, so talents shift how a spec plays, not how hard it is
@@ -69,7 +75,7 @@ const TAL_BASE = {};
 function talentBase(L) {
   if (TAL_BASE[L]) return TAL_BASE[L];
   // mana is averaged over mana users only, healing over the classes that heal
-  const sum = { d: 0, t: 0, m: 0, h: 0, l: 0 }, n = { d: 0, t: 0, m: 0, h: 0, l: 0 }, heals = /Paladin|Priest|Shaman|Druid/;
+  const sum = { d: 0, t: 0, m: 0, h: 0, l: 0 }, n = { d: 0, t: 0, m: 0, h: 0, l: 0 }, heals = HEAL_CLASSES;
   for (const c in TALENTS) for (let s = 0; s < 3; s++) {
     const fx = talentFx(c, L, s);
     for (const k in sum) { if ((k === "m" && !CLASSES[c].mp) || (k === "l" && !heals.test(c))) continue; sum[k] += fx[k]; n[k]++; }
@@ -85,7 +91,8 @@ function talMod(k) {
 // the hero's talent spells: [{name, kind}] for every active talent with a point in it
 function talentSpells() {
   const split = talentSplit(S.level, S.spec), out = [];
-  for (let i = 0; i < 3; i++) talentRanks(S.cls, i, split[i]).forEach((r, k) => { const tl = talTree(S.cls, i)[k]; if (r && /[acu]/.test(tl.fx)) out.push({ name: tl.name, kind: tl.fx === "u" ? ((ULT_ATK[S.cls] || []).includes(i) ? "a" : "c") : tl.fx, tree: i }); });
+  // the 31-point talent is an attack for some specs (ULT_ATK) and a cooldown for the rest
+  forRanks(S.cls, split, (tl, r, i) => { if (r && isTalentSpell(tl)) out.push({ name: tl.name, kind: tl.fx === "u" ? ((ULT_ATK[S.cls] || []).includes(i) ? "a" : "c") : tl.fx, tree: i }); });
   return out;
 }
 // talent points gained between two levels, for the chronicle
@@ -98,7 +105,7 @@ function talentGains(L0, L1) {
   return out;
 }
 function talentLine(tl, r) {
-  if (/[acu]/.test(tl.fx)) return tl.fx === "u" ? "31-point talent spell" : "talent spell";
+  if (isTalentSpell(tl)) return tl.fx === "u" ? "31-point talent spell" : "talent spell";
   const v = +(r * tl.per).toFixed(1), sign = tl.fx === "t" || tl.fx === "m" ? "−" : "+", per = +tl.per.toFixed(1);
   return r && tl.max > 1 ? `${sign}${per}% ${TAL_FX[tl.fx]} per rank · ${sign}${v}% total` : r ? `${sign}${v}% ${TAL_FX[tl.fx]}` : `${sign}${per}% ${TAL_FX[tl.fx]} per rank`;
 }
@@ -112,10 +119,10 @@ function renderTalents() {
   tree.forEach((tl, k) => {
     if (tl.tier !== lastTier) { lastTier = tl.tier; rows += `<li class="tier">Tier ${tl.tier}${tl.tier > 1 ? ` · ${(tl.tier - 1) * 5} points` : ""}</li>`; }
     const r = ranks[k], st = r >= tl.max ? "max" : r ? "some" : "none";
-    rows += `<li class="t-${st}${/[acu]/.test(tl.fx) ? " spell" : ""}"><span class="tn">${esc(tl.name)}</span><span class="tr">${r}/${tl.max}</span><span class="tx">${talentLine(tl, r)}</span></li>`;
+    rows += `<li class="t-${st}${isTalentSpell(tl) ? " spell" : ""}"><span class="tn">${esc(tl.name)}</span><span class="tr">${r}/${tl.max}</span><span class="tx">${talentLine(tl, r)}</span></li>`;
   });
   setHtml("talTabs", tabs); setHtml("tal", rows);
-  const fx = talentFx(S.cls, S.level, S.spec), heals = /Paladin|Priest|Shaman|Druid/.test(S.cls);
+  const fx = talentFx(S.cls, S.level, S.spec), heals = HEAL_CLASSES.test(S.cls);
   const keys = ["d", "t", "m", "h", "l"].filter(k => (k !== "m" || c.mp) && (k !== "l" || heals));
   const pct = v => Math.round(v * 100), neg = k => k === "t" || k === "m";
   const mine = keys.filter(k => fx[k] > 0).map(k => `${neg(k) ? "−" : "+"}${pct(fx[k])}% ${TAL_FX[k]}`);

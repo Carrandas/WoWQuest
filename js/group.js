@@ -211,7 +211,7 @@ function hpAt(p, raw) {
 function memberNow(i) {
   const m = S.party[i], t = S.task, f = partyFight(t), g = f && f.m[i];
   if (!g) return { hp: m.hp, mp: m.mp, p: 0, fight: false, ci: -1, casts: [] };
-  const raw = Math.min(1, t.el / t.t), cs = g.casts, n = cs.length, p = n ? Math.floor(raw * n) / n : raw;
+  const raw = taskDone(t), cs = g.casts, n = cs.length, p = n ? Math.floor(raw * n) / n : raw;
   return { hp: g.tl ? hpAt(g, raw) : g.hp + (g.end - g.hp) * p, mp: g.mp + (g.mpEnd - g.mp) * p, p, fight: n > 0, ci: n ? Math.min(n - 1, Math.floor(raw * n)) : -1, casts: cs };
 }
 function partyFinish(t) {

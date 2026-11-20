@@ -31,11 +31,6 @@ function curZone() { const r = route(); return S.leg < r.length ? r[S.leg].z : S
 function hub() { return ZONE_HUB(curZone(), S.faction); }
 function hpMax() { return Math.round((cls().hp * S.level + S.stats.STA * 10) * talMod("h")); }
 function resMax() { return cls().mp ? cls().mp * S.level + S.stats.INT * 15 : 100; }
-function talents() {
-  const pts = Math.max(0, S.level - 9), t = [0, 0, 0], second = (S.spec + 1) % 3;
-  t[S.spec] = Math.min(pts, 31); t[second] = Math.min(pts - t[S.spec], 20); t[S.spec] += pts - t[S.spec] - t[second];
-  return t;
-}
 
 // ---------- items ----------
 const power = it => it ? it.ilvl * QMULT[it.q] : -1;
@@ -227,6 +222,8 @@ const rationPrice = () => Math.round(5 + S.level * S.level * 0.15);
 
 // current health / mana (fractions, display only): fights drain, rests and walking refill
 const FIGHTS = ["kill", "trash", "boss"];
+// how far through a task is (0..1)
+const taskDone = t => Math.min(1, t.el / t.t);
 function vitalEnd(t) {
   const f = partyFight(t); if (f && f.hero) return [f.hero.end, f.hero.mpEnd];
   if (t.ve) return t.ve;
@@ -247,7 +244,7 @@ function vitalEnd(t) {
 }
 // fights drop in blocks, one per finished cast; everything else moves smoothly
 function poolProgress(t) {
-  const p = Math.min(1, t.el / t.t);
+  const p = taskDone(t);
   if (!FIGHTS.includes(t.k)) return p;
   const n = (t.casts && t.casts.length) || 4;
   return Math.floor(p * n) / n;
@@ -255,7 +252,7 @@ function poolProgress(t) {
 function vitalsNow() {
   const t = S.task; let hp = S.hpF ?? 1, mp = S.mpF ?? 1;
   if (t) {
-    const p = poolProgress(t), raw = Math.min(1, t.el / t.t), e = vitalEnd(t), f = partyFight(t);
+    const p = poolProgress(t), raw = taskDone(t), e = vitalEnd(t), f = partyFight(t);
     hp = f && f.hero ? hpAt(f.hero, raw) : t.k === "kill" && !S.party ? hpAt(soloFight(t), raw) : hp + (e[0] - hp) * p; mp += (e[1] - mp) * p;
   }
   return [hp, mp];

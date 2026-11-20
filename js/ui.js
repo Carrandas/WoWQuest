@@ -183,7 +183,7 @@ function renderFoe() {
     setHtml("eName", "No target"); setHtml("eSub", esc(foeIdle())); setHtml("eCasts", ""); setHtml("eAdds", ""); setHtml("eAbil", ""); setHtml("eInfo", "");
     return;
   }
-  const n = f.w.length, k = Math.floor(Math.min(1, t.el / t.t) * n), st = f.units.map(u => foeAt(f, u, k));
+  const n = f.w.length, k = Math.floor(taskDone(t) * n), st = f.units.map(u => foeAt(f, u, k));
   let mi = f.units.findIndex(u => (u.segs || []).some(g => k >= g.a && k < g.b));
   if (mi < 0 || !st[mi].alive) mi = st.findIndex(s => s.alive && !s.hidden); if (mi < 0) mi = f.units.length - 1;
   const sig = t.d + "|" + t.t;
@@ -250,7 +250,7 @@ const fmtN = n => n >= 1e6 ? (n / 1e6).toFixed(2) + "M" : n >= 1e4 ? (n / 1e3).t
 let dmMode = "dmg", dmScope = "fight", dmTick = 0;
 function renderMeter(force) {
   if (!force && ++dmTick % 8) return; // a few times a second is plenty (the first call after the frames appear always draws)
-  const M = meterRun(), t = S.task, live = t ? meterNow(t, Math.min(1, t.el / t.t)) : null;
+  const M = meterRun(), t = S.task, live = t ? meterNow(t, taskDone(t)) : null;
   document.querySelectorAll("#dmMode button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.m === dmMode)));
   document.querySelectorAll("#dmScope button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s === dmScope)));
   if (!M || !S.party) { setHtml("dmRows", ""); return; }
@@ -367,7 +367,7 @@ function renderMeterNames() {
 
 function renderBars() {
   const t = S.task;
-  if (t) { const p = Math.min(1, t.el / t.t); $("tDesc").textContent = t.d;
+  if (t) { const p = taskDone(t); $("tDesc").textContent = t.d;
     const cs = t.casts || [], ci = Math.min(cs.length - 1, Math.floor(p * cs.length));
     const from = Math.max(0, ci - 5); $("tCasts").innerHTML = (from ? "… › " : "") + cs.slice(from, ci + 1).map((s, i) => `<span${i + from === ci ? ' class="cur"' : ""}>${esc(s)}</span>`).join(" › "); $("tFill").style.width = (p * 100).toFixed(1) + "%"; $("tPct").textContent = Math.floor(p * 100) + "%"; }
   const [hf, mf] = vitalsNow(), hm = hpMax();
@@ -442,7 +442,7 @@ function renderGroup(hf, mf) {
     $("gc" + i).innerHTML = cast;
   };
   const raidUi = box.classList.contains("raid"), t = S.task, castHtml = (cs, ci) => ci < 0 ? "&nbsp;" : (ci > 0 && !raidUi ? `<span>${esc(cs[ci - 1])}</span> › ` : "") + `<span class="cur">${esc(cs[ci])}</span>`;
-  const hc = t && t.casts && FIGHTS.includes(t.k) ? t.casts : [], hci = hc.length ? Math.min(hc.length - 1, Math.floor(Math.min(1, t.el / t.t) * hc.length)) : -1;
+  const hc = t && t.casts && FIGHTS.includes(t.k) ? t.casts : [], hci = hc.length ? Math.min(hc.length - 1, Math.floor(taskDone(t) * hc.length)) : -1;
   const dead = '<span class="dead">dead</span>';
   paint(0, S.cls, hf, mf, hc.length > 0, t ? poolProgress(t) : 0, hf <= 0 && hc.length ? dead : castHtml(hc, hci), S.level);
   renderMeter();
