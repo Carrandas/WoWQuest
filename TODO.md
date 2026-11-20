@@ -104,6 +104,34 @@
     whole guild keeps up with your character. Raid loot goes to members through DKP
   - Start simple: each member's gear is one gear level (what drives their damage and healing).
     Full gear sets per member could come later, if the guild tab should show their items
+- [ ] **Life at 60: goals, collections and things to do besides raiding**
+  - Goals the hero sets itself, a few at a time, shown on the character tab with progress bars, and the days between
+    raid nights fill up with whatever moves them along: "Saving for an epic mount: 412 / 1000g", "Exalted with
+    Timbermaw Hold", "Deathcharger's Reins (Stratholme, 1%)", "Pre-raid set: 6 / 8 pieces", "Master Angler".
+    A finished goal is a chronicle moment, then the next one comes up
+  - Collections, and a collections tab with a mount bar and a minipet bar (the empty slots say where each comes from):
+    - Mounts: Deathcharger's Reins (Baron Rivendare, Stratholme), Swift Razzashi Raptor and Swift Zulian Tiger (Zul'Gurub),
+      Winterspring Frostsaber (Wintersaber Trainers, Alliance), the other races' mounts at exalted with their city,
+      the AQ40 Qiraji battle tanks, the PvP mounts (Frostwolf Howler, Stormpike Battle Charger) once PvP is in
+    - Minipets: the whelps (Dark and Crimson Whelpling in the Wetlands, Azure in Winterspring, Emerald in the Swamp of
+      Sorrows), the Booty Bay parrots (Hyacinth Macaw), Worg Pup and Smolderweb Hatchling (Lower Blackrock Spire),
+      Sprite Darter Hatchling (Feralas), the Mechanical Chicken (a quest), the holiday ones (Tiny Snowman, Winter Veil)
+    - The odd good-looking rare (world drop epics, Tabard of the Argent Dawn), shown with the collections
+  - Farming runs as their own activity: herbs (Black Lotus routes in Winterspring and Burning Steppes), Thorium and
+    Dark Iron, Runecloth, Righteous Orbs and Essence of Undeath for the top crafts, daily cooldowns (Arcanite
+    transmute, Mooncloth); ties into the masterworks and pays for the epic mount
+  - Reputation grinds, each with a reward: Argent Dawn (Scourgestones, the Naxxramas attunement), Timbermaw Hold,
+    Thorium Brotherhood (Molten Core recipes), Hydraxian Waterlords (dousing the runes in Molten Core), Zandalar Tribe
+    (Zul'Gurub enchants), Cenarion Circle, the Wintersaber Trainers, the other faction cities (their mounts)
+  - Fishing as the third secondary skill: fishing trips, Nat Pagle's quests, the Stranglethorn Fishing Extravaganza on
+    Sundays (Master Angler, the Arcanite Fishing Pole), the odd rare catch (Old Ironjaw)
+  - Pre-raid best-in-slot hunting: farming Upper Blackrock Spire, Stratholme and Scholomance for the dungeon set, then
+    the long chain that upgrades it (Dungeon Set 2)
+  - World events: Darkmoon Faire weeks (cards, tickets, the turtles), the holidays (Hallow's End, Winter Veil, Lunar
+    Festival elders), world bosses (Azuregos, Kazzak, the Emerald Dragons) and the Gurubashi Arena chest
+  - Doing things for fun, mostly chronicle flavour: guild chat, duels outside Orgrimmar or Ironforge, world PvP in
+    Hillsbrad, a lap around the world, /dance on the Ironforge bank
+  - Achievements for the collections (10 / 25 minipets, 5 mounts, Deathcharger, Exalted with 5 factions)
 - [ ] **PvP: battlegrounds and honor ranks** (at 60, maybe a bracket now and then while levelling)
   - Battlegrounds, played out like a dungeon run (queue, "X joined Warsong Gulch", a string of fights, win or loss):
     - Warsong Gulch (10 vs 10): capture the flag, first to 3 caps ("Dalwyn picked up the Horde flag!", "2–1 Alliance")
