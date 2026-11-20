@@ -61,7 +61,8 @@ function setPiece(tier, ilvl, slot) {
   slot = slot || pick(SET_SLOTS[tier] || SET_SLOTS[0]); const set = SETS[S.cls][tier];
   return { name: (SETSHORT[set] || set) + " " + ARMOR_BASE[armorType()][slot], ilvl, q: tier ? 4 : 3, slot, set: tier };
 }
-const sellValue = it => Math.round(it.ilvl * it.ilvl * 2 * QMULT[it.q]);
+// what a vendor pays for an item (less at 60, where the loot pours in)
+const sellValue = it => Math.round(it.ilvl * it.ilvl * QMULT[it.q] * (S.level >= 60 ? 0.75 : 1));
 // equip if better, otherwise into the bags as something to sell
 function gain(it, how) {
   const cur = S.equip[it.slot];
@@ -146,7 +147,8 @@ function newQuest() {
   else { q.type = "kill"; q.max = 6 + R(7); }
   const L = S.level;
   q.xp = Math.round(mobXp(L) * (q.type === "elite" ? 14 : 7 + R(5)) * 1.15);
-  q.money = Math.round((L * L * 3 + 60) * (0.7 + Math.random() * 0.6));
+  // at 60 the questing is for gold only, and there's a lot of it: a third of the pay, so the epic mount takes a few weeks
+  q.money = Math.round((L * L * 2.5 + 40) * (0.7 + Math.random() * 0.6) * (L >= 60 ? 0.4 : 1));
   S.quests.push(q);
   return q;
 }
@@ -327,7 +329,7 @@ function newHero(f) {
     buffs: {}, cons: { hp: 0, mp: 0, elix: 0, stone: 0, food: 10, drink: CLASSES[f.cls].mp ? 10 : 0, band: 0, bomb: 0, feast: 0, flask: 0 },
     prof: newProf(pairsFor(f.cls).includes(f.prof) ? f.prof : PAIR_FOR[f.cls], 1), elites: [], feats: [], zones: [], dstat: {}, ach: {},
     parts: {}, legendaries: [], lock: {}, runs: 0, trip: 0, cd: {}, achProf: 1,
-    pet: null, demons: {}, petStats: { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 }, rareHunt: null,
+    bossKills: {}, runs60: 0, pet: null, demons: {}, petStats: { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 }, rareHunt: null,
     kills: 0, deaths: 0, qdone: 0, qid: 0, since: 0, curQ: 0, repair: 0, dg: null, time: 0, log: [], logId: 0, task: null, queue: [], speed: 1, savedAt: Date.now() };
   SLOTS.forEach(s => S.equip[s] = null);
   S.equip["Main Hand"] = { name: c.start, ilvl: 2, q: 1, slot: "Main Hand" };

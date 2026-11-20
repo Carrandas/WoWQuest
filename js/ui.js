@@ -521,7 +521,7 @@ function renderJournal() {
   } else {
     h = dl.map(d => { const e = S.dstat[d.name], raid = RAIDS.includes(d), done = S.dungeons.includes(d.name) && e;
       const loot = done && e.loot.length ? `<span class="loot">${e.loot.map(x => `<i class="q${x.q}">${esc(x.n)}</i>`).join(", ")}</span>` : "";
-      return `<li class="${done ? "got" : "locked"}"><span class="ico">${done ? "✓" : "·"}</span><div><b>${esc(d.name)}${raid ? ` (${RAID_INFO[d.name].size}-man raid)` : ""}</b><span>${done ? `cleared ${e.runs}× · ${e.old ? "first clear before the journal" : "first at level " + e.L + " on " + fmtDate(e.at)}${raid && raidLocked(d.name) ? ` · saved, resets in ${Math.ceil((RAID_INFO[d.name].lock * DAY - (S.time - S.lock[d.name])) / DAY)}d` : ""}` : `levels ${d.min}–${d.max}`}</span>${loot}</div></li>`; }).join("");
+      return `<li class="${done ? "got" : "locked"}"><span class="ico">${done ? "✓" : "·"}</span><div><b>${esc(d.name)}${raid ? ` (${RAID_INFO[d.name].size}-man raid)` : ""}</b><span>${done ? `cleared ${e.runs}× · ${e.old ? "first clear before the journal" : "first at level " + e.L + " on " + fmtDate(e.at)}${raid && raidLock(d.name) ? ` · saved (${raidKilled(d.name)}/${d.bosses.length}), resets in ${Math.ceil((RAID_INFO[d.name].lock * DAY - (S.time - raidLock(d.name).at)) / DAY)}d` : ""}` : `levels ${d.min}–${d.max}`}</span>${loot}</div></li>`; }).join("");
   }
   $("journal").innerHTML = h;
 }

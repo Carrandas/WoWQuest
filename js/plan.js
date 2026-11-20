@@ -178,8 +178,15 @@ function queueCity() {
 // a dungeon or raid by name
 const instanceRow = n => DUNGEONS.concat(RAIDS).find(d => d.name === n);
 // a raid is open when the previous tier is cleared, your gear is ready and you are not saved to it
-const raidLocked = n => S.lock[n] && S.time - S.lock[n] < RAID_INFO[n].lock * DAY;
-const raidOpen = r => { const i = RAID_INFO[r.name]; return gearScore() >= i.gs && (!i.need || S.dungeons.includes(i.need)) && !raidLocked(r.name); };
+// raid lockouts: { at (when it started), killed (bosses down this lockout, in order), last (the last raid night) }.
+// A raid takes several nights: the next one carries on from the first boss still standing, until the reset
+const RAID_TRIES = 3;                       // wipes before the raid calls it a night
+const raidLock = n => { const l = S.lock[n]; return l && S.time - l.at < RAID_INFO[n].lock * DAY ? l : null; };
+const raidKilled = n => (raidLock(n) || { killed: 0 }).killed;
+const raidLocked = n => raidKilled(n) >= instanceRow(n).bosses.length;   // fully cleared this lockout
+const raidRested = n => !S.lock[n] || !S.lock[n].last || S.time - S.lock[n].last >= DAY; // one raid night a day
+const attuned = n => !RAID_INFO[n].attune || S.runs60 >= RAID_INFO[n].attune[0];
+const raidOpen = r => { const i = RAID_INFO[r.name]; return gearScore() >= i.gs && (!i.need || S.dungeons.includes(i.need)) && attuned(r.name) && !raidLocked(r.name) && raidRested(r.name); };
 function pickDungeon() {
   const ok = d => d.side === "B" || d.side === S.faction[0];
   if (S.level >= 60) {
@@ -193,7 +200,8 @@ const regroupTask = raid => ({ k: "regroup", d: pick(["Waiting for the healer to
 function queueDungeon(d) {
   const q = S.queue, raid = RAIDS.includes(d), { name: dn, abbr, bosses, trash } = d;
   const chat = pick([`LFM ${abbr}, need heals`, `LF1M ${abbr}, have summon`, `LFG ${abbr}, ${S.cls.toLowerCase()} lvl ${S.level}`, `LF tank for ${abbr} then GO`, `${abbr} run, LF2M, PST`]);
-  S.dg = { name: dn, killed: 0, total: bosses.length, raid, rep0: S.repair };
+  const start = raid ? raidKilled(dn) : 0; // bosses already down this lockout
+  S.dg = { name: dn, killed: start, total: bosses.length, raid, rep0: S.repair, wipes: 0 };
   S.party = makeParty(raid);
   S.meter = { dn, dmg: [], heal: [], secs: 0, last: null };
   const dq = S.dungeons.includes(dn) ? [] : (DQUESTS[dn] || []).map(x => { const [name, boss, obj, side] = x.split("|"); return { name, boss, obj, side }; }).filter(x => !x.side || x.side === S.faction[0]);
@@ -202,7 +210,8 @@ function queueDungeon(d) {
   q.push({ k: "dtravel", d: `Traveling to ${dn} with the group`, t: sec(raid ? 180 : 120), dn });
   const petBoss = petDungeon(q, raid, bosses);
   q.push({ k: "dbuff", d: raid ? "Buffing up and drinking a flask at the instance portal" : "Buffing up at the instance entrance", t: sec(8), raid });
-  bosses.forEach(b => {
+  bosses.forEach((b, bi) => {
+    if (bi < start) return;
     const n = raid ? 2 + R(2) : 1 + R(3);
     for (let i = 0; i < n; i++) {
       const main = pick(trash), mobs = Array.from({ length: raid ? 3 + R(3) : 2 + R(3) }, (_, j) => j && Math.random() < 0.3 ? pick(trash) : main);

@@ -28,7 +28,7 @@ const CRAFT_SRC = { Blacksmithing: "Mining", Engineering: "Mining", Alchemy: "He
 const CRAFT_AT = { Blacksmithing: "at the anvil", Leatherworking: "at the leatherworking bench", Tailoring: "at the loom", Alchemy: "at the alchemy lab", Engineering: "at the engineering bench", Enchanting: "at the enchanting table" };
 const BLACK_LOTUS = 60000; // a flask's rare herb, bought on the AH
 // copper per material on the Auction House: Linen and Copper are cheap, Runecloth and Thorium are not
-const MAT_PRICE = [200, 1000, 4500, 8000, 12500], matPrice = t => MAT_PRICE[t];
+const MAT_PRICE = [100, 400, 2000, 5000, 9000], matPrice = t => MAT_PRICE[t];
 const zoneTier = (z = curZone()) => { const d = ZONES[z], m = d ? (d.min + d.max) / 2 : S.level; return m < 13 ? 0 : m < 23 ? 1 : m < 33 ? 2 : m < 45 ? 3 : 4; };
 const skillTier = sk => { let t = -1; MAT_REQ.forEach((r, i) => { if (sk >= r) t = i; }); return t; };
 // orange always teaches something, yellow usually, green now and then, grey never
@@ -238,7 +238,7 @@ function craftPractice(run) {
     const r = recipes(craft).filter(x => sk() >= x.req && skillChance(sk(), x.req) >= 0.5).pop() || recipes(craft).filter(x => sk() >= x.req && skillChance(sk(), x.req) > 0).pop();
     if (!r) break;
     if (!canCraft(run, r) && !(behind() && buyMats(src, r.t, r.n - matCount(src, r.t), run.notes))) break;
-    useRecipe(run, r); ups++; vend += Math.round((r.t + 1) * (r.t + 1) * 225 * (r.v + 1));
+    useRecipe(run, r); ups++; vend += Math.round((r.t + 1) * 120 * (r.v + 1));
   }
   if (vend) S.money += vend;
   return ups;
@@ -251,7 +251,7 @@ function sellMats() {
     const have = p.mats[k] || 0; if (!have) return;
     const tailor = hasProf("Tailoring"), craft = src === "Cloth" ? (tailor ? "Tailoring" : "First Aid") : src === "Meat" ? "Cooking" : crafts().find(n => CRAFT_SRC[n] === src) || p.b;
     const top = skillTier(profSkill(craft)), keep = !uses.has(src) ? 0 : t < top - 1 ? 0 : src === "Cloth" && !tailor ? 10 : src === "Meat" ? 10 : 40;
-    if (have > keep) { const n = have - keep, c = Math.round(n * matPrice(t) * 0.3); sum += c; got.push(`${n} ${k}`); p.mats[k] = keep; if (!keep) delete p.mats[k]; }
+    if (have > keep) { const n = have - keep, c = Math.round(n * matPrice(t) * 0.1); sum += c; got.push(`${n} ${k}`); p.mats[k] = keep; if (!keep) delete p.mats[k]; }
   });
   if (!sum) return;
   S.money += sum; p.ah += sum;

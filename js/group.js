@@ -120,8 +120,14 @@ function healAmt(s) {
 }
 // whether this boss pull ends in a wipe: rolled once, so the bars can show it coming
 // undergeared raids and underleveled dungeon groups wipe more, well-geared ones less
+// in raids, later bosses are harder (the last one about 1.8 times the first) and a boss nobody has killed yet much harder
+const FIRST_KILL = 3.5;
 function wipeChance(t) {
-  const ri = RAID_INFO[t.dn]; if (ri) return ri.wipe * clamp(1 + (ri.gs - gearScore()) / 25, 0.5, 2);
+  const ri = RAID_INFO[t.dn];
+  if (ri) {
+    const b = instanceRow(t.dn).bosses, i = Math.max(0, b.indexOf(t.boss)), first = !(S.bossKills[t.boss] > 0);
+    return Math.min(0.85, ri.wipe * clamp(1 + (ri.gs - gearScore()) / 25, 0.5, 2) * (1 + 0.8 * i / Math.max(1, b.length - 1)) * (first ? FIRST_KILL : 1));
+  }
   const d = instanceRow(t.dn); return 0.06 * (d ? clamp(1 + (d.max - 2 - S.level) * 0.12, 0.4, 2) : 1);
 }
 const bossWipes = t => t.k === "boss" && (t.wipe ?? (t.wipe = Math.random() < wipeChance(t)));

@@ -101,7 +101,7 @@ const FINISH = {
     }
     if (t.elite) { log(`${t.mob} has been slain.`, "boss"); if (!S.elites.includes(t.mob)) S.elites.push(t.mob); }
     if (S.arrived) { const ze = zoneEntry(S.arrived); ze.k++; ze.L1 = S.level; ze.t1 = realNow(); }
-    const L = S.level, junk = () => Math.round((L * L * 0.6 + 4) * (0.5 + Math.random()));
+    const L = S.level, junk = () => Math.round((L * L * 0.35 + 3) * (0.5 + Math.random()) * (L >= 60 ? 0.4 : 1));
     if (S.prof) { profLoot(t); if (Math.random() < 0.4) addBag({ name: pick(GREYS), val: junk(), q: 0 }); }
     else if (Math.random() < 0.55) addBag({ name: Math.random() < 0.4 ? CLOTH[clamp(Math.floor(L / 12), 0, 4)] : pick(GREYS), val: junk(), q: 0 });
     S.queue.unshift(...gatherTasks(t));
@@ -144,7 +144,7 @@ const FINISH = {
   repair() { const c = Math.min(S.repair, S.money); spend("rep", c); S.repair = 0; if (c) log(`Repaired everything for ${moneyTxt(c)}.`, "gold"); },
   shop() {
     const L = S.level;
-    buySupplies(spendable() * 0.25);
+    buySupplies(spendable() * 0.5); // potions and the like come first: half of the spare gold may go to supplies
     const bag = BAGS.filter(b => b.lvl <= L).pop();
     // tailors sew their own bags
     if (bag && !(hasProf("Tailoring") && S.prof.cap) && S.money >= bag.price && bagUpgrade(bag)) { spend("gear", bag.price); giveBag(bag, S.bagSlots.length < 4 ? "Bought" : "Swapped a small bag for"); }
@@ -195,7 +195,7 @@ const FINISH = {
   dqturn(t) {
     const raid = !!RAID_INFO[t.dn];
     (S.dq || []).filter(x => x.done).forEach(x => {
-      const xp = S.level < 60 ? Math.round(mobXp(S.level + 2) * (14 + R(6))) : 0, coin = Math.round((S.level * S.level * 6 + 200) * (0.8 + Math.random() * 0.5) * (raid ? 4 : 1));
+      const xp = S.level < 60 ? Math.round(mobXp(S.level + 2) * (14 + R(6))) : 0, coin = Math.round((S.level * S.level * 4 + 150) * (0.8 + Math.random() * 0.5) * (raid ? 4 : 1));
       S.money += coin; S.qdone++;
       noteDone(x.name);
       log(`Quest complete: "${x.name}". ${xp ? "+" + xp.toLocaleString() + " XP, " : ""}${moneyTxt(coin)}.`, "quest");
@@ -212,15 +212,30 @@ const FINISH = {
     if (bossWipes(t)) {
       S.deaths++; S.repair += S.level * S.level * (raid ? 25 : 5); loseBuffs(); if (S.pet) S.pet.dead = true;
       log(`Wiped on ${t.boss}. Corpse run…`, "death"); S.hpF = 0; (S.party || []).forEach(m => m.hp = 0);
+      const ghost = { k: "ghost", d: "Running back through the instance as a ghost", t: sec(60) };
+      // three wipes in a raid and it's over for tonight: on to the exit
+      if (raid && S.dg && ++S.dg.wipes >= RAID_TRIES) {
+        log(`${S.dg.wipes} wipes on ${t.boss}. The raid calls it a night.`, "death");
+        const end = S.queue.findIndex(x => x.k === "dend");
+        if (end > 0) S.queue.splice(0, end);
+        S.queue.unshift(ghost);
+        return;
+      }
       const again = { ...t, el: 0 }; delete again.ve; delete again.foe; delete again.wipe;
-      S.queue.unshift({ k: "ghost", d: "Running back through the instance as a ghost", t: sec(60) }, regroupTask(raid), again);
+      S.queue.unshift(ghost, regroupTask(raid), again);
       return;
     }
     if (S.dg) { S.dg.killed++; if (raid) S.repair += S.level * S.level * 2; }
+    if (raid) {
+      const first = !(S.bossKills[t.boss] > 0), l = raidLock(t.dn) || (S.lock[t.dn] = { at: S.time, killed: 0, last: 0 });
+      l.killed = S.dg.killed; S.bossKills[t.boss] = (S.bossKills[t.boss] || 0) + 1;
+      if (first) log(`First kill: ${t.boss}!`, "ach");
+    }
     log(`${t.boss} has been defeated.`, "boss");
     (S.dq || []).filter(x => !x.done && x.boss === t.boss).forEach(x => { x.done = true; log(`Objective complete: ${x.obj} ("${x.name}").`, "quest"); });
     gainXp(mobXp(S.level + 2) * 5); petAfterFight(t, null);
-    if (Math.random() < (raid ? 0.3 : 0.4)) lootDrop(t.dn, t.boss);
+    // a boss drops a few items for the whole group: in a raid the hero only now and then gets one
+    if (Math.random() < (raid ? RAID_INFO[t.dn].size === 20 ? 0.2 : 0.12 : 0.4)) lootDrop(t.dn, t.boss);
     if (t.dn === "Naxxramas" && Math.random() < 0.1) atiesh();
   },
   buff(t) { applyBuff(t.b); },
@@ -244,11 +259,18 @@ const FINISH = {
     if (got.length) log(`Buffed up: ${got.join(", ")}.`, "spell");
   },
   dend(t) {
-    if (RAID_INFO[t.dn]) S.lock[t.dn] = S.time;
-    const de = dungeonEntry(t.dn); de.runs++; if (!de.at) { de.at = realNow(); de.L = S.level; de.p = S.time; }
-    if (!S.dungeons.includes(t.dn)) S.dungeons.push(t.dn);
+    // a raid only counts as cleared once the last boss is down (that can take several nights)
+    const ri = RAID_INFO[t.dn], full = !ri || !S.dg || S.dg.killed >= S.dg.total;
+    if (ri) (S.lock[t.dn] = raidLock(t.dn) || { at: S.time, killed: 0, last: 0 }).last = S.time;
+    if (full) { const de = dungeonEntry(t.dn); de.runs++; if (!de.at) { de.at = realNow(); de.L = S.level; de.p = S.time; } }
+    if (full && !S.dungeons.includes(t.dn)) S.dungeons.push(t.dn);
+    // level 60 dungeon clears count toward the raid attunements
+    if (full && !ri && S.level >= 60) {
+      S.runs60++;
+      RAIDS.forEach(r => { const a = RAID_INFO[r.name].attune; if (a && S.runs60 === a[0]) log(`Attuned to ${r.name}: ${a[1]} is done.`, "ach"); });
+    }
     S.runs++;
-    log(`${t.dn} cleared!`, "dung");
+    log(full ? `${t.dn} cleared!` : `Leaving ${t.dn} with ${S.dg.killed} of ${S.dg.total} bosses down. Same time tomorrow.`, "dung");
     const bill = S.dg && S.dg.raid ? S.repair - (S.dg.rep0 || 0) : 0;
     if (bill > 0) log(`Repair bill after ${t.dn}: ${moneyTxt(bill)}.`, "gold");
     S.dg = null; S.party = null; S.loc = "city";

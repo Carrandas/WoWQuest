@@ -42,6 +42,7 @@ Plain HTML, CSS and vanilla JS: no build step, no dependencies, no modules. GitH
 - Durations go through `sec()` / `SPAN(level)`, so they stretch as the hero levels.
 - Fights: `foeOf(t)` builds the enemies and their health curves from the hero's casts (`castWeight`); `soloFight(t)` plays solo pulls out hit by hit; `simFight(t)` does group fights. Boss wipes are still a roll (`wipeChance`).
 - Gear: items are `{ name, ilvl, q, slot }`; `power()` compares items, `gearScore()` (which also counts enchants) drives raid access, wipe chance, damage taken and kill speed (`gearFor()` is gear for the level).
+- Raids take weeks: entry needs gear (`RAID_INFO.gs`), the previous tier (`need`) and for Onyxia and Molten Core an attunement (level 60 dungeon clears, `attune`). One raid night per raid per day; three wipes and the raid calls it a night. Lockouts (`S.lock[raid] = { at, killed, last }`) remember the bosses killed, so the next night carries on. Bosses never killed before wipe much more (`FIRST_KILL`), later bosses more than early ones. Economy targets: about 90g around level 40 for the riding mount, 100-500g at 60, the epic mount after weeks of raiding (quest and vendor gold is cut at 60; repairs, flasks and enchants drain it).
 - Gold: purchases go through `spend(kind, c)` (weekly tracking) and must respect `spendable()` (keeps the mount savings).
 - Achievements: entries in `ACH` (`journal.js`) with `test()`, optional `show()` and `cat` (profession ones have `cat: "prof"` and their own heading). Achievements that old saves may already meet are granted quietly once in `migrate()` (`checkAch(true, cat)` behind a flag like `S.achProf`), so they don't all pop at once. Profession totals live in `S.prof.count` (`bump(key)`, `profCount(key)`).
 - `renderLists()` redraws when `dirty` (one `render…` call per part of the page); `renderBars()` runs every frame. Page markup that repeats goes through the small template helpers at the top of `ui.js` (`unitFrame`, `poolBar`, `progMeter`, `foldBtn`).
@@ -53,11 +54,13 @@ Two checks to run after every change (both in Node, no browser, under 20 seconds
 ```
 node tools/check.js same [ref] [--long]   # refactors: seeded output must match main (or ref) exactly
 node tools/check.js balance [seeds]       # gameplay changes: new heroes of every profession pair, 40 hours each
-node tools/check.js specs [seeds]         # class balance: all 27 specs from level 1 to 60, then 40 hours of raiding (~40 s)
+node tools/check.js specs [seeds]         # class balance: all 27 specs from level 1 to 60, then a week of raiding (~1 min)
+node tools/check.js endgame [seeds] [days] # the raid timeline after 60: first clears, gear, gold, epic mount (~1-2 min)
 ```
 
 - `same` runs the scenarios below on the saves in `saves/` and on new level 1 heroes, on this copy and on `main` (in a temporary worktree), and prints IDENTICAL or the first differing line. `--long` adds 40-hour runs.
 - `balance` checks levelling speed (about level 43 after 40 hours), deaths, solo deaths, gold, gear score per level, blue crafts and profession skill pace at levels 20/30/40 against the ranges in `EXPECT` at the top of `tools/check.js`, and prints OK / LOW / HIGH per profession pair. When a change is meant to move one of these, update its range in the same commit and say so.
+- `endgame` plays one hero per class to 60 and then 60 days, and checks the median day of the first full clear of each raid (Onyxia ~3-7, Molten Core ~7-13, Blackwing Lair ~14-24, AQ40 ~26-40, Naxxramas ~42-60) and of the epic mount (~20-45) against `RAID_TARGET`.
 - `specs` plays every class and spec from level 1 to 60 and then 40 hours at 60, and prints hours to 60, deaths, solo deaths, gold and gear at 60, raids reached, raid wipe rate, gear at the end and the hero's rank on the raid meter (damage, or healing for healers; pets count toward their owner). It flags specs that stand out from the median of all specs (SLOW, SOLO DEATHS, WIPES, LOW ON METER…). Run it after changes to classes, talents, fights or the economy.
 
 Single scenarios run in Node too:

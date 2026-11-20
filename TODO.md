@@ -131,6 +131,9 @@
   - The week at 60: raid when the lockout is open, otherwise battlegrounds or dungeons (maybe a PvP-mood setting)
   - Later with the guild: premades from guildmates win more often and show up in the chronicle
   - Order: Warsong Gulch first, then ranks and rewards, the PvP tab, then Arathi Basin and Alterac Valley
+- [x] **Endgame pacing and economy**: raid progression over about two months (attunements, raid nights, lockouts that
+  remember kills, harder first kills), gold about 90g at 40 and 100-500g at 60, the epic mount after weeks;
+  the damage meter shows a pet's damage on its owner's bar
 - [x] **Hunter pets and warlock demons**: tamed beasts with names and families, rare tames (Broken Tooth, Lupos…),
   happiness and feeding, Mend Pet / Health Funnel; demons by job (Voidwalker solo, Succubus for Demonology, Felhunter
   against casters, Imp in groups), Infernal from 50, Ritual of Doom in raids; pets hold one enemy while soloing

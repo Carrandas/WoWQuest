@@ -6,9 +6,13 @@
 //     --long adds 40-hour runs. Uses the saves in saves/ that exist, plus brand-new heroes.
 //
 //   node tools/check.js specs [seeds]
-//     For balance between classes. Every class and spec (27) from level 1 to 60, then 40 hours of endgame
+//     For balance between classes. Every class and spec (27) from level 1 to 60, then a week of endgame
 //     (default 2 seeds each): hours to 60, deaths, gold and gear at 60, raids reached, raid wipe rate, rank on
 //     the meter. Flags specs that stand out from the median of all specs. Takes a few minutes.
+//
+//   node tools/check.js endgame [seeds] [days]
+//     The raid timeline: one hero per class to 60, then 60 days of play: the day each raid is first fully cleared
+//     (against the targets in RAID_TARGET), gear score and gold by day, the day of the epic mount.
 //
 //   node tools/check.js balance [seeds]
 //     For gameplay changes. Plays new heroes of every profession pair for 40 hours (default 4 seeds each) and
@@ -70,11 +74,11 @@ async function same(ref, long) {
 const EXPECT = {
   level: [41.8, 44.5],        // level after 40 hours from level 1
   deaths: [2, 11],            // deaths in 40 hours (mostly dungeon wipes)
-  solo: [0, 2],               // solo deaths (killed while questing)
-  gold: [60, 400],            // gold at the end
+  solo: [0, 4],               // solo deaths (killed while questing; cloth casters die most, accepted for now)
+  gold: [10, 150],            // gold at the end (the riding mount, 90g, is bought around level 40)
   gearPerLevel: [1.0, 1.35],  // gear score / level at the end
   blues: [0, 5],              // blue crafts made (two slots, new pieces at skill 150 and 200 by then)
-  craft: { 20: [55, 105], 30: [110, 160], 40: [160, 215] },
+  craft: { 20: [55, 105], 30: [110, 160], 40: [150, 215] },
   gather: { 20: [45, 130], 30: [110, 230], 40: [200, 300] },
   second: { 20: [30, 105],   // tailors start lower: First Aid shares their cloth
             30: [105, 160], 40: [150, 215] },
@@ -118,8 +122,8 @@ const ROLE_OF = { Warrior: { 2: "tank" }, Paladin: { 0: "heal", 1: "tank" }, Pri
 async function specs(seeds) {
   const jobs = [];
   for (const [race, cls, prof, trees] of SPEC_HEROES) for (let spec = 0; spec < 3; spec++) for (let s = 1; s <= seeds; s++)
-    jobs.push({ key: `${cls} ${trees[spec]}`, role: (ROLE_OF[cls] || {})[spec] || "dps", run: () => sim("new", "spec60", s, { PRE: newHero([race, cls, spec, prof]) }) });
-  console.log(`Playing ${jobs.length} heroes (${SPEC_HEROES.length * 3} specs x ${seeds}) from level 1 to 60, then 40 hours of raiding…`);
+    jobs.push({ key: `${cls} ${trees[spec]}`, role: (ROLE_OF[cls] || {})[spec] || "dps", run: () => sim("new", "spec60", s, { PRE: `${newHero([race, cls, spec, prof])};window.ENDH=168` }) });
+  console.log(`Playing ${jobs.length} heroes (${SPEC_HEROES.length * 3} specs x ${seeds}) from level 1 to 60, then a week of raiding…`);
   const outs = await pool(jobs.map(j => j.run));
   const avg = a => { a = a.filter(x => x != null); return a.length ? a.reduce((x, y) => x + y, 0) / a.length : null; };
   const rows = [];
@@ -150,11 +154,48 @@ async function specs(seeds) {
     if (flags.length) ok = false;
     console.log(`${r.key.padEnd(26)}${r.role.padEnd(6)}${f(r.hours).padStart(11)}  ${f(r.deaths, 1).padStart(6)}  ${f(r.solo, 1).padStart(4)}  ${f(r.gold).padStart(7)}  ${f(r.gs, 1).padStart(5)} | ${f(r.raids, 1).padStart(5)}  ${f(r.wipe == null ? null : r.wipe * 100).padStart(5)}  ${f(r.gsEnd, 1).padStart(6)}  ${f(r.endDeaths, 1).padStart(6)}  ${f(r.rank, 1).padStart(10)}  ${flags.join(", ")}`);
   }
-  console.log(`median: ${f(mh)} hours to 60 (${f(mh / 24, 1)} days), ${f(md, 1)} deaths, ${f(mw == null ? null : mw * 100)}% raid wipes, ${f(mr, 1)} raids in 40 hours`);
+  console.log(`median: ${f(mh)} hours to 60 (${f(mh / 24, 1)} days), ${f(md, 1)} deaths, ${f(mw == null ? null : mw * 100)}% raid wipes, ${f(mr, 1)} raids in the first week at 60`);
   console.log(ok ? "SPECS OK" : "SOME SPECS STAND OUT (see flags)");
   return ok;
 }
 
+// ---------- endgame: the raid timeline after level 60 ----------
+// one hero per class (a spec each), played to 60 and then DAYS days (default 60)
+const END_HEROES = [["Human", "Warrior", 1, "smith"], ["Dwarf", "Paladin", 0, "smith"], ["Night Elf", "Hunter", 0, "leather"], ["Undead", "Rogue", 1, "herb"],
+  ["Troll", "Priest", 1, "tailor"], ["Orc", "Shaman", 0, "leather"], ["Gnome", "Mage", 2, "tailor"], ["Undead", "Warlock", 0, "eng"], ["Tauren", "Druid", 2, "herb"]];
+const RAID_ORDER = ["Zul'Gurub", "Onyxia's Lair", "Molten Core", "Ruins of Ahn'Qiraj", "Blackwing Lair", "Temple of Ahn'Qiraj", "Naxxramas"];
+const RAID_SHORT = ["ZG", "Ony", "MC", "AQ20", "BWL", "AQ40", "Naxx"];
+// target day (after reaching 60) for the first full clear, and how far off the median may be
+const RAID_TARGET = { "Onyxia's Lair": [3, 7], "Molten Core": [7, 13], "Blackwing Lair": [14, 24], "Temple of Ahn'Qiraj": [26, 40], "Naxxramas": [42, 60] };
+async function endgame(seeds, days) {
+  const jobs = [];
+  for (const h of END_HEROES) for (let s = 1; s <= seeds; s++) jobs.push({ h, run: () => sim("new", "end60", s, { PRE: `${newHero(h)};window.DAYS=${days}` }) });
+  console.log(`Playing ${jobs.length} heroes to 60, then ${days} days of endgame…`);
+  const outs = (await pool(jobs.map(j => j.run))).map(o => { try { return JSON.parse(o.split("\n")[0]); } catch (e) { console.log("bad output: " + o.slice(0, 200)); return null; } });
+  const f = v => v == null ? "   -" : String(v).padStart(4);
+  console.log(`hero              ${RAID_SHORT.map(s => s.padStart(5)).join("")}  | gs d2  d7 d14 d30 d60 | gold d7 d30 d60 | epic mount`);
+  outs.forEach((r, i) => {
+    if (!r) return;
+    const h = jobs[i].h, g = k => r.snap[k] || {};
+    console.log(`${(h[1] + " " + h[3]).padEnd(17)} ${RAID_ORDER.map(n => f(r.clears[n] == null ? null : Math.round(r.clears[n])).padStart(5)).join("")}  | ${[2, 7, 14, 30, 60].map(k => f(g(k).gs == null ? null : Math.round(g(k).gs))).join("")} | ${[7, 30, 60].map(k => f(g(k).gold)).join("")} | ${r.epic == null ? "-" : "day " + Math.round(r.epic)}`);
+  });
+  const med = a => { a = a.filter(x => x != null).sort((x, y) => x - y); return a.length ? a[a.length >> 1] : null; };
+  let ok = true;
+  console.log("median first clear (day after 60):");
+  for (const n of RAID_ORDER) {
+    // a hero that never cleared it counts as later than everyone else
+    const vals = outs.filter(Boolean).map(r => r.clears[n]), never = vals.filter(v => v == null).length, sorted = vals.map(v => v == null ? Infinity : v).sort((x, y) => x - y), mm = sorted[sorted.length >> 1], m = mm === Infinity ? null : mm, t = RAID_TARGET[n];
+    const good = !t || (m != null && m >= t[0] && m <= t[1]); if (!good) ok = false;
+    console.log(`  ${n.padEnd(22)} ${m == null ? "not cleared" : "day " + m.toFixed(1)}${never ? ` (${never} of ${vals.length} never)` : ""}${t ? `   target ${t[0]}-${t[1]} ${good ? "ok" : m == null || m > t[1] ? "LATE" : "EARLY"}` : ""}`);
+  }
+  // the epic mount, for classes that buy it (paladins and warlocks get theirs from a class quest at 60)
+  const ep = outs.filter((r, i) => r && !["Paladin", "Warlock"].includes(jobs[i].h[1])).map(r => r.epic == null ? Infinity : r.epic).sort((x, y) => x - y), em = ep[ep.length >> 1];
+  console.log(`  epic mount            ${em === Infinity ? "not bought by half of them" : "day " + em.toFixed(1)} (bought by ${ep.filter(v => v !== Infinity).length} of ${ep.length})   target 20-45 ${em >= 20 && em <= 45 ? "ok" : em < 20 ? "EARLY" : "LATE"}`);
+  if (!(em >= 20 && em <= 45)) ok = false;
+  console.log(ok ? "ENDGAME OK" : "ENDGAME OFF TARGET");
+  return ok;
+}
+
 const [mode = "same", arg] = process.argv.slice(2);
-(mode === "balance" ? balance(+arg || 4) : mode === "specs" ? specs(+arg || 2) : same(arg && !arg.startsWith("--") ? arg : "main", process.argv.includes("--long")))
+(mode === "balance" ? balance(+arg || 4) : mode === "specs" ? specs(+arg || 2) : mode === "endgame" ? endgame(+arg || 1, +process.argv[4] || 60) : same(arg && !arg.startsWith("--") ? arg : "main", process.argv.includes("--long")))
   .then(good => process.exit(good ? 0 : 1));

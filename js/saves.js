@@ -14,6 +14,12 @@ function migrate() {
   // heroes from before professions pick up their class's pair, already on pace for their level
   if (!S.prof) { S.prof = newProf(PAIR_FOR[S.cls], S.level); if (S.prof.cap) log(`Picked up ${S.prof.a} and ${S.prof.b} (${S.prof.sk[S.prof.b]} / ${S.prof.cap}).`, "spell"); }
   S.prof.count = S.prof.count || {};
+  // raid lockouts used to be a time; now they remember the kills (a saved raid was a full clear). Bosses of raids
+  // already cleared count as killed (no first-kill penalty)
+  for (const n in S.lock) if (typeof S.lock[n] === "number") S.lock[n] = { at: S.lock[n], killed: (instanceRow(n) || { bosses: [] }).bosses.length, last: S.lock[n] };
+  // attunements came later: heroes already at 60 count as attuned
+  if (S.runs60 == null) S.runs60 = S.level >= 60 ? 99 : 0;
+  if (!S.bossKills) { S.bossKills = {}; RAIDS.filter(r => S.dungeons.includes(r.name)).forEach(r => r.bosses.forEach(b => S.bossKills[b] = 1)); }
   // pets used to be a buff; now they're the real thing (pets.js)
   if (S.pet === undefined) S.pet = null;
   S.demons = S.demons || {}; S.petStats = S.petStats || { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 }; S.rareHunt = S.rareHunt || null;
