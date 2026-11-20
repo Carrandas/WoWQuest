@@ -27,11 +27,15 @@ const NODES = { Mining: ["Copper Vein", "Tin Vein", "Iron Deposit", "Mithril Dep
 const CRAFT_SRC = { Blacksmithing: "Mining", Engineering: "Mining", Alchemy: "Herbalism", Leatherworking: "Skinning", Tailoring: "Cloth", Enchanting: "Dust", "First Aid": "Cloth", Cooking: "Meat" };
 const CRAFT_AT = { Blacksmithing: "at the anvil", Leatherworking: "at the leatherworking bench", Tailoring: "at the loom", Alchemy: "at the alchemy lab", Engineering: "at the engineering bench", Enchanting: "at the enchanting table" };
 const BLACK_LOTUS = 60000; // a flask's rare herb, bought on the AH
-const matPrice = t => (t + 1) * (t + 1) * 500; // copper per material on the Auction House
+// copper per material on the Auction House: Linen and Copper are cheap, Runecloth and Thorium are not
+const MAT_PRICE = [200, 1000, 4500, 8000, 12500], matPrice = t => MAT_PRICE[t];
 const zoneTier = (z = curZone()) => { const d = ZONES[z], m = d ? (d.min + d.max) / 2 : S.level; return m < 13 ? 0 : m < 23 ? 1 : m < 33 ? 2 : m < 45 ? 3 : 4; };
 const skillTier = sk => { let t = -1; MAT_REQ.forEach((r, i) => { if (sk >= r) t = i; }); return t; };
 // orange always teaches something, yellow usually, green now and then, grey never
 const skillChance = (sk, req) => { const d = sk - req; return d < 0 ? 0 : d < 25 ? 1 : d < 50 ? 0.55 : d < 90 ? 0.18 : 0; };
+// mining and herbalism stay useful a little longer, so the skill keeps up until the next material opens (Tin at 65,
+// Iron at 125...); nodes are rarer than skinnable beasts, so skinning keeps the normal curve
+const gatherChance = (sk, req) => { const d = sk - req; return d < 0 ? 0 : d < 35 ? 1 : d < 60 ? 0.55 : d < 100 ? 0.18 : 0; };
 const profSkill = n => (S.prof && S.prof.sk[n]) || 0;
 // what a profession makes at its current skill (bandages, dishes, bombs)
 const profItem = (list, n) => list[clamp(skillTier(profSkill(n)), 0, list.length - 1)];
@@ -40,9 +44,9 @@ const hasProf = n => !!(S.prof && (S.prof.a === n || S.prof.b === n));
 const isEnchanter = () => !!(S.prof && S.prof.b === "Enchanting" && S.prof.cap);
 // the crafts in the pair (Tailoring + Enchanting has two)
 const crafts = () => S.prof ? [S.prof.a, S.prof.b].filter(n => CRAFT_AT[n]) : [];
-function skillUp(n, req) {
+function skillUp(n, req, chance = skillChance) {
   const p = S.prof; if (!p || !(n in p.sk) || p.sk[n] >= p.cap) return 0;
-  if (Math.random() >= skillChance(p.sk[n], req)) return 0;
+  if (Math.random() >= chance(p.sk[n], req)) return 0;
   p.sk[n]++;
   if (p.sk[n] % 25 === 0) log(`${n} skill increased to ${p.sk[n]}.`, "spell");
   return 1;
@@ -86,7 +90,7 @@ function profLoot(t) {
 function finishGather(t) {
   const n = t.prof === "Skinning" ? 1 + R(2) : 1 + R(3);
   addMat(t.prof, t.tier, n); bump(t.prof, n); if (t.tier === 4) bump("top:" + t.prof, n);
-  skillUp(t.prof, MAT_REQ[t.tier]);
+  skillUp(t.prof, MAT_REQ[t.tier], t.prof === "Skinning" ? skillChance : gatherChance);
 }
 
 // ---------- crafting ----------
@@ -130,7 +134,7 @@ const CONS_CRAFT = {
 // the AH can make up a shortfall when the skill falls behind (cloth and dust are hard to come by)
 function buyMats(src, t, n, why) {
   const c = n * matPrice(t), k = MATS[src][t];
-  if (spendable() < c * 3) return false;
+  if (spendable() < c * 1.5) return false;
   spend("mats", c); addMat(src, t, n);
   const b = why[k] || (why[k] = [0, 0]); b[0] += n; b[1] += c;
   return true;
@@ -228,11 +232,13 @@ function craftPractice(run) {
   const { craft, p, src } = run, sk = () => p.sk[craft];
   const behind = () => sk() < Math.min(p.cap, S.level * 5) - 10;
   let ups = 0, vend = 0;
-  for (let i = 0; i < 12; i++) {
+  // up to 12 practice pieces, or more (up to 30) while the skill is still behind the level
+  for (let i = 0; i < 30; i++) {
+    if (i >= 12 && !behind()) break;
     const r = recipes(craft).filter(x => sk() >= x.req && skillChance(sk(), x.req) >= 0.5).pop() || recipes(craft).filter(x => sk() >= x.req && skillChance(sk(), x.req) > 0).pop();
     if (!r) break;
     if (!canCraft(run, r) && !(behind() && buyMats(src, r.t, r.n - matCount(src, r.t), run.notes))) break;
-    useRecipe(run, r); ups++; vend += Math.round((r.t + 1) * (r.t + 1) * 300 * (r.v + 1));
+    useRecipe(run, r); ups++; vend += Math.round((r.t + 1) * (r.t + 1) * 225 * (r.v + 1));
   }
   if (vend) S.money += vend;
   return ups;
