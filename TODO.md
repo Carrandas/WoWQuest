@@ -112,7 +112,7 @@
     "Collect 15 minipets". A finished goal is a chronicle moment, then pick the next one
     - The list shows what each goal involves and roughly how long it takes; goals that need something first say so
       (the Frostsaber needs Winterspring, the Deathcharger needs Stratholme open to your gear)
-    - **Done**: up to 4 goals on the character tab at 60 (the hero picks 3 until the player does): epic mount, a fat
+    - **Done**: up to 4 goals on top of the Quests tab at 60 (the hero picks 3 until the player does): epic mount, a fat
       purse (2000g), clear the next raids, Deathcharger's Reins, a Zul'Gurub mount, the Frostsaber, exalted with each
       other race, collect N minipets. Each one steers the days (farming, Stratholme, Winterspring, Runecloth). Still to
       come once those systems exist: Timbermaw and Argent Dawn reputation, the pre-raid set, Master Angler

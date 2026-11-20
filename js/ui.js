@@ -50,7 +50,6 @@ function gameShell() {
         <div class="tabs ctabs" role="tablist" id="ctabs">${CTABS.map(([k, n]) => `<button type="button" role="tab" data-c="${k}" aria-selected="${k === charTab}" aria-label="${n}" title="${n}">${tabIcon(k)}<span class="tl">${n}</span></button>`).join("")}</div>
         <div class="cpane" data-c="char"><div class="stats" id="stats"></div>
         <ul class="rows vitals" id="vitals"></ul>
-        <h3 class="paneh" id="goalsH">Goals <small id="gCount"></small></h3><ul class="rows goals" id="goals"></ul>
         <h3 class="paneh">Buffs <small id="bCount"></small></h3><ul class="rows" id="buffs"></ul></div>
         <div class="cpane" data-c="equip"><div class="tabmeta"><small id="gs"></small></div><ul class="rows" id="equip"></ul></div>
         <div class="cpane" data-c="bags"><div class="tabmeta"><small id="money"></small></div>
@@ -85,7 +84,7 @@ function gameShell() {
   $("importSave").addEventListener("click", pickSaveFile);
   onButton("tabs", b => { uiTab = b.dataset.t; document.querySelectorAll("#tabs button").forEach(x => x.setAttribute("aria-selected", String(x === b))); dirty = true; });
   onButton("ctabs", b => { charTab = b.dataset.c; renderCharTab(); });
-  onButton("goals", goalClick);
+  onButton("quests", goalClick);
   $("brand").addEventListener("click", brandTap);
   onButton("talTabs", b => { talTab = +b.dataset.tt; renderTalents(); });
   document.querySelectorAll(".fold").forEach(b => b.addEventListener("click", () => toggleFold(b.dataset.fold)));
@@ -332,7 +331,6 @@ function renderHero() {
     ["mount", S.mount ? esc(rideName()) : S.level >= 40 ? "saving up…" : "on foot until 40"],
     ...(S.companion ? [["companion", esc(S.companion)]] : []), ["kills", S.kills.toLocaleString()], ["quests done", S.qdone.toLocaleString()], ["deaths", S.deaths.toLocaleString()], ...spentRow(),
   ].map(([k, v]) => `<li><span class="k">${k}</span><span class="v">${v}</span></li>`).join("");
-  renderGoals();
   const act = activeBuffs();
   $("bCount").textContent = `${act.length} active`;
   $("buffs").innerHTML = act.map(n => { const left = S.buffs[n] - S.time; return `<li><span class="l buff">${esc(n)}</span><span class="rank">${left > 1e13 ? "" : Math.max(1, Math.ceil(left / MIN)) + " min"}</span></li>`; }).join("") || `<li><span class="empty">none right now</span></li>`;
@@ -362,7 +360,7 @@ function renderQuests() {
   const dqs = S.dq || [];
   $("tab-quests").textContent = ` ${S.quests.length + dqs.length}`;
   const qs = dqs.map(x => `<li><span class="l">${esc(x.name)} <span class="ilvl">(${x.raid ? "raid" : "dungeon"})</span><br><small style="color:var(--dim)">${esc(x.obj)} ${x.done ? 1 : 0}/1</small></span>${x.done ? '<span class="done">✓</span>' : ""}</li>`).concat(S.quests.map(q => `<li><span class="l ${q.id === S.curQ && !questDone(q) ? "cur" : ""}">${esc(q.name)}<br><small style="color:var(--dim)">${esc(questText(q))}</small></span>${questDone(q) ? '<span class="done">✓</span>' : ""}</li>`));
-  $("quests").innerHTML = qs.join("") || `<li><span class="empty">no quests right now</span></li>`;
+  $("quests").innerHTML = renderGoals() + (qs.join("") || `<li><span class="empty">no quests right now</span></li>`);
 }
 function renderLog() {
   $("log").innerHTML = S.log.map(l => `<li class="${l.k}${l.id > lastLogId && lastLogId ? " fresh" : ""}"><time>${fmtTime(l.t)}</time><span>${esc(l.txt)}</span></li>`).join("");
@@ -506,7 +504,7 @@ function renderJournal() {
   $("tab-dung").textContent = ` ${dl.filter(d => S.dungeons.includes(d.name)).length}`;
   $("tab-coll").textContent = ` ${Object.keys(S.minipets).length + Object.keys(S.mounts).length}`;
   $("log").hidden = uiTab !== "log"; $("quests").hidden = uiTab !== "quests"; $("journal").hidden = uiTab === "log" || uiTab === "quests";
-  $("elapsed").textContent = uiTab === "log" ? "/played " + fmtTime(S.time) : uiTab === "quests" ? `${S.quests.length + (S.dq || []).length} active` : uiTab === "ach" ? `${got.length} of ${shown.length} earned` : uiTab === "zones" ? `${doneZ} zones done` : uiTab === "coll" ? `${Object.keys(S.mounts).length} mounts · ${Object.keys(S.minipets).length} minipets` : `${dl.filter(d => S.dungeons.includes(d.name)).length} of ${dl.length} cleared`;
+  $("elapsed").textContent = uiTab === "log" ? "/played " + fmtTime(S.time) : uiTab === "quests" ? `${S.level >= 60 ? `${S.goals.length} goals · ` : ""}${S.quests.length + (S.dq || []).length} active` : uiTab === "ach" ? `${got.length} of ${shown.length} earned` : uiTab === "zones" ? `${doneZ} zones done` : uiTab === "coll" ? `${Object.keys(S.mounts).length} mounts · ${Object.keys(S.minipets).length} minipets` : `${dl.filter(d => S.dungeons.includes(d.name)).length} of ${dl.length} cleared`;
   if (uiTab === "log" || uiTab === "quests") return;
   let h = "";
   if (uiTab === "ach") {

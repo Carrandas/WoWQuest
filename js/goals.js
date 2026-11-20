@@ -96,20 +96,19 @@ function goalDungeon() {
   return null;
 }
 
-// ---------- the character tab ----------
+// ---------- the quests tab ----------
+// at 60 the goals sit on top of the quests tab (the quests are drying up by then): a heading, a row per goal, the picker
 function renderGoals() {
-  const on = S.level >= 60;
-  $("goalsH").hidden = $("goals").hidden = !on;
-  if (!on) return;
+  if (S.level < 60) return "";
   const n = Object.keys(S.goalsDone).length;
-  $("gCount").textContent = n ? `${n} reached` : "";
-  $("goals").innerHTML = S.goals.map(g => {
+  return `<li class="qhead">Goals <small>${S.goals.length} of ${GOAL_SLOTS}${n ? ` · ${n} reached` : ""}</small></li>` + S.goals.map(g => {
     const d = goalById(g.id); if (!d) return "";
     const [a, b] = d.prog();
     return `<li class="goal"><div class="gl"><b>${esc(d.name)}</b><small>${esc(d.txt())}</small>${b ? `<div class="bar"><i style="width:${Math.round(100 * a / b)}%"></i></div>` : ""}</div><button type="button" class="gx" data-gx="${esc(g.id)}" title="Drop this goal" aria-label="Drop ${esc(d.name)}">×</button></li>`;
-  }).join("") + (S.goals.length < GOAL_SLOTS ? `<li class="gaddrow"><button type="button" class="ghost" data-gadd="1">+ pick a goal</button>${S.goalAuto ? `<small>${esc(S.name)} picks their own until you do</small>` : ""}</li>` : "");
+  }).join("") + (S.goals.length < GOAL_SLOTS ? `<li class="gaddrow"><button type="button" class="ghost" data-gadd="1">+ pick a goal</button>${S.goalAuto ? `<small>${esc(S.name)} picks their own until you do</small>` : ""}</li>` : "")
+    + `<li class="qhead">Quests</li>`;
 }
-function goalClick(b) {
+function goalClick(b) { // clicks in the quests tab: drop a goal, open the picker
   if (b.dataset.gx) { S.goals = S.goals.filter(g => g.id !== b.dataset.gx); S.goalAuto = false; dirty = true; return; }
   if (b.dataset.gadd) goalPicker();
 }
