@@ -834,7 +834,11 @@ function vitalEnd(t) {
   if (t.ve) return t.ve;
   const hp = S.hpF ?? 1, mp = S.mpF ?? 1, r = (a, b) => a + Math.random() * (b - a), lo = x => Math.max(0.04, x), up = x => Math.min(1, x);
   let e;
-  if (t.k === "kill") e = t.elite ? [lo(hp - r(0.35, 0.6)), lo(mp - r(0.3, 0.5))] : [lo(hp - r(0.07, 0.17)), lo(mp - r(0.08, 0.18))];
+  if (t.k === "kill") {
+    const n = 1 + 0.8 * ((t.mobs || [1]).length - 1), fate = killFate(t);
+    e = t.elite ? [lo(hp - r(0.35, 0.6)), lo(mp - r(0.3, 0.5))] : [lo(hp - r(0.07, 0.17) * n), lo(mp - r(0.08, 0.18) * n)];
+    if (fate === "die") e[0] = 0; else if (fate === "close") e[0] = 0.6;
+  }
   else if (t.k === "trash" || t.k === "boss") { const d = fightDrop(heroRole(), t.k); e = [lo(hp - d[0]), lo(mp - d[1])]; }
   else if (t.k === "rest" || t.k === "rez" || t.k === "regroup") e = [1, 1];
   else if (t.k === "ghost") e = [0, 0];
@@ -851,7 +855,10 @@ function poolProgress(t) {
 }
 function vitalsNow() {
   const t = S.task; let hp = S.hpF ?? 1, mp = S.mpF ?? 1;
-  if (t) { const p = poolProgress(t), e = vitalEnd(t), f = partyFight(t); hp = f && f.hero ? hpAt(f.hero, Math.min(1, t.el / t.t)) : hp + (e[0] - hp) * p; mp += (e[1] - mp) * p; }
+  if (t) {
+    const p = poolProgress(t), raw = Math.min(1, t.el / t.t), e = vitalEnd(t), f = partyFight(t);
+    hp = f && f.hero ? hpAt(f.hero, raw) : t.k === "kill" && !S.party ? hpAt(soloFight(t), raw) : hp + (e[0] - hp) * p; mp += (e[1] - mp) * p;
+  }
   return [hp, mp];
 }
 // rage builds during a fight and fades after; energy dips and ticks back
@@ -1109,11 +1116,20 @@ function simFight(t) {
   const W = { tank: 3, dps: 0.6, heal: 0.3 }, wsum = P.reduce((a, p) => a + W[p.role], 0);
   P.forEach(p => { const d = fightDrop(p.role, t.k); p.mpEnd = lo(p.mp - d[1]); p.hit = (d[0] + supply * HEAL_EFF * W[p.role] / wsum) / (p.casts.length || 1); p.cur = p.hp; p.tl = [[0, p.hp]]; });
   const ev = []; P.forEach((p, i) => p.casts.forEach((s, k) => ev.push([(k + 1) / p.casts.length, i, k])));
+  // the enemy's hits: single-target ones on whoever it is attacking, aoe on everyone. Members it never
+  // hits this pull (no aoe) keep taking their usual splash damage on their own casts
+  const fe = foeEvents(t), tn = foeTarget(), ti = tn === "you" ? 0 : Math.max(0, P.findIndex(p => p.name === tn));
+  P.forEach((p, i) => {
+    const hs = fe.filter(e => e[2] || i === ti), W = hs.reduce((a, e) => a + e[1], 0), budget = p.hit * (p.casts.length || 1);
+    p.fromFoe = W > 0; hs.forEach(e => ev.push([e[0], i, -1, budget * e[1] / W]));
+  });
   ev.sort((a, b) => a[0] - b[0]);
   const put = (p, at, v) => { p.cur = Math.min(1, Math.max(0.05, v)); p.tl.push([at, p.cur]); };
-  for (const [at, i, k] of ev) {
-    const p = P[i], s = p.casts[k];
-    put(p, at, p.cur - p.hit * (0.6 + Math.random() * 0.8));
+  for (const [at, i, k, amt] of ev) {
+    const p = P[i];
+    if (k < 0) { put(p, at, p.cur - amt); continue; }
+    const s = p.casts[k];
+    if (!p.fromFoe) put(p, at, p.cur - p.hit * (0.6 + Math.random() * 0.8));
     if (p.role !== "heal" || !isHeal(s)) continue;
     const hurt = P.map((q, j) => [1 - q.cur + (q.role === "tank" ? 0.08 : 0), j]).sort((a, b) => b[0] - a[0]);
     if (GROUP_HEALS.test(s)) { hurt.slice(0, 5).forEach(([, x]) => put(P[x], at, P[x].cur + 0.07)); continue; }
@@ -1400,13 +1416,14 @@ function finish(t) {
     case "hub": S.loc = "hub"; break;
     case "kill": {
       S.since = (S.since || 0) + 1;
-      if (Math.random() < (t.elite ? 0.06 : 0.003)) {
-        if (S.cons.hp > 0 && Math.random() < 0.7) {
-          S.cons.hp--; if (!S.feats.includes("close call")) S.feats.push("close call");
+      const fate = killFate(t), who = n => t.elite ? n : article(n), by = t.killer ? `${who(t.killer.src)}'s ${t.killer.a}` : who(t.mob);
+      if (fate) {
+        if (fate === "close") {
+          if (S.cons.hp > 0) S.cons.hp--; if (!S.feats.includes("close call")) S.feats.push("close call");
           S.hpF = 0.6; log(`Close call! Nearly died to ${article(t.mob)}, but ${article(hpPot())} saved the day.`, "death");
         } else {
         S.deaths++; loseBuffs(); S.repair += S.level * S.level * 4 + 20;
-        log(`Died to ${article(t.mob)}. Releasing spirit…`, "death"); S.hpF = 0;
+        log(`Killed by ${by}. Releasing spirit…`, "death"); S.hpF = 0;
         S.queue.unshift({ k: "ghost", d: "Running back to your corpse as a ghost", t: sec(45) }, { k: "rez", d: "Resurrecting and drinking up", t: sec(10) });
         break;
         }
@@ -1774,6 +1791,7 @@ function foeOf(t) {
 }
 // state of one enemy after k finished hero casts
 function foeAt(f, u, k) {
+  if (f.stop != null) k = Math.min(k, f.stop);
   const left = u.left || 0, alive = k < u.b || left > 0;
   let hp = 1;
   if (k >= u.b) hp = left;
@@ -1787,6 +1805,69 @@ function foeTarget() {
   if (!S.dg || !S.party) return "you";
   if (heroRole() === "tank") return "you";
   const tank = S.party.find(m => m.role === "tank"); return tank ? tank.name : "you";
+}
+// ---------- enemy damage: the enemy's actions decide when the damage lands and how big each hit is ----------
+// what an ability does: m = hit size (a normal swing is 1), aoe hits the whole group, dot ticks over the next few actions
+function foeHit(a) {
+  if (!a || /^(Summon|Call|Raise)/.test(a) || /^(Heal|Renew|Mana Shield|Evasion|Enrage|Frenzy|Battle Shout|Demoralizing Shout|Furious Howl|Level Up|Essence of the Red|Magic Reflection|Damage Shield|Submit|Teleport|Time Lapse|Burning Adrenaline|Blade Flurry|Bellowing Roar|Class Call|Charge|Pounce|Web|Dominate Mind|Cause Insanity|Will of Hakkar|Threatening Gaze)$/.test(a)) return { m: 0 };
+  if (/Rend|Poison|Pain|Curse|Corruption|Ignite|Living Bomb|Corrupted Blood|Impending Doom|Garrote|Acid|Shadow Fissure|Frost Burn|Corrosive|Rake|Tendon Rip|Immolate/.test(a)) return { m: 1.2, dot: 3 };
+  if (/Explosion|Nova|Volley|Thunder|Stomp|Deep Breath|Inferno|Whirlwind|Tail Sweep|Wing Buffet|Armageddon|Dark Glare|Elemental Fire|Eruption|Antimagic|Frost Blast|Panic|Fear|Lava Bomb|Detonate|Cookie|Wrath of Ragnaros|Knockback|Shadow Flame|Breath|Blood Siphon|Eye Tentacles|Magma Shackles|Cleave|Veil of Shadow/.test(a)) return { m: 1.3, aoe: true };
+  if (/^(Kick|Gouge|Cheap Shot|Hamstring|Sunder Armor|Shield Bash|Curse of Weakness|Crippling Poison)$/.test(a)) return { m: 0.6 };
+  if (a === "Auto Attack") return { m: 1 };
+  if (/bolt|Fireball|Smite|Lightning|Shock|Burst|Blast|Eye Beam|Hateful|Incinerate|Chains/i.test(a)) return { m: 2 };
+  return { m: 1.5 };
+}
+// every hit the enemies land in a fight: [time 0..1, size, aoe, who, ability, action index]
+// action i is on screen while the hero works on cast i, and lands just past the middle of it
+function foeEvents(t) {
+  const f = foeOf(t); if (!f) return [];
+  const N = f.w.length, out = [], stop = f.stop ?? N;
+  f.units.forEach(u => {
+    const last = Math.min(u.left ? N : u.b, u.acts.length, stop + 1);
+    for (let i = 0; i < last; i++) {
+      const a = u.acts[i], h = foeHit(a);
+      if (!h.m) continue;
+      if (h.dot) for (let j = 0; j < h.dot && i + j < last; j++) out.push([(i + j + 0.6) / N, h.m / h.dot, false, u.name, a, i + j]);
+      else out.push([(i + 0.6) / N, h.m, !!h.aoe, u.name, a, i]);
+    }
+  });
+  return out.sort((a, b) => a[0] - b[0]);
+}
+// how a solo pull ends, rolled once when it starts: "" (fine), "close" (a potion saves you) or "die"
+// more mobs at once are more dangerous
+const killFate = t => t.fate ?? (t.fate = (() => {
+  const n = (t.mobs || [1]).length, c = t.elite ? 0.06 : [0.003, 0.012, 0.03][n - 1] || 0.03;
+  if (Math.random() >= c) return "";
+  return S.cons.hp > 0 && Math.random() < 0.7 ? "close" : "die";
+})());
+// the hero's health through a solo pull: enemy hits push it down, the hero's own heals and potions lift it,
+// and it ends exactly where the task says it ends
+function soloFight(t) {
+  let f = PF.get(t); if (f) return f;
+  const fo = foeOf(t), fate = killFate(t), start = S.hpF ?? 1, end = vitalEnd(t)[0], N = fo.w.length, casts = t.casts || [];
+  let ev = foeEvents(t);
+  const heals = [];
+  casts.forEach((s, k) => { if (/Healing Potion/.test(s)) heals.push([(k + 1) / N, 0.35]); else if (isHeal(s)) heals.push([(k + 1) / N, healAmt(s) * 0.6]); });
+  let killer = null;
+  if (fate === "die" && ev.length) {
+    // the killing blow: a hit late in the fight; the enemies stop there with health to spare
+    let j = ev.length - 1; while (j > 0 && ev[j][0] > 0.95) j--;
+    killer = ev[j]; ev = ev.slice(0, j + 1); fo.stop = killer[5];
+    t.killer = { src: killer[3], a: killer[4] };
+  }
+  const target = fate === "die" ? 0 : fate === "close" ? 0.05 : end;
+  if (killer) heals.splice(0, heals.length, ...heals.filter(h => h[0] < killer[0]));
+  const H = heals.reduce((a, h) => a + h[1], 0), W = ev.reduce((a, e) => a + e[1], 0) || 1;
+  const scale = Math.max(0, start + H - target) / W, all = ev.map(e => [e[0], -e[1] * scale]).concat(heals).sort((a, b) => a[0] - b[0]);
+  const tl = [[0, start]]; let cur = start;
+  all.forEach(([at, d]) => {
+    cur = Math.min(1, Math.max(0.05, cur + d));
+    tl.push([at, cur]);
+  });
+  if (tl.length > 1) tl[tl.length - 1][1] = target;
+  if (fate === "close") tl.push([Math.min(1, tl[tl.length - 1][0] + 0.2 / N), 0.6]);
+  f = { tl, end: tl[tl.length - 1][1] };
+  PF.set(t, f); return f;
 }
 // what's next when nothing is being fought
 function foeIdle() {
