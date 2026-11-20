@@ -44,4 +44,9 @@
     ("Thrall wins [Perdition's Blade] for 120 DKP")
   - Guild bank: flasks before a raid, spare gear for new members and alts, gold for repairs
   - Guild achievements (low priority, overlaps with the current achievements)
+  - Gear without simulating everyone's runs: each time your group finishes a dungeon, every guild member
+    has a chance at an upgrade (as if they ran one too), with some randomness in who gets what, so the
+    whole guild keeps up with your character. Raid loot goes to members through DKP
+  - Start simple: each member's gear is one gear level (what drives their damage and healing).
+    Full gear sets per member could come later, if the guild tab should show their items
 - [ ] **Expansion packs** (eventually)
