@@ -161,6 +161,19 @@ button:disabled { cursor: not-allowed; }
 .gbar.thin > span { font-size: 9px; }
 .gcast { font-size: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.4em; }
 .gcast .cur { color: var(--gold); }
+/* damage meter under the group frames */
+.dmeter { margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--rim); }
+.dmh { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 8px; }
+.dmh .lbl { color: var(--gold); }
+.dmh small { color: var(--dim); font-size: 13px; margin-right: auto; }
+.dmrows { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 18px; }
+.dmrows li { position: relative; display: flex; justify-content: space-between; gap: 8px; padding: 3px 8px; font-size: 14px; border-radius: 3px; background: #05070c; overflow: hidden; }
+.dmrows li > i { position: absolute; inset: 0 auto 0 0; opacity: .28; }
+.dmrows li > span { position: relative; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dmrows li b { color: var(--dim); font-weight: 700; font-size: 12px; margin-right: 2px; }
+.dmrows li.me { outline: 1px solid var(--gold-dk); }
+.dmrows .dmv { color: var(--text); font-variant-numeric: tabular-nums; flex: none; }
+.dmrows .dmempty { color: var(--dim); font-style: italic; background: none; }
 .gcast .dead { color: var(--hp-crit); font-style: italic; }
 /* floating damage (red) and healing (green) numbers */
 .unit, .gcard, .rcell { position: relative; }
@@ -313,6 +326,7 @@ button:disabled { cursor: not-allowed; }
   .rgroups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .main { grid-template-columns: minmax(0, 1fr); }
   .main .c-foe { order: -1; }
+  .dmrows { grid-template-columns: minmax(0, 1fr); }
   .tabs, .ctabs, .chron .tabs { justify-content: space-around; gap: 4px; }
   .tabs .tl { display: none; }
   .tabs .ti { display: block; margin: 0 auto; }
@@ -1128,8 +1142,8 @@ const bossWipes = t => t.k === "boss" && (t.wipe ?? (t.wipe = Math.random() < wi
 function simFight(t) {
   foeOf(t);
   const raid = S.dg && S.dg.raid, base = t.k === "boss" ? (raid ? 260 : 110) : (raid ? 70 : 40), lo = x => Math.max(0.05, x);
-  const P = [{ name: S.name, role: heroRole(), hp: S.hpF ?? 1, mp: S.mpF ?? 1, casts: (t.casts || []).map(s => s.replace(/ on .+$/, "")) },
-    ...S.party.map(m => ({ name: m.name, role: m.role, hp: m.hp, mp: m.mp, casts: rollRot(GROUP_ROT[m.role][m.cls], knowsAt(m.cls, m.L, m.spec), castCount(base, m.L)) }))];
+  const P = [{ name: S.name, role: heroRole(), hp: S.hpF ?? 1, mp: S.mpF ?? 1, mx: hpMax(), healEv: [], casts: (t.casts || []).map(s => s.replace(/ on .+$/, "")) },
+    ...S.party.map(m => ({ name: m.name, role: m.role, hp: m.hp, mp: m.mp, mx: memberMax(m.cls, m.L), healEv: [], casts: rollRot(GROUP_ROT[m.role][m.cls], knowsAt(m.cls, m.L, m.spec), castCount(base, m.L)) }))];
   // the damage each role soaks is the pull's usual cost plus its share of the healing on offer
   let supply = 0;
   P.forEach(p => { if (p.role === "heal") p.casts.forEach(s => { if (isHeal(s)) supply += 0.15; }); });
@@ -1154,6 +1168,7 @@ function simFight(t) {
   });
   ev.sort((a, b) => a[0] - b[0]);
   const put = (p, at, v) => { p.cur = Math.min(1, Math.max(0.05, v)); p.tl.push([at, p.cur]); };
+  const heal = (h, q, at, v) => { const was = q.cur; put(q, at, v); if (q.cur > was) h.healEv.push([at, Math.round((q.cur - was) * q.mx)]); };
   for (const [at, i, k, amt] of ev) {
     const p = P[i];
     if (k < 0) { put(p, at, p.cur - amt); continue; }
@@ -1161,10 +1176,10 @@ function simFight(t) {
     if (p.splash > 0) put(p, at, p.cur - p.hit * p.splash * (0.6 + Math.random() * 0.8));
     if (p.role !== "heal" || !isHeal(s)) continue;
     const hurt = P.map((q, j) => [1 - q.cur + (q.role === "tank" ? 0.08 : 0), j]).sort((a, b) => b[0] - a[0]);
-    if (GROUP_HEALS.test(s)) { hurt.slice(0, 5).forEach(([, x]) => put(P[x], at, P[x].cur + 0.07)); continue; }
+    if (GROUP_HEALS.test(s)) { hurt.slice(0, 5).forEach(([, x]) => heal(p, P[x], at, P[x].cur + 0.07)); continue; }
     const q = P[Math.random() < 0.85 ? hurt[0][1] : hurt[R(Math.min(4, hurt.length))][1]];
-    put(q, at, q.cur + healAmt(s));
-    if (/Chain Heal/.test(s)) hurt.filter(([, x]) => P[x] !== q).slice(0, 2).forEach(([, x], n) => put(P[x], at, P[x].cur + (n ? 0.04 : 0.07)));
+    heal(p, q, at, q.cur + healAmt(s));
+    if (/Chain Heal/.test(s)) hurt.filter(([, x]) => P[x] !== q).slice(0, 2).forEach(([, x], n) => heal(p, P[x], at, P[x].cur + (n ? 0.04 : 0.07)));
     p.casts[k] = `${s} on ${q.name}`;
   }
   // a wipe: late in the fight the group goes down, tank first, then the healers, then everyone else
@@ -1208,6 +1223,7 @@ function memberNow(i) {
 }
 function partyFinish(t) {
   const f = partyFight(t); if (!f) return;
+  if (t.k === "trash" || t.k === "boss") meterFinish(t);
   S.party.forEach((m, i) => { const g = f.m[i]; if (g) { m.hp = g.end; m.mp = g.mpEnd; } });
 }
 // rage builds through a pull, energy dips and ticks back
@@ -1352,6 +1368,7 @@ function queueDungeon(d) {
   const chat = pick([`LFM ${d[4]}, need heals`, `LF1M ${d[4]}, have summon`, `LFG ${d[4]}, ${S.cls.toLowerCase()} lvl ${S.level}`, `LF tank for ${d[4]} then GO`, `${d[4]} run, LF2M, PST`]);
   S.dg = { name: d[0], killed: 0, total: bosses.length, raid };
   S.party = makeParty(raid);
+  S.meter = { dn: d[0], dmg: [], heal: [], secs: 0, last: null };
   const dq = S.dungeons.includes(d[0]) ? [] : (DQUESTS[d[0]] || []).map(x => x.split("|")).filter(x => !x[3] || x[3] === S.faction[0]);
   if (dq.length) q.push({ k: "dqpick", d: `Picking up quests for ${d[0]}`, t: sec(6 + 3 * dq.length), dn: d[0], dq: dq.map(x => ({ name: x[0], boss: x[1], obj: x[2], raid, done: false })) });
   q.push({ k: "lfg", d: raid ? `Waiting on the raid invite for ${d[0]}` : `Looking for group: "${chat}"`, t: sec(raid ? 120 : 60 + R(120)), chat: raid ? `[Raid] ${d[4]} invites going out, ${RAID_INFO[d[0]].size} man, be on time!` : chat, dn: d[0] });
@@ -1639,7 +1656,11 @@ function gameShell() {
     <div class="desc" id="tDesc"></div>
     <div class="bigbar"><div class="fill" id="tFill"></div><div class="pct" id="tPct"></div></div>
   </section>
-  <section class="group" id="group" hidden><h2 id="gTitle">Group</h2><div class="gcards" id="gcards"></div></section>
+  <section class="group" id="group" hidden><h2 id="gTitle">Group</h2><div class="gcards" id="gcards"></div>
+    <div class="dmeter"><div class="dmh"><span class="lbl">Damage meter</span><small id="dmNote"></small>
+      <div class="seg" id="dmMode"><button type="button" data-m="dmg">Damage</button><button type="button" data-m="heal">Healing</button></div>
+      <div class="seg" id="dmScope"><button type="button" data-s="fight">This fight</button><button type="button" data-s="run">Whole run</button></div></div>
+      <ol class="dmrows" id="dmRows"></ol></div></section>
   <section class="main">
     <div class="col">
       <div class="sec">
@@ -1684,6 +1705,8 @@ function gameShell() {
   $("tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; uiTab = b.dataset.t; document.querySelectorAll("#tabs button").forEach(x => x.setAttribute("aria-selected", String(x === b))); dirty = true; });
   $("ctabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; charTab = b.dataset.c; renderCharTab(); });
   $("brand").addEventListener("click", brandTap);
+  $("dmMode").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { dmMode = b.dataset.m; renderMeter(true); } });
+  $("dmScope").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { dmScope = b.dataset.s; renderMeter(true); } });
   renderSpeed(); renderCharTab();
 }
 // tab icons, shown instead of the names on a phone
@@ -2072,6 +2095,62 @@ function renderFoe() {
     .filter(Boolean).map(([a, b]) => `<li><span class="k">${a}</span><span class="v">${b}</span></li>`).join(""));
 }
 
+// ---------- damage meter (dungeons and raids) ----------
+// who did how much of the damage dealt to the enemies: dps the bulk, tanks some, healers a little,
+// scaled by gear and level, with some luck per pull. Healing comes straight from the heals that landed
+const DM_ROLE = { dps: 1, tank: 0.3, heal: 0.04 };
+const DMF = new WeakMap();
+function meterFight(t) {
+  if (!t || !S.party || !(t.k === "trash" || t.k === "boss")) return null;
+  let m = DMF.get(t); if (m) return m;
+  const pf = partyFight(t); if (!pf || !pf.hero || !foeOf(t)) return null;
+  const P = [pf.hero, ...pf.m], all = [{ role: heroRole(), L: S.level, gear: clamp(gearScore() / Math.max(1, S.level), 0.5, 1.4) }, ...S.party.map(x => ({ role: x.role, L: x.L, gear: 1 }))];
+  const w = all.map(a => (DM_ROLE[a.role] || 0.5) * a.gear * (a.L / Math.max(1, S.level)) * (0.75 + Math.random() * 0.5)), ws = w.reduce((a, b) => a + b, 0) || 1;
+  m = { share: w.map(x => x / ws), heal: P.map(p => p.healEv || []) };
+  DMF.set(t, m); return m;
+}
+// damage and healing so far in a pull (raw = how far through it is, 0..1), per group member
+function meterNow(t, raw) {
+  const m = meterFight(t); if (!m) return null;
+  const f = foeOf(t), k = Math.floor(raw * f.w.length);
+  const total = f.units.reduce((a, u) => a + Math.max(0, 1 - foeAt(f, u, k).hp) * u.max, 0);
+  return { dmg: m.share.map(s => s * total), heal: m.heal.map(ev => ev.reduce((a, e) => a + (e[0] <= raw + 1e-9 ? e[1] : 0), 0)), secs: raw * t.t / 1000 / SPAN(S.level) };
+}
+// a finished pull goes into the run's totals
+// saves from before the meter existed start one mid-run
+const meterRun = () => S.meter || (S.dg && S.party ? (S.meter = { dn: S.dg.name, dmg: [], heal: [], secs: 0, last: null }) : null);
+function meterFinish(t) {
+  const M = meterRun(), mn = M && meterNow(t, 1); if (!mn) return;
+  mn.dmg.forEach((v, i) => M.dmg[i] = (M.dmg[i] || 0) + v);
+  mn.heal.forEach((v, i) => M.heal[i] = (M.heal[i] || 0) + v);
+  M.secs += mn.secs; M.last = { dmg: mn.dmg.map(Math.round), heal: mn.heal.map(Math.round), secs: mn.secs, what: t.boss || "trash" };
+}
+const fmtN = n => n >= 1e6 ? (n / 1e6).toFixed(2) + "M" : n >= 1e4 ? (n / 1e3).toFixed(1) + "k" : Math.round(n).toLocaleString();
+let dmMode = "dmg", dmScope = "fight", dmTick = 0;
+function renderMeter(force) {
+  if (!force && ++dmTick % 8) return; // a few times a second is plenty (the first call after the frames appear always draws)
+  const M = meterRun(), t = S.task, live = t ? meterNow(t, Math.min(1, t.el / t.t)) : null;
+  document.querySelectorAll("#dmMode button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.m === dmMode)));
+  document.querySelectorAll("#dmScope button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s === dmScope)));
+  if (!M || !S.party) { setHtml("dmRows", ""); return; }
+  const all = [{ name: S.name, cls: S.cls, me: true }, ...S.party.map(x => ({ name: x.name, cls: x.cls }))];
+  let vals, secs, what;
+  if (dmScope === "fight") {
+    const src = live || M.last;
+    if (!src) { setHtml("dmNote", ""); setHtml("dmRows", '<li class="dmempty">No pulls yet</li>'); return; }
+    vals = src[dmMode]; secs = src.secs; what = live ? (t.boss || "this pack") : M.last.what === "trash" ? "last pack" : M.last.what;
+  } else {
+    vals = all.map((_, i) => (M[dmMode][i] || 0) + (live ? live[dmMode][i] : 0)); secs = M.secs + (live ? live.secs : 0); what = M.dn;
+  }
+  const rows = all.map((a, i) => ({ ...a, v: vals[i] || 0 })).sort((a, b) => b.v - a.v), top = rows[0].v || 1, sum = rows.reduce((s, r) => s + r.v, 0);
+  rows.forEach((r, i) => r.rank = i + 1);
+  const shown = rows.slice(0, 10), me = rows.find(r => r.me);
+  if (me.rank > 10) shown.push(me);
+  setHtml("dmNote", `${esc(what)} · ${fmtN(sum)} ${dmMode === "dmg" ? "damage" : "healing"} in ${Math.max(1, Math.round(secs))}s`);
+  setHtml("dmRows", shown.map(r => { const c = CLASSES[r.cls].color;
+    return `<li class="${r.me ? "me" : ""}"><i style="width:${(r.v / top * 100).toFixed(1)}%;background:${c}"></i><span class="dmn"><b>${r.rank}</b> <span style="color:${c}">${esc(r.name)}</span></span><span class="dmv">${fmtN(r.v)} · ${fmtN(secs > 0 ? r.v / secs : 0)} ${dmMode === "dmg" ? "dps" : "hps"}</span></li>`; }).join(""));
+}
+
 // where the hero is right now, shown above the current task
 function where() {
   if (S.loc === "dungeon" && S.dg) return S.dg.name;
@@ -2178,7 +2257,7 @@ function renderGroup(hf, mf) {
   if (!show) return;
   const sig = S.party.map(m => m.name).join() + S.level;
   if (box.dataset.sig !== sig) {
-    box.dataset.sig = sig; gCache = {};
+    box.dataset.sig = sig; gCache = {}; dmTick = -1;
     const all = [{ name: S.name, race: S.race, cls: S.cls, role: heroRole(), L: S.level, me: true }, ...S.party], raid = all.length > 5;
     $("gTitle").innerHTML = raid ? `Raid <small>${esc(S.dg.name)} · ${all.length} players · ${all.filter(m => m.role === "tank").length} tanks, ${all.filter(m => m.role === "heal").length} healers</small><span class="legend"><span><i style="background:#4a7bd8"></i>tank</span><span><i style="background:#3fbf3f"></i>healer</span><span><i style="background:#c8312b"></i>dps</span></span>` : `Group <small>${esc(S.dg.name)}</small>`;
     box.classList.toggle("raid", raid);
@@ -2210,6 +2289,7 @@ function renderGroup(hf, mf) {
   const hc = t && t.casts && FIGHTS.includes(t.k) ? t.casts : [], hci = hc.length ? Math.min(hc.length - 1, Math.floor(Math.min(1, t.el / t.t) * hc.length)) : -1;
   const dead = '<span class="dead">dead</span>';
   paint(0, S.cls, hf, mf, hc.length > 0, t ? poolProgress(t) : 0, hf <= 0 && hc.length ? dead : castHtml(hc, hci), S.level);
+  renderMeter();
   S.party.forEach((m, i) => { const n = memberNow(i); paint(i + 1, m.cls, n.hp, n.mp, n.fight, n.p, n.hp <= 0 && n.fight ? dead : castHtml(n.casts, n.ci), m.L); });
 }
 
