@@ -21,7 +21,32 @@
     druids (Hurricane, Swipe), hunters (Multi-Shot, Volley), priests (Holy Nova)
   - AoE damages the whole pack at once, so packs die faster and closer together instead of one by one
   - Applies to 3-mob pulls while questing and to dungeon/raid packs; in groups the AoE classes also switch
-- [ ] **Wipes from the fight itself** (raid wipes are still a roll, now based on gear)
+- [ ] **Wipes from the fight itself** (raid and dungeon wipes are still a roll, based on gear)
+  - Today: group fights never kill anyone (health floors at 5%); boss deaths only come from a roll at the pull
+    (`bossWipes` / `wipeChance`), so cooldowns, talents and healing don't decide the outcome
+  - Quick step first: each cooldown ready at the start of a boss pull lowers the wipe chance (say 10% per shield
+    or burst, 15% per heal cooldown for healers), so being prepared counts while the rest stays as it is
+  - The real plan:
+    1. Let health reach zero in `simFight`: drop the 5% floor, a member at 0 is dead, stops casting
+       (shown as "dead" already) and stops taking hits; enemy hits that would land on them move to the next target
+    2. Threat and targets: when the tank dies, the boss turns to the next tank, or to a random member
+       (healers and dps take tank-sized hits and die fast); off-tanks pick up adds
+    3. Healer mana: healers drain mana per heal (`mpEnd` already exists); out of mana means no more heals,
+       which is how long fights turn into wipes
+    4. Snowball into a wipe: the fight is lost when all tanks are dead and the boss isn't almost dead,
+       or when more than half the group is down; then everyone goes down within a few casts (like now)
+    5. Damage done depends on who's alive: the enemy health curve slows down as dps die, so a fight
+       with deaths runs longer and has more chance to go wrong (cap the length so a fight can't stall)
+    6. Size the damage: boss hit size from the boss level and the raid's gear requirement (like `refHp` for solo),
+       healing from healer gear; tune both so the wipe rate comes out near today's (about 6% per dungeon boss,
+       10–18% per raid boss for a group geared just right), and much lower when overgeared
+    7. Let everything that matters feed in: gear (members' gear levels, your gear), talents (damage taken,
+       healing), cooldowns (shields, burst, heal cooldowns), boss scripts (Deep Breath, Ragnaros' adds)
+    8. Battle rezzes and soulstones (optional): a druid or warlock can bring one dead member back once per fight
+    9. Chronicle: name what went wrong ("Lorrik died to Wrath of Ragnaros", "The healers ran out of mana",
+       "Wiped at 12%"), and keep "Wiped at x%" for the boss frame
+    10. Calibrate with the long-run harness: wipe rate per raid by gear, deaths per hour, and that
+        overgeared raids almost never wipe while undergeared ones wipe often
 - [x] **Damage meter for dungeons and raids** (damage and healing, this fight or the whole run; collapsible)
   - [ ] Base your own damage on your actual casts instead of a share of the group's
   - [ ] Raid numbers run low (about 125 dps/hps per player); raise raid boss health and heal sizes
