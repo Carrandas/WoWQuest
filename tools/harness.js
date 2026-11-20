@@ -1,9 +1,9 @@
-// builds test pages: node mk.js <save.json> <scenario> <out.html> [progress]
-const fs = require("fs");
-const [save, scen, out, prog = "0.45"] = process.argv.slice(2);
-let html = fs.readFileSync(process.env.SRC || "C:/git/WoWQuest/index.html", "utf8");
-const data = fs.readFileSync(save, "utf8");
-const pre = `<style>*{transition:none!important}</style><script>window.claude={hot:{data:{S:${data}}}};</script>\n`;
+// builds a self-contained test page: node tools/harness.js <save.json> <scenario> <out.html> [progress]
+// The game's stylesheet and scripts are inlined, so the page works from anywhere, and SRC can point at
+// another copy (an older single-file index.html works too). SEED=<n> makes a run repeatable: Math.random
+// is seeded and the save is loaded fresh right before the scenario, so the same code gives the same output.
+// tools/sim.js runs the same scenarios in Node, without a browser.
+const fs = require("fs"), path = require("path");
 const setups = {
   field3: `S.dg=null;S.party=null;S.loc="field";let q=S.quests.find(x=>!questDone(x));if(!q){q={id:9999,name:"Test",mob:"Defias Pathstalker",type:"kill",zone:curZone(),prog:0,max:8};S.quests.push(q);}S.curQ=q.id;let t;for(let i=0;i<200;i++){t=killTask(q);if(t.mobs.length===3)break;}S.task=t;`,
   field1: `S.dg=null;S.party=null;S.loc="field";let q=S.quests.find(x=>!questDone(x));if(!q){q={id:9999,name:"Test",mob:"Defias Pathstalker",type:"kill",zone:curZone(),prog:0,max:8};S.quests.push(q);}S.curQ=q.id;let t;for(let i=0;i<200;i++){t=killTask(q);if(t.mobs.length===1)break;}S.task=t;`,
@@ -45,7 +45,27 @@ const setups = {
   boss: `S.queue.length=0;S.task=null;const d=DUNGEONS.concat(RAIDS).find(x=>x[0]===BOSSDG);queueDungeon(d);S.loc="dungeon";S.dg.formed=true;const i=S.queue.findIndex(x=>x.k==="boss"&&x.boss===BOSSNAME);S.dg.killed=d[6].split(",").indexOf(BOSSNAME);S.task=S.queue[i];S.queue.splice(0,i+1);`,
   trash: `S.queue.length=0;S.task=null;const d=DUNGEONS.concat(RAIDS).find(x=>x[0]===BOSSDG);queueDungeon(d);S.loc="dungeon";S.dg.formed=true;const i=S.queue.findIndex(x=>x.k==="trash");S.task=S.queue[i];S.queue.splice(0,i+1);`,
 };
-const [kind, dg, boss] = scen.split(":");
-const post = `<script>setTimeout(()=>{try{const BOSSDG=${JSON.stringify(dg || "")},BOSSNAME=${JSON.stringify(boss || "")};${process.env.PRE||""};${setups[kind]}S.task.el=S.task.t*${prog};speed=0;dirty=true;}catch(e){document.title="ERR "+e.message;document.body.insertAdjacentHTML("afterbegin","<h1 style=color:red>"+e.stack+"</h1>")}},400);</script>`;
-html = html.replace(/<script>\r?\n"use strict";/, m => pre + m).replace("</body>", post + "</body>");
-fs.writeFileSync(out, html);
+
+// the game's page with the stylesheet and scripts inlined
+function gamePage(src) {
+  const dir = path.dirname(src), read = f => fs.readFileSync(path.join(dir, f), "utf8");
+  return fs.readFileSync(src, "utf8")
+    .replace(/<link rel="stylesheet" href="([^":]+\.css)">/g, (m, f) => `<style>\n${read(f)}</style>`)
+    .replace(/<script src="([^":]+\.js)"><\/script>/g, (m, f) => `<script>\n${read(f)}</script>`);
+}
+// runs before the scenario: a seeded Math.random and a fresh copy of the save (SAVE0)
+const seedCode = seed => seed ? `Math.random=(s=>()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296})(${+seed});S=JSON.parse(SAVE0);migrate();` : "";
+const DEFAULT_SRC = path.join(__dirname, "..", "index.html");
+module.exports = { setups, gamePage, seedCode, DEFAULT_SRC };
+
+if (require.main === module) {
+  const [save, scen, out, prog = "0.45"] = process.argv.slice(2);
+  let html = gamePage(process.env.SRC || DEFAULT_SRC);
+  const data = fs.readFileSync(save, "utf8");
+  // errors while the page loads are written on the page, so a screenshot shows them
+  const pre = `<style>*{transition:none!important}</style><script>window.onerror=(m,f,l)=>{document.title="ERR "+m;addEventListener("load",()=>document.body.insertAdjacentHTML("afterbegin","<h1 style=color:red>"+m+" (line "+l+")</h1>"))};window.SAVE0=${JSON.stringify(data)};window.claude={hot:{data:{S:JSON.parse(SAVE0)}}};</script>\n`;
+  const [kind, dg, boss] = scen.split(":");
+  const post = `<script>setTimeout(()=>{try{const BOSSDG=${JSON.stringify(dg || "")},BOSSNAME=${JSON.stringify(boss || "")};${seedCode(process.env.SEED)}${process.env.PRE || ""};${setups[kind]}S.task.el=S.task.t*${prog};speed=0;dirty=true;}catch(e){document.title="ERR "+e.message;document.body.insertAdjacentHTML("afterbegin","<h1 style=color:red>"+e.stack+"</h1>")}},400);</script>`;
+  html = html.replace("<script", () => pre + "<script").replace("</body>", () => post + "</body>");
+  fs.writeFileSync(out, html);
+}
