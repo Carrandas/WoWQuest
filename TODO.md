@@ -156,6 +156,22 @@
   - Doing things for fun, mostly chronicle flavour: guild chat, duels outside Orgrimmar or Ironforge, world PvP in
     Hillsbrad, a lap around the world, /dance on the Ironforge bank
   - Achievements for the collections (10 / 25 minipets, 5 mounts, Deathcharger, Exalted with 5 factions)
+- [ ] **Resistance gear for the raids that ask for it** (fire for Molten Core, nature for AQ40, frost for Naxxramas)
+  - Today resistance is only a name: the paladin auras and the Greater Resistance cloak enchant do nothing, and
+    Ragnaros or Sapphiron are just bosses with a bigger number
+  - A resistance per school (fire, frost, nature, shadow) from gear, enchants, potions and the raid's buffs (paladin
+    auras, shaman totems), shown in the gear tab next to item level
+  - Bosses that check it: Magmadar and Ragnaros (fire), Princess Huhuran and Viscidus (nature), Sapphiron and
+    Kel'Thuzad (frost). Below the target they hit harder and wipe more; far below (Sapphiron), they're a wall
+  - Where it comes from, as a grind between raid nights:
+    - Fire: Thorium Brotherhood reputation and its crafts (Dark Iron pieces for smiths, the Molten Helm for
+      leatherworkers), the odd blue drop, Greater Fire Resistance on the cloak, Greater Fire Protection Potions
+    - Nature: Cenarion Circle reputation from Silithus quests, its leather sets (Sandstalker, Spitfire, Bramblewood),
+      Greater Nature Protection Potions
+    - Frost: the Argent Dawn sets (Glacial for tailors, Polar and Icy Scale for leatherworkers, Icebane for smiths),
+      which need Frozen Runes from Naxxramas and Argent Dawn reputation; Frost Protection Potions
+  - Goals for it ("Fire resistance set: 140 of 200"), crafters making their own pieces
+  - Rebalance so the endgame timeline holds: missing resistance slows those raids, having it doesn't speed them up
 - [ ] **PvP: battlegrounds and honor ranks** (at 60, maybe a bracket now and then while levelling)
   - Battlegrounds, played out like a dungeon run (queue, "X joined Warsong Gulch", a string of fights, win or loss):
     - Warsong Gulch (10 vs 10): capture the flag, first to 3 caps ("Dalwyn picked up the Horde flag!", "2–1 Alliance")
