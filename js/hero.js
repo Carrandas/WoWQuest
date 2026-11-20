@@ -172,8 +172,8 @@ const CLASS_BUFFS = {
   Priest: () => [[["Power Word: Fortitude"], 30], [["Inner Fire"], 10]],
   Druid: () => [[["Mark of the Wild"], 30], [["Thorns"], 10]],
   Paladin: () => [[S.spec === 2 ? ["Retribution Aura", "Devotion Aura"] : ["Devotion Aura"], 0], [S.spec === 0 ? ["Blessing of Wisdom", "Blessing of Might"] : ["Blessing of Might"], 5]],
-  Hunter: () => [[["Aspect of the Hawk", "Aspect of the Monkey"], 0], [["Call Pet"], 0]],
-  Warlock: () => [[["Demon Armor", "Demon Skin"], 30], [["Summon Voidwalker", "Summon Imp"], 0]],
+  Hunter: () => [[["Aspect of the Hawk", "Aspect of the Monkey"], 0]], // pets: see pets.js
+  Warlock: () => [[["Demon Armor", "Demon Skin"], 30]],
   Shaman: () => [[["Lightning Shield"], 10], [S.spec === 1 ? ["Windfury Weapon", "Flametongue Weapon", "Rockbiter Weapon"] : ["Flametongue Weapon", "Rockbiter Weapon"], 5]],
   Warrior: () => [[S.spec === 2 ? ["Defensive Stance", "Battle Stance"] : ["Battle Stance"], 0]],
   Rogue: () => [],
@@ -239,6 +239,7 @@ function vitalEnd(t) {
   else if (t.k === "rest" || t.k === "rez" || t.k === "regroup") e = [1, 1];
   else if (t.k === "ghost") e = [0, 0];
   else if (t.k === "buff" || t.k === "conjure" || t.k === "dbuff") e = [up(hp + 0.05), lo(mp - 0.08)];
+  else if (petVitals(t, hp, mp)) e = petVitals(t, hp, mp);
   else e = [up(hp + 0.25), up(mp + 0.15)];
   return (t.ve = e);
 }
@@ -280,7 +281,7 @@ function applyBuff(b) {
 }
 function activeBuffs() { return Object.keys(S.buffs).filter(buffUp); }
 // a fully buffed hero kills a little faster (up to 6%)
-const buffSpeed = () => 1 - 0.015 * Math.min(4, activeBuffs().length);
+const buffSpeed = () => 1 - 0.015 * Math.min(4, activeBuffs().length + (petOut() ? 1 : 0)); // a pet out counts as one
 function loseBuffs() { S.buffs = {}; }
 // elixir before an elite or a dungeon, a flask before a raid
 function drinkElixir(raid) {
@@ -326,6 +327,7 @@ function newHero(f) {
     buffs: {}, cons: { hp: 0, mp: 0, elix: 0, stone: 0, food: 10, drink: CLASSES[f.cls].mp ? 10 : 0, band: 0, bomb: 0, feast: 0, flask: 0 },
     prof: newProf(pairsFor(f.cls).includes(f.prof) ? f.prof : PAIR_FOR[f.cls], 1), elites: [], feats: [], zones: [], dstat: {}, ach: {},
     parts: {}, legendaries: [], lock: {}, runs: 0, trip: 0, cd: {}, achProf: 1,
+    pet: null, demons: {}, petStats: { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 }, rareHunt: null,
     kills: 0, deaths: 0, qdone: 0, qid: 0, since: 0, curQ: 0, repair: 0, dg: null, time: 0, log: [], logId: 0, task: null, queue: [], speed: 1, savedAt: Date.now() };
   SLOTS.forEach(s => S.equip[s] = null);
   S.equip["Main Hand"] = { name: c.start, ilvl: 2, q: 1, slot: "Main Hand" };

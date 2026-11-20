@@ -15,7 +15,7 @@ const fs = require("fs"), os = require("os"), path = require("path");
 const ROOT = path.join(__dirname, ".."), SIM = path.join(__dirname, "sim.js");
 
 // new heroes, one per profession pair: race, class, spec, pair
-const HEROES = [["Human", "Warrior", 0, "smith"], ["Undead", "Mage", 2, "tailor"], ["Tauren", "Druid", 1, "leather"], ["Orc", "Rogue", 0, "herb"], ["Gnome", "Warlock", 0, "eng"]];
+const HEROES = [["Human", "Warrior", 0, "smith"], ["Undead", "Mage", 2, "tailor"], ["Tauren", "Druid", 1, "leather"], ["Orc", "Rogue", 0, "herb"], ["Gnome", "Warlock", 0, "eng"], ["Orc", "Hunter", 0, "leather"]];
 const newHero = ([race, cls, spec, prof]) => `newHero({race:"${race}",cls:"${cls}",spec:${spec},name:"T",prof:"${prof}"})`;
 const SAVES = ["WoWQuest-Deadmines.json", "WoWQuest-Mage42.json", "WoWQuest-MoltenCore.json"].map(f => path.join(ROOT, "saves", f)).filter(f => fs.existsSync(f));
 
@@ -40,7 +40,7 @@ async function same(ref, long) {
     for (const save of SAVES) for (const sc of ["run", "econ", "pulls", "aoe", "stats", "elite", "killlog", "bosslog"])
       cases.push([`${path.basename(save, ".json")} ${sc}`, save, sc, 11, "window.HOURS=6"]);
     for (const h of HEROES) for (const seed of [1, 2]) for (const sc of ["run", "econ"])
-      cases.push([`new ${h[3]} ${sc} seed ${seed}`, "new", sc, seed, `${newHero(h)};window.HOURS=12`]);
+      cases.push([`new ${h[1]} ${h[3]} ${sc} seed ${seed}`, "new", sc, seed, `${newHero(h)};window.HOURS=12`]);
     if (long) for (const save of SAVES) for (const seed of [1, 2, 3]) for (const sc of ["run", "econ"])
       cases.push([`${path.basename(save, ".json")} ${sc} 40h seed ${seed}`, save, sc, seed, "window.HOURS=40"]);
     const run = src => pool(cases.map(([, save, sc, seed, pre]) => () => sim(save, sc, seed, { SRC: src, PRE: pre })));
@@ -83,12 +83,12 @@ async function balance(seeds) {
   let ok = true;
   const mark = (v, [lo, hi]) => { const good = v >= lo && v <= hi; if (!good) ok = false; return `${v.toFixed(v < 10 ? 2 : v < 100 ? 1 : 0).padStart(6)} ${good ? "ok  " : v < lo ? "LOW " : "HIGH"}`; };
   const avg = a => a.reduce((x, y) => x + y, 0) / (a.length || 1);
-  console.log("pair     level        deaths       solo         gold         gear/lvl     blues        skills at 20 / 30 / 40 (a, b, first aid, cooking)");
+  console.log("hero             level        deaths       solo         gold         gear/lvl     blues        skills at 20 / 30 / 40 (a, b, first aid, cooking)");
   for (const h of HEROES) {
     const rs = outs.filter((o, i) => jobs[i].h === h).map(o => { try { return JSON.parse(o.split("\n")[0]); } catch (e) { console.log("bad output: " + o.slice(0, 300)); ok = false; return null; } }).filter(Boolean);
     if (!rs.length) continue;
     const m = k => avg(rs.map(r => r[k]));
-    let line = `${h[3].padEnd(8)} ${mark(m("level"), EXPECT.level)} ${mark(m("deaths"), EXPECT.deaths)} ${mark(m("solo"), EXPECT.solo)} ${mark(m("gold"), EXPECT.gold)} ${mark(avg(rs.map(r => r.gs / r.level)), EXPECT.gearPerLevel)} ${mark(m("blues"), EXPECT.blues)}`;
+    let line = `${(h[1] + " " + h[3]).padEnd(16)} ${mark(m("level"), EXPECT.level)} ${mark(m("deaths"), EXPECT.deaths)} ${mark(m("solo"), EXPECT.solo)} ${mark(m("gold"), EXPECT.gold)} ${mark(avg(rs.map(r => r.gs / r.level)), EXPECT.gearPerLevel)} ${mark(m("blues"), EXPECT.blues)}`;
     const skills = [];
     for (const T of [20, 30, 40]) {
       const at = rs.map(r => r.marks[T]).filter(Boolean); if (at.length < rs.length) continue;

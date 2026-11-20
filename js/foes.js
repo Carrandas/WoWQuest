@@ -156,6 +156,7 @@ function useCooldowns(t) {
     S.cd[x.name] = S.time + (x.tree === S.spec && x.name === cls().ult[S.spec] ? 300 : 180) * 1000 * SPAN(S.level);
     if (cdType(x.name) === "burst" && t.k === "kill") t.t = Math.round(t.t * 0.88); // the pull goes down faster
   });
+  petCooldowns(t);
   // an engineer opens with a bomb
   if (S.cons.bomb > 0 && t.casts.length > 2) { S.cons.bomb--; bump("bombs"); t.casts.splice(Math.min(t.casts.length - 1, 1 + t.cds.length), 0, profItem(BOMBS, "Engineering")); }
 }
@@ -200,6 +201,7 @@ function foeOf(t) {
   if (pack) layoutPack(units, pack, N); else layoutChunks(t, units, boss, raid, N);
   units.forEach(u => { u.max = foeHp(u.L, u.rank); u.res = FOE_RES[u.kind]; u.acts = foeActions(u, N); });
   frostNova(casts, units);
+  petControl(t, units);
   controlHero(t, units, N);
   const w = heroWeights(t, casts, N);
   // a cast lost to a stun or a fear does no damage to anyone in the pack either
@@ -280,7 +282,7 @@ function foeTarget() {
 // what an ability does: m = hit size (a normal swing is 1), aoe hits the whole group, dot ticks over the next few actions
 function foeHit(a) {
   if (a === "Deep Breath") return { m: 3.5, aoe: true };
-  if (!a || a === "Submerged" || /^(Summon|Call|Raise)/.test(a) || /^(Heal|Renew|Mana Shield|Evasion|Enrage|Frenzy|Battle Shout|Demoralizing Shout|Furious Howl|Level Up|Essence of the Red|Magic Reflection|Damage Shield|Submit|Teleport|Time Lapse|Burning Adrenaline|Blade Flurry|Bellowing Roar|Class Call|Charge|Pounce|Web|Dominate Mind|Cause Insanity|Will of Hakkar|Threatening Gaze|Frozen)$/.test(a)) return { m: 0 };
+  if (!a || a === "Submerged" || /^(Summon|Call|Raise)/.test(a) || /^(Heal|Renew|Mana Shield|Evasion|Enrage|Frenzy|Battle Shout|Demoralizing Shout|Furious Howl|Level Up|Essence of the Red|Magic Reflection|Damage Shield|Submit|Teleport|Time Lapse|Burning Adrenaline|Blade Flurry|Bellowing Roar|Class Call|Charge|Pounce|Web|Dominate Mind|Cause Insanity|Will of Hakkar|Threatening Gaze|Frozen|Seduced|Spell Locked)$/.test(a)) return { m: 0 };
   if (/Rend|Poison|Pain|Curse|Corruption|Ignite|Living Bomb|Corrupted Blood|Impending Doom|Garrote|Acid|Shadow Fissure|Frost Burn|Corrosive|Rake|Tendon Rip|Immolate/.test(a)) return { m: 1.2, dot: 3 };
   if (/Explosion|Nova|Volley|Thunder|Stomp|Deep Breath|Inferno|Whirlwind|Tail Sweep|Wing Buffet|Armageddon|Dark Glare|Elemental Fire|Eruption|Antimagic|Frost Blast|Panic|Fear|Lava Bomb|Detonate|Cookie|Wrath of Ragnaros|Knockback|Shadow Flame|Breath|Blood Siphon|Eye Tentacles|Magma Shackles|Cleave|Veil of Shadow/.test(a)) return { m: 1.3, aoe: true };
   if (/^(Kick|Gouge|Cheap Shot|Hamstring|Sunder Armor|Shield Bash|Curse of Weakness|Crippling Poison)$/.test(a)) return { m: 0.6 };
@@ -320,7 +322,7 @@ function heroTaken(spell, mobL) {
 // and if health runs out the hero dies to that exact hit. Worked out once and kept on the task
 function soloFight(t) {
   if (t.sf) return t.sf;
-  const fo = foeOf(t), N = fo.w.length, casts = t.casts || [], hm = hpMax();
+  const fo = foeOf(t), N = fo.w.length, casts = t.casts || [], hm = hpMax(), pet = petInFight(t, hm);
   let cur = Math.max(1, (S.hpF ?? 1) * hm), low = cur, drank = false, killer = null;
   const potion = S.cons.hp > 0 && !casts.some(c => /Healing Potion/.test(c));
   // some pulls just go badly: a mob that keeps critting, a parry streak, a resist at the wrong moment
@@ -329,7 +331,7 @@ function soloFight(t) {
   const ev = foeEvents(t).map(e => {
     const u = e.u, spell = (u.kind === "caster" && e.act !== "Auto Attack") || SPELLY.test(e.act), crit = Math.random() < 0.08;
     const base = refHp(u.L) * (u.rank === "elite" ? 0.046 : 0.016);
-    return { at: e.at, amt: -Math.max(1, Math.round(base * luck * e.size * heroTaken(spell, u.L) * (0.8 + Math.random() * 0.4) * (crit ? 1.5 : 1))), who: e.who, act: e.act, k: e.k };
+    return { at: e.at, amt: -Math.max(1, Math.round(base * luck * e.size * heroTaken(spell, u.L) * (0.8 + Math.random() * 0.4) * (crit ? 1.5 : 1))), who: e.who, act: e.act, k: e.k, u: e.u, aoe: e.aoe };
   });
   casts.forEach((s, k) => {
     const cd = (t.cds || []).find(c => c.name === s), at = (k + 1) / N, heal = amt => ev.push({ at, amt, who: null, act: s, k });
@@ -343,6 +345,7 @@ function soloFight(t) {
   let shield = 0;
   for (const e of ev) {
     if (e.shield) { shield += Math.round(hm * 0.3); continue; }
+    if (pet && e.amt < 0 && petTakes(pet, fo, e) && !e.aoe) continue; // the pet took it (an area hit lands on both)
     if (e.amt < 0 && shield > 0) { const soak = Math.min(shield, -e.amt); shield -= soak; e.amt += soak; if (!e.amt) continue; }
     cur = Math.min(hm, cur + e.amt);
     if (cur <= 0) { cur = 0; killer = e; tl.push([e.at, 0]); break; }
@@ -350,7 +353,7 @@ function soloFight(t) {
     if (potion && !drank && cur < hm * 0.25) { drank = true; cur = Math.min(hm, cur + Math.round(hm * 0.4)); tl.push([e.at, cur / hm]); }
   }
   if (killer) { fo.stop = killer.k; t.killer = { src: killer.who, a: killer.act }; }
-  return (t.sf = { tl, end: cur / hm, drank, low: low / hm });
+  return (t.sf = { tl, end: cur / hm, drank, low: low / hm, ...(pet ? { pet: { tl: pet.tl, end: pet.cur / pet.max, died: pet.died } } : {}) });
 }
 // what's next when nothing is being fought
 function foeIdle() {

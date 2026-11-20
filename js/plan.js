@@ -26,6 +26,8 @@ function planField(q, h) {
     q.push({ k: "hub", d: S.bags.length >= bagCap() ? `Bags full. ${travelVerb()} back to ${h}` : `${travelVerb()} back to ${h} to turn in`, t: sec(35 * mountF()) });
     return;
   }
+  const pt = petTask();
+  if (pt) { q.push(pt); return; }
   const mb = missingBuff();
   if (mb) { q.push({ k: "buff", d: mb.cast, t: sec(2.5), b: mb }); return; }
   if (S.since > 3 + R(6) || (S.hpF ?? 1) < 0.45 || (cls().mp && (S.mpF ?? 1) < 0.3)) {
@@ -71,7 +73,7 @@ function killTask(quest) {
   const d = elite ? `Fighting ${mob} (elite) with a pickup group` : n > 1 ? `${pick(c.verbs)} ${n === 2 ? "two" : "three"} mobs at once` : `${pick(c.verbs)} ${article(mob)}`;
   const gear = gearFor();
   const p = packTrim(rotation(elite, n > 1 ? (4 + R(2)) * n : undefined, n), n, 0,
-    sec((9 + S.level * 0.12) * (elite ? 5 : 1) * (1 + 0.6 * (n - 1)) * clamp(1.35 - gear * 0.35, 0.8, 1.2) * buffSpeed() / talMod("d")));
+    sec((9 + S.level * 0.12) * (elite ? 5 : 1) * (1 + 0.6 * (n - 1)) * clamp(1.35 - gear * 0.35, 0.8, 1.2) * buffSpeed() * petSpeed() / talMod("d")));
   return { k: "kill", d, t: p.t, mob, mobs, mobL, qid: quest.id, elite, casts: p.casts };
 }
 
@@ -80,7 +82,7 @@ function killTask(quest) {
 // next to a single-target cast of the same weight
 const AOE = { "Arcane Explosion": [99, 0.7], Blizzard: [99, 0.8], Flamestrike: [99, 0.8], "Cone of Cold": [99, 0.6], "Frost Nova": [99, 0.3],
   "Rain of Fire": [99, 0.8], Hellfire: [99, 0.7], Consecration: [99, 0.6], "Holy Nova": [99, 0.5], Hurricane: [99, 0.8], Volley: [99, 0.8],
-  "Fire Nova Totem": [99, 0.6], "Rough Copper Bomb": [99, 0.9], "Coarse Dynamite": [99, 0.9], "Iron Grenade": [99, 0.9], "Mithril Frag Bomb": [99, 0.9], "Thorium Grenade": [99, 0.9], "Thunder Clap": [4, 0.5], Whirlwind: [4, 0.9], Cleave: [2, 0.9], "Multi-Shot": [3, 0.85], "Chain Lightning": [3, 0.8] };
+  "Fire Nova Totem": [99, 0.6], "Rough Copper Bomb": [99, 0.9], "Coarse Dynamite": [99, 0.9], "Iron Grenade": [99, 0.9], "Mithril Frag Bomb": [99, 0.9], "Thorium Grenade": [99, 0.9], Inferno: [99, 0.9], "Thunder Clap": [4, 0.5], Whirlwind: [4, 0.9], Cleave: [2, 0.9], "Multi-Shot": [3, 0.85], "Chain Lightning": [3, 0.8] };
 // what each class reaches for with three or more enemies on it
 const AOE_PICK = { Mage: ["Arcane Explosion", "Blizzard", "Flamestrike", "Cone of Cold", "Frost Nova"], Warlock: ["Rain of Fire", "Hellfire"], Warrior: ["Whirlwind", "Cleave", "Thunder Clap"],
   Paladin: ["Consecration"], Druid: ["Hurricane"], Hunter: ["Multi-Shot", "Volley"], Priest: ["Holy Nova"], Shaman: ["Chain Lightning", "Fire Nova Totem"] };
@@ -198,6 +200,7 @@ function queueDungeon(d) {
   if (dq.length) q.push({ k: "dqpick", d: `Picking up quests for ${dn}`, t: sec(6 + 3 * dq.length), dn, dq: dq.map(x => ({ name: x.name, boss: x.boss, obj: x.obj, raid, done: false })) });
   q.push({ k: "lfg", d: raid ? `Waiting on the raid invite for ${dn}` : `Looking for group: "${chat}"`, t: sec(raid ? 120 : 60 + R(120)), chat: raid ? `[Raid] ${abbr} invites going out, ${RAID_INFO[dn].size} man, be on time!` : chat, dn });
   q.push({ k: "dtravel", d: `Traveling to ${dn} with the group`, t: sec(raid ? 180 : 120), dn });
+  const petBoss = petDungeon(q, raid, bosses);
   q.push({ k: "dbuff", d: raid ? "Buffing up and drinking a flask at the instance portal" : "Buffing up at the instance entrance", t: sec(8), raid });
   bosses.forEach(b => {
     const n = raid ? 2 + R(2) : 1 + R(3);
@@ -206,8 +209,8 @@ function queueDungeon(d) {
       const share = groupAoe(mobs.length), p = packTrim(heroGroupCasts(raid ? 70 : 40, false, mobs.length), mobs.length, share, sec(raid ? 70 : 40));
       q.push({ k: "trash", d: `Clearing a pack of ${plural(main)}`, t: p.t, mobs, casts: p.casts, aoeShare: share });
     }
-    const adds = BOSS_ADDS[b] || [], late = (BOSS_SCRIPT[b] || []).some(p => p.adds);
-    q.push({ k: "boss", d: adds.length && !late ? `Fighting ${b} and ${adds.length === 1 ? "an add" : adds.length + " adds"}` : `Fighting ${b}`, t: sec(raid ? 260 : 110), boss: b, dn, adds, casts: heroGroupCasts(raid ? 260 : 110, true) });
+    const adds = BOSS_ADDS[b] || [], late = (BOSS_SCRIPT[b] || []).some(p => p.adds), pb = petBoss(b);
+    q.push({ k: "boss", d: adds.length && !late ? `Fighting ${b} and ${adds.length === 1 ? "an add" : adds.length + " adds"}` : `Fighting ${b}`, t: sec(raid ? 260 : 110), boss: b, dn, adds, casts: heroGroupCasts(raid ? 260 : 110, true), ...(pb || {}) });
     q.push(regroupTask(raid));
   });
   q.push({ k: "dend", d: `Leaving ${dn}`, t: sec(10), dn });

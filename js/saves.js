@@ -14,6 +14,10 @@ function migrate() {
   // heroes from before professions pick up their class's pair, already on pace for their level
   if (!S.prof) { S.prof = newProf(PAIR_FOR[S.cls], S.level); if (S.prof.cap) log(`Picked up ${S.prof.a} and ${S.prof.b} (${S.prof.sk[S.prof.b]} / ${S.prof.cap}).`, "spell"); }
   S.prof.count = S.prof.count || {};
+  // pets used to be a buff; now they're the real thing (pets.js)
+  if (S.pet === undefined) S.pet = null;
+  S.demons = S.demons || {}; S.petStats = S.petStats || { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 }; S.rareHunt = S.rareHunt || null;
+  ["Call Pet", "Summon Imp", "Summon Voidwalker", "Summon Succubus", "Summon Felhunter"].forEach(n => delete S.buffs[n]);
   // profession achievements came later: the ones already earned are noted quietly instead of all at once
   if (!S.achProf) { S.achProf = 1; checkAch(true, "prof"); }
 }

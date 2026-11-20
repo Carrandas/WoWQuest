@@ -92,6 +92,9 @@ button:disabled { cursor: not-allowed; }
 .adds .gbar > i { background: var(--hp-ok); }
 .adds li.dead { opacity: .4; }
 .adds li.dead .an span { text-decoration: line-through; }
+.petf { margin: 10px 0 14px; } .petf[hidden] { display: none; }
+.petf .an span { color: var(--text); } .petf .pk { font-size: 12.5px; color: var(--dim); margin-left: 4px; } .petf .pk i { font-style: normal; }
+.h-happy { color: var(--hp-ok); } .h-content { color: var(--hp-mid); } .h-unhappy { color: var(--hp-crit); }
 .bigbar { position: relative; height: 22px; border-radius: 3px; background: #05070c; border: 1px solid #5a4a12; overflow: hidden; box-shadow: inset 0 2px 6px #000a; }
 .bigbar .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(180deg, #ffe066, #e0b100 55%, #9a7a00); }
 .bigbar .fill::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, #fff5 50%, transparent 70%); background-size: 200% 100%; animation: sheen 2.2s linear infinite; }

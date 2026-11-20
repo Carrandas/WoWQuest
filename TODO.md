@@ -131,6 +131,9 @@
   - The week at 60: raid when the lockout is open, otherwise battlegrounds or dungeons (maybe a PvP-mood setting)
   - Later with the guild: premades from guildmates win more often and show up in the chronicle
   - Order: Warsong Gulch first, then ranks and rewards, the PvP tab, then Arathi Basin and Alterac Valley
+- [x] **Hunter pets and warlock demons**: tamed beasts with names and families, rare tames (Broken Tooth, Lupos…),
+  happiness and feeding, Mend Pet / Health Funnel; demons by job (Voidwalker solo, Succubus for Demonology, Felhunter
+  against casters, Imp in groups), Infernal from 50, Ritual of Doom in raids; pets hold one enemy while soloing
 - [x] **Profession achievements**: skill tiers, firsts and totals for gathering and crafting, AH gold, Crusader;
   blue crafts from skill 150 (two signature slots per craft); totals on the professions tab
 - [x] **Gold sinks while raiding** (gold piles up at 60 today; raiding should cost money like it did)

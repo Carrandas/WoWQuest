@@ -73,6 +73,7 @@ const FINISH = {
     if (before > S.quests.length) log(`Abandoned ${before - S.quests.length} unfinished quest${before - S.quests.length > 1 ? "s" : ""} from the last zone.`);
     const z = ZONES[t.zone]; zoneEntry(t.zone);
     log(`Entered ${t.zone} (levels ${z.min}–${z.max}).`, "zone");
+    petArrive(t.zone);
   },
   field() { flushTrip(); S.loc = "field"; },
   hub() { S.loc = "hub"; },
@@ -80,8 +81,9 @@ const FINISH = {
     S.since = (S.since || 0) + 1;
     const sf = soloFight(t), who = n => t.elite ? n : article(n), by = t.killer ? `${who(t.killer.src)}'s ${t.killer.a}` : who(t.mob);
     if (sf.drank && S.cons.hp > 0) S.cons.hp--;
+    petAfterFight(t, sf);
     if (sf.end <= 0) {
-      S.deaths++; loseBuffs(); S.repair += S.level * S.level * 4 + 20;
+      S.deaths++; loseBuffs(); S.repair += S.level * S.level * 4 + 20; if (S.pet) S.pet.dead = true;
       log(`Killed by ${by}. Releasing spirit…`, "death"); S.hpF = 0;
       S.queue.unshift({ k: "ghost", d: "Running back to your corpse as a ghost", t: sec(45) }, { k: "rez", d: "Resurrecting and drinking up", t: sec(10) });
       return;
@@ -203,12 +205,12 @@ const FINISH = {
     S.dq = null;
   },
   dtravel(t) { S.loc = "dungeon"; log(`Entering ${t.dn}.`, "dung"); },
-  trash() { if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); },
+  trash(t) { if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); petAfterFight(t, null); },
   boss(t) {
     if (t.foe) t.foe.units.forEach(u => (u.phases || []).forEach(p => { if (p.say) log(p.say, "boss"); }));
     const raid = !!(S.dg && S.dg.raid);
     if (bossWipes(t)) {
-      S.deaths++; S.repair += S.level * S.level * (raid ? 25 : 5); loseBuffs();
+      S.deaths++; S.repair += S.level * S.level * (raid ? 25 : 5); loseBuffs(); if (S.pet) S.pet.dead = true;
       log(`Wiped on ${t.boss}. Corpse run…`, "death"); S.hpF = 0; (S.party || []).forEach(m => m.hp = 0);
       const again = { ...t, el: 0 }; delete again.ve; delete again.foe; delete again.wipe;
       S.queue.unshift({ k: "ghost", d: "Running back through the instance as a ghost", t: sec(60) }, regroupTask(raid), again);
@@ -217,7 +219,7 @@ const FINISH = {
     if (S.dg) { S.dg.killed++; if (raid) S.repair += S.level * S.level * 2; }
     log(`${t.boss} has been defeated.`, "boss");
     (S.dq || []).filter(x => !x.done && x.boss === t.boss).forEach(x => { x.done = true; log(`Objective complete: ${x.obj} ("${x.name}").`, "quest"); });
-    gainXp(mobXp(S.level + 2) * 5);
+    gainXp(mobXp(S.level + 2) * 5); petAfterFight(t, null);
     if (Math.random() < (raid ? 0.3 : 0.4)) lootDrop(t.dn, t.boss);
     if (t.dn === "Naxxramas" && Math.random() < 0.1) atiesh();
   },
@@ -253,10 +255,12 @@ const FINISH = {
   },
   // nothing to do when these end: the hero just moves on (health and mana are set in finish)
   move() {}, rest() {}, ghost() {}, rez() {}, regroup() {},
+  ...PET_FINISH, // tame, summon, petrez, petheal, feed, ritual
 };
 function finish(t) {
   const ve = vitalEnd(t); S.hpF = ve[0]; S.mpF = ve[1]; partyFinish(t);
   if (FINISH[t.k]) FINISH[t.k](t);
+  petTick(t);
   checkAch();
   dirty = true;
 }

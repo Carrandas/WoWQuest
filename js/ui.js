@@ -46,6 +46,7 @@ function gameShell() {
     <div class="col">
       <div class="sec">
         ${unitFrame("hero", { name: "hName", sub: "hSub", hp: "hp", res: "mp", resLabel: "mana", casts: "tCasts" })}
+        <ul class="adds petf" id="petf" hidden></ul>
         <div class="tabs ctabs" role="tablist" id="ctabs">${CTABS.map(([k, n]) => `<button type="button" role="tab" data-c="${k}" aria-selected="${k === charTab}" aria-label="${n}" title="${n}">${tabIcon(k)}<span class="tl">${n}</span></button>`).join("")}</div>
         <div class="cpane" data-c="char"><div class="stats" id="stats"></div>
         <ul class="rows vitals" id="vitals"></ul>
@@ -211,7 +212,7 @@ function renderFoe() {
   setHtml("eCasts", s.alive ? (from > (u.spawn || 0) ? "… › " : "") + acts.map((a, i) => `<span${i + from === s.ci ? ' class="cur"' : ""}>${esc(a)}</span>`).join(" › ") : '<span class="dead">dead</span>');
   setHtml("eAdds", f.units.length > 1 ? f.units.map((x, i) => i === mi || !st[i].present ? "" : `<li class="${st[i].alive ? "" : "dead"}"><div class="an"><span>${esc(x.name)}</span><small>${st[i].alive ? esc(st[i].act) : "dead"}</small></div><div class="gbar thin"><i style="width:${(st[i].hp * 100).toFixed(1)}%;background:${hpCol(st[i].hp)}"></i></div></li>`).join("") : "");
   const left = st.filter(x => x.alive).length, seen = st.filter(x => x.present).length, bi = f.units.findIndex(x => x.phases), ph = bi >= 0 ? st[bi].phase : null;
-  setHtml("eInfo", [ph ? ["phase", esc(ph.label)] : null, ["target", esc(foeTarget())], seen > 1 ? ["pack", `${left} of ${seen} standing`] : null, ["health", u.max.toLocaleString()]]
+  setHtml("eInfo", [ph ? ["phase", esc(ph.label)] : null, ["target", esc(petHolding(f, k) ? S.pet.name : foeTarget())], seen > 1 ? ["pack", `${left} of ${seen} standing`] : null, ["health", u.max.toLocaleString()]]
     .filter(Boolean).map(([a, b]) => `<li><span class="k">${a}</span><span class="v">${b}</span></li>`).join(""));
 }
 
@@ -228,6 +229,7 @@ function meterFight(t) {
   const P = [pf.hero, ...pf.m], all = [{ role: heroRole(), L: S.level, gear: clamp(gearScore() / Math.max(1, S.level), 0.5, 2) * talMod("d") }, ...S.party.map(x => ({ role: x.role, L: x.L, gear: x.gear ?? (x.gear = contentGear()) }))];
   if ((t.cds || []).some(c => c.type === "burst")) all[0].gear *= 1.2;
   const w = all.map(a => (DM_ROLE[a.role] || 0.5) * a.gear * (a.L / Math.max(1, S.level)) * (0.85 + Math.random() * 0.3)), ws = w.reduce((a, b) => a + b, 0) || 1;
+  if (S.pet) { const ps = petShare(); w.push(w[0] * ps); w[0] *= 1 - ps; } // the pet's damage is its share of the hero's
   m = { share: w.map(x => x / ws), heal: P.map(p => p.healEv || []) };
   DMF.set(t, m); return m;
 }
@@ -255,7 +257,7 @@ function renderMeter(force) {
   document.querySelectorAll("#dmMode button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.m === dmMode)));
   document.querySelectorAll("#dmScope button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s === dmScope)));
   if (!M || !S.party) { setHtml("dmRows", ""); return; }
-  const all = [{ name: S.name, cls: S.cls, me: true }, ...S.party.map(x => ({ name: x.name, cls: x.cls }))];
+  const all = [{ name: S.name, cls: S.cls, me: true }, ...S.party.map(x => ({ name: x.name, cls: x.cls })), ...(S.pet ? [{ name: S.pet.name + " (pet)", cls: S.cls }] : [])];
   let vals, secs, what;
   if (dmScope === "fight") {
     const src = live || M.last;
@@ -387,7 +389,7 @@ function renderBars() {
   $("qV").textContent = qm ? qm.val : ""; $("qB").style.width = (qm ? qm.p * 100 : 0) + "%";
   if (S.dg) { $("zV").textContent = `${S.dg.killed} / ${S.dg.total} bosses`; $("zB").style.width = (S.dg.killed / S.dg.total * 100) + "%"; }
   else { const li = legInfo(); $("zV").textContent = li.val; $("zB").style.width = (li.p * 100) + "%"; }
-  renderGroup(hf, mf); renderFoe();
+  renderGroup(hf, mf); renderFoe(); renderPet();
   if (uiTab === "log") $("elapsed").textContent = "/played " + fmtTime(S.time);
 }
 

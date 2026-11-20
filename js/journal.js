@@ -94,6 +94,15 @@ const PROF_ACH = [
   { id: "p-crusader", name: "Crusader", desc: "Get Crusader on your weapon, bought or enchanted yourself.", test: () => eq(it => it.ench && it.ench.name === "Crusader") },
 ];
 ACH.push(...PROF_ACH.map(a => ({ ...a, cat: "prof" })));
+// pets
+const ps = () => S.petStats || { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 };
+ACH.push(
+  { id: "pet-tame", name: "Beast Friend", desc: "Tame your first pet.", show: () => S.cls === "Hunter", test: () => ps().tamed >= 1 },
+  { id: "pet-rare", name: "Rare Tamer", desc: "Tame a famous rare beast, like Humar the Pridelord or Broken Tooth.", show: () => S.cls === "Hunter", test: () => ps().rares.length >= 1 },
+  { id: "pet-demons", name: "Demonologist", desc: "Summon an Imp, a Voidwalker, a Succubus and a Felhunter.", show: () => S.cls === "Warlock", test: () => ps().summoned.length >= 4 },
+  { id: "pet-infernal", name: "Inferno", desc: "Call down an Infernal.", show: () => S.cls === "Warlock", test: () => ps().infernal >= 1 },
+  { id: "pet-doom", name: "Ritual of Doom", desc: "Summon a Doomguard in a raid.", show: () => S.cls === "Warlock", test: () => ps().doom >= 1 },
+);
 // quiet: mark what's already earned without announcing it (pre: what came later, for the journal text);
 // cat: only that category
 function checkAch(quiet, cat) {
