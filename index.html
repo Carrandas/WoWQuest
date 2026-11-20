@@ -161,6 +161,22 @@ button:disabled { cursor: not-allowed; }
 .gbar.thin > span { font-size: 9px; }
 .gcast { font-size: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.4em; }
 .gcast .cur { color: var(--gold); }
+/* collapse buttons */
+.fold { flex: none; width: 26px; height: 26px; display: grid; place-items: center; background: transparent; border: 1px solid var(--rim); border-radius: 999px; color: var(--dim); cursor: pointer; padding: 0; }
+.fold:hover { color: var(--gold); border-color: var(--gold-dk); }
+.fold svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s; }
+.folded .fold svg, .fold[aria-expanded="false"] svg { transform: rotate(180deg); }
+.meters { position: relative; padding-right: 36px; }
+.meters > .fold { position: absolute; top: 0; right: 0; }
+.meters.folded .meter .name, .meters.folded .meter .bar { display: none; }
+.meters.folded .meter { gap: 0; }
+.ghead { display: flex; align-items: flex-start; gap: 10px; }
+.ghead h2 { flex: 1; min-width: 0; }
+.group.folded .gcards { display: none !important; }
+.dmeter.folded .dmrows, .dmeter.folded .seg { display: none; }
+.dmeter { position: relative; }
+.dmh { padding-right: 36px; }
+.dmh > .fold { position: absolute; top: 8px; right: 0; }
 /* damage meter under the group frames */
 .dmeter { margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--rim); }
 .dmh { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 8px; }
@@ -1646,7 +1662,7 @@ function gameShell() {
       <span class="saved" id="saved"></span>
     </div>
   </div>
-  <section class="meters">
+  <section class="meters" data-fold-box="meters"><button type="button" class="fold" data-fold="meters" aria-expanded="true" aria-label="Collapse progress" title="Collapse"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
     <div class="meter m-xp"><div class="top"><span class="lbl" id="xpL">experience</span><span class="val" id="xpV"></span></div><div class="name" id="xpN"></div><div class="bar"><i id="xpB"></i></div></div>
     <div class="meter m-zone"><div class="top"><span class="lbl" id="zL">zone</span><span class="val" id="zV"></span></div><div class="name" id="zN"></div><div class="bar"><i id="zB"></i></div></div>
     <div class="meter m-quest"><div class="top"><span class="lbl">quest</span><span class="val" id="qV"></span></div><div class="name" id="qN"></div><div class="bar"><i id="qB"></i></div></div>
@@ -1656,10 +1672,10 @@ function gameShell() {
     <div class="desc" id="tDesc"></div>
     <div class="bigbar"><div class="fill" id="tFill"></div><div class="pct" id="tPct"></div></div>
   </section>
-  <section class="group" id="group" hidden><h2 id="gTitle">Group</h2><div class="gcards" id="gcards"></div>
-    <div class="dmeter"><div class="dmh"><span class="lbl">Damage meter</span><small id="dmNote"></small>
+  <section class="group" id="group" hidden><div class="ghead" data-fold-box="group"><h2 id="gTitle">Group</h2><button type="button" class="fold" data-fold="group" aria-expanded="true" aria-label="Collapse group frames" title="Collapse"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button></div><div class="gcards" id="gcards"></div>
+    <div class="dmeter" data-fold-box="meter"><div class="dmh"><span class="lbl">Damage meter</span><small id="dmNote"></small>
       <div class="seg" id="dmMode"><button type="button" data-m="dmg">Damage</button><button type="button" data-m="heal">Healing</button></div>
-      <div class="seg" id="dmScope"><button type="button" data-s="fight">This fight</button><button type="button" data-s="run">Whole run</button></div></div>
+      <div class="seg" id="dmScope"><button type="button" data-s="fight">This fight</button><button type="button" data-s="run">Whole run</button></div><button type="button" class="fold" data-fold="meter" aria-expanded="true" aria-label="Collapse damage meter" title="Collapse"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button></div>
       <ol class="dmrows" id="dmRows"></ol></div></section>
   <section class="main">
     <div class="col">
@@ -1705,9 +1721,27 @@ function gameShell() {
   $("tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; uiTab = b.dataset.t; document.querySelectorAll("#tabs button").forEach(x => x.setAttribute("aria-selected", String(x === b))); dirty = true; });
   $("ctabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; charTab = b.dataset.c; renderCharTab(); });
   $("brand").addEventListener("click", brandTap);
+  document.querySelectorAll(".fold").forEach(b => b.addEventListener("click", () => toggleFold(b.dataset.fold)));
+  renderFolds();
   $("dmMode").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { dmMode = b.dataset.m; renderMeter(true); } });
   $("dmScope").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { dmScope = b.dataset.s; renderMeter(true); } });
   renderSpeed(); renderCharTab();
+}
+// collapsible boxes (progress meters, group frames, damage meter), remembered in this browser
+const FOLD_KEY = "wowquest-fold";
+let folds = {};
+try { folds = JSON.parse(localStorage.getItem(FOLD_KEY) || "{}") || {}; } catch (e) {}
+function renderFolds() {
+  document.querySelectorAll("[data-fold-box]").forEach(el => {
+    const k = el.dataset.foldBox, shut = !!folds[k], box = k === "group" ? el.parentNode : el, b = el.querySelector(`.fold[data-fold="${k}"]`);
+    box.classList.toggle("folded", shut); box.classList.toggle("fold-" + k, true);
+    if (b) { b.setAttribute("aria-expanded", String(!shut)); b.title = shut ? "Expand" : "Collapse"; b.setAttribute("aria-label", b.getAttribute("aria-label").replace(/^(Collapse|Expand)/, shut ? "Expand" : "Collapse")); }
+  });
+}
+function toggleFold(k) {
+  folds[k] = !folds[k];
+  try { localStorage.setItem(FOLD_KEY, JSON.stringify(folds)); } catch (e) {}
+  renderFolds();
 }
 // tab icons, shown instead of the names on a phone
 const TAB_ICONS = {
