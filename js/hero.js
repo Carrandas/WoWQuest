@@ -148,7 +148,7 @@ function newQuest() {
   const L = S.level;
   q.xp = Math.round(mobXp(L) * (q.type === "elite" ? 14 : 7 + R(5)) * 1.15);
   // at 60 the questing is for gold only, and there's a lot of it: a third of the pay, so the epic mount takes a few weeks
-  q.money = Math.round((L * L * 2.5 + 40) * (0.7 + Math.random() * 0.6) * (L >= 60 ? 0.4 : 1));
+  q.money = Math.round((L * L * 2.5 + 40) * (0.7 + Math.random() * 0.6) * (L >= 60 ? 0.35 : 1));
   S.quests.push(q);
   return q;
 }

@@ -185,8 +185,10 @@ const raidLock = n => { const l = S.lock[n]; return l && S.time - l.at < RAID_IN
 const raidKilled = n => (raidLock(n) || { killed: 0 }).killed;
 const raidLocked = n => raidKilled(n) >= instanceRow(n).bosses.length;   // fully cleared this lockout
 const raidRested = n => !S.lock[n] || !S.lock[n].last || S.time - S.lock[n].last >= DAY; // one raid night a day
+// full clears of a raid so far (each lockout can clear it once)
+const raidClears = n => (S.dstat[n] && S.dstat[n].runs) || 0;
 const attuned = n => !RAID_INFO[n].attune || S.runs60 >= RAID_INFO[n].attune[0];
-const raidOpen = r => { const i = RAID_INFO[r.name]; return gearScore() >= i.gs && (!i.need || S.dungeons.includes(i.need)) && attuned(r.name) && !raidLocked(r.name) && raidRested(r.name); };
+const raidOpen = r => { const i = RAID_INFO[r.name]; return gearScore() >= i.gs && (!i.need || raidClears(i.need) >= (i.needClears || 1)) && attuned(r.name) && !raidLocked(r.name) && raidRested(r.name); };
 function pickDungeon() {
   const ok = d => d.side === "B" || d.side === S.faction[0];
   if (S.level >= 60) {

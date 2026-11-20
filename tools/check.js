@@ -11,7 +11,7 @@
 //     the meter. Flags specs that stand out from the median of all specs. Takes a few minutes.
 //
 //   node tools/check.js endgame [seeds] [days]
-//     The raid timeline: one hero per class to 60, then 60 days of play: the day each raid is first fully cleared
+//     The raid timeline: one hero per class to 60, then 90 days of play: the day each raid is first fully cleared
 //     (against the targets in RAID_TARGET), gear score and gold by day, the day of the epic mount.
 //
 //   node tools/check.js balance [seeds]
@@ -166,18 +166,19 @@ const END_HEROES = [["Human", "Warrior", 1, "smith"], ["Dwarf", "Paladin", 0, "s
 const RAID_ORDER = ["Zul'Gurub", "Onyxia's Lair", "Molten Core", "Ruins of Ahn'Qiraj", "Blackwing Lair", "Temple of Ahn'Qiraj", "Naxxramas"];
 const RAID_SHORT = ["ZG", "Ony", "MC", "AQ20", "BWL", "AQ40", "Naxx"];
 // target day (after reaching 60) for the first full clear, and how far off the median may be
-const RAID_TARGET = { "Onyxia's Lair": [3, 7], "Molten Core": [7, 13], "Blackwing Lair": [14, 24], "Temple of Ahn'Qiraj": [26, 40], "Naxxramas": [42, 60] };
+// (weeks of Molten Core before Blackwing Lair, then a couple of clears of each tier before the next)
+const RAID_TARGET = { "Onyxia's Lair": [3, 7], "Molten Core": [7, 13], "Blackwing Lair": [26, 40], "Temple of Ahn'Qiraj": [40, 58], "Naxxramas": [55, 85] };
 async function endgame(seeds, days) {
   const jobs = [];
   for (const h of END_HEROES) for (let s = 1; s <= seeds; s++) jobs.push({ h, run: () => sim("new", "end60", s, { PRE: `${newHero(h)};window.DAYS=${days}` }) });
   console.log(`Playing ${jobs.length} heroes to 60, then ${days} days of endgame…`);
   const outs = (await pool(jobs.map(j => j.run))).map(o => { try { return JSON.parse(o.split("\n")[0]); } catch (e) { console.log("bad output: " + o.slice(0, 200)); return null; } });
   const f = v => v == null ? "   -" : String(v).padStart(4);
-  console.log(`hero              ${RAID_SHORT.map(s => s.padStart(5)).join("")}  | gs d2  d7 d14 d30 d60 | gold d7 d30 d60 | epic mount`);
+  console.log(`hero              ${RAID_SHORT.map(s => s.padStart(5)).join("")}  | gs d2  d7 d14 d30 d60 d90 | gold d7 d30 d60 | epic mount`);
   outs.forEach((r, i) => {
     if (!r) return;
     const h = jobs[i].h, g = k => r.snap[k] || {};
-    console.log(`${(h[1] + " " + h[3]).padEnd(17)} ${RAID_ORDER.map(n => f(r.clears[n] == null ? null : Math.round(r.clears[n])).padStart(5)).join("")}  | ${[2, 7, 14, 30, 60].map(k => f(g(k).gs == null ? null : Math.round(g(k).gs))).join("")} | ${[7, 30, 60].map(k => f(g(k).gold)).join("")} | ${r.epic == null ? "-" : "day " + Math.round(r.epic)}`);
+    console.log(`${(h[1] + " " + h[3]).padEnd(17)} ${RAID_ORDER.map(n => f(r.clears[n] == null ? null : Math.round(r.clears[n])).padStart(5)).join("")}  | ${[2, 7, 14, 30, 60, 90].map(k => f(g(k).gs == null ? null : Math.round(g(k).gs))).join("")} | ${[7, 30, 60].map(k => f(g(k).gold)).join("")} | ${r.epic == null ? "-" : "day " + Math.round(r.epic)}`);
   });
   const med = a => { a = a.filter(x => x != null).sort((x, y) => x - y); return a.length ? a[a.length >> 1] : null; };
   let ok = true;
@@ -197,5 +198,5 @@ async function endgame(seeds, days) {
 }
 
 const [mode = "same", arg] = process.argv.slice(2);
-(mode === "balance" ? balance(+arg || 4) : mode === "specs" ? specs(+arg || 2) : mode === "endgame" ? endgame(+arg || 1, +process.argv[4] || 60) : same(arg && !arg.startsWith("--") ? arg : "main", process.argv.includes("--long")))
+(mode === "balance" ? balance(+arg || 4) : mode === "specs" ? specs(+arg || 2) : mode === "endgame" ? endgame(+arg || 1, +process.argv[4] || 90) : same(arg && !arg.startsWith("--") ? arg : "main", process.argv.includes("--long")))
   .then(good => process.exit(good ? 0 : 1));
