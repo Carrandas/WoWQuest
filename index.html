@@ -196,7 +196,9 @@ button:disabled { cursor: not-allowed; }
 .bub { position: absolute; top: 34%; z-index: 5; pointer-events: none; font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums;
   text-shadow: 0 1px 2px #000, 0 0 5px #000; transform: translateX(-50%); animation: bub 1.3s ease-out forwards; }
 .bub.dn { color: #ff5a4f; } .bub.up { color: #5ce65c; }
-.gcard .bub { font-size: 14px; top: 28%; } .rcell .bub { font-size: 11px; top: 10%; }
+.gcard .bub { font-size: 14px; top: 28%; }
+.meter.m-xp { position: relative; }
+.bub.xp { font-size: 14px; top: 2px; color: #5ce65c; } .rcell .bub { font-size: 11px; top: 10%; }
 @keyframes bub { from { opacity: 0; transform: translate(-50%, 6px); } 15% { opacity: 1; } to { opacity: 0; transform: translate(-50%, -28px); } }
 @media (prefers-reduced-motion: reduce) { .bub { animation: bubfade 1.3s linear forwards; } @keyframes bubfade { from { opacity: 1; } to { opacity: 0; } } }
 .group.raid .gcards { display: block; }
@@ -759,9 +761,10 @@ function trainSpells() {
   if (!learned.length && !ranked.length) log(`Nothing new to learn yet.`, "spell");
   else if (cost) log(`Training cost ${moneyTxt(cost)}.`, "gold");
 }
+let xpPop = 0; // experience gained since the last frame, shown as a green "+x" on the experience bar
 function gainXp(n) {
   if (S.level >= 60) return;
-  S.xp += Math.round(n);
+  S.xp += Math.round(n); xpPop += Math.round(n);
   while (S.level < 60 && S.xp >= xpNeed(S.level)) {
     S.xp -= xpNeed(S.level); S.level++;
     const c = cls(); const gains = [];
@@ -2086,6 +2089,11 @@ function bubble(key, el, val, max, fight) {
   b.style.left = (25 + Math.random() * 50) + "%";
   el.appendChild(b); setTimeout(() => b.remove(), 1300);
 }
+function xpBubble(el, n) {
+  const b = document.createElement("span"); b.className = "bub up xp";
+  b.textContent = "+" + n.toLocaleString() + " xp"; b.style.left = (55 + Math.random() * 30) + "%";
+  el.appendChild(b); setTimeout(() => b.remove(), 1300);
+}
 const memberMax = (c, L) => CLASSES[c].hp * L + (20 + 2 * L) * 10;
 // health bar colour, same as the hero's: green, yellow, orange, red
 const hpCol = f => f > 0.6 ? "var(--hp-ok)" : f > 0.35 ? "var(--hp-mid)" : f > 0.15 ? "var(--hp-low)" : "var(--hp-crit)";
@@ -2277,6 +2285,7 @@ function renderBars() {
   if (cls().mp) { const mm = resMax(); $("mpV").textContent = `${Math.round(mf * mm).toLocaleString()} / ${mm.toLocaleString()}`; $("mpB").style.width = (mf * 100).toFixed(1) + "%"; $("mpB").style.background = "var(--mana)"; }
   else { const v = secondPool(); $("mpV").textContent = `${v} / 100`; $("mpB").style.width = v + "%"; $("mpB").style.background = res === "Rage" ? "var(--rage)" : "var(--energy)"; }
   const need = xpNeed(S.level);
+  if (xpPop > 0) { const el = document.querySelector(".m-xp"); if (el) xpBubble(el, xpPop); xpPop = 0; }
   if (S.level >= 60) { const g = raidGoal(); $("xpV").textContent = g.val; $("xpB").style.width = (g.p * 100) + "%"; }
   else { $("xpV").textContent = `${S.xp.toLocaleString()} / ${need.toLocaleString()}`; $("xpB").style.width = (S.xp / need * 100) + "%"; }
   const qm = questMeter();
