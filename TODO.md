@@ -15,12 +15,11 @@
   - Stuns, fears and interrupts; enemy heals; floating damage and healing numbers
 - [x] **Scripted boss moments**: VanCleef, Ragnaros, Onyxia, Nefarian, Kel'Thuzad, Patchwerk, Majordomo
   - [ ] More bosses (Hakkar's Blood Siphon, C'Thun's eye phase, the Four Horsemen, Vaelastrasz)
-- [ ] **Area of effect for the hero and the group** (from 3 or more enemies at once)
-  - Classes that can AoE switch to it on 3+ mobs: mages (Arcane Explosion, Flamestrike, Blizzard, Frost Nova + Cone of Cold),
-    warlocks (Rain of Fire, Hellfire), paladins (Consecration), warriors (Whirlwind, Cleave, Thunder Clap),
-    druids (Hurricane, Swipe), hunters (Multi-Shot, Volley), priests (Holy Nova)
-  - AoE damages the whole pack at once, so packs die faster and closer together instead of one by one
-  - Applies to 3-mob pulls while questing and to dungeon/raid packs; in groups the AoE classes also switch
+- [x] **Area of effect for the hero and the group** (from 3 or more enemies at once)
+  - Area spells hit every enemy still standing (Cleave, Multi-Shot, Chain Lightning hit two or three); packs die together and sooner
+  - With 3+ mobs the hero switches to area spells; pack-only spells (Arcane Explosion, Blizzard, ...) stay out of single-target fights
+  - Dungeon packs: the area classes in the party add their share; Frost Nova freezes melee mobs for two actions
+  - [ ] Area spells on boss adds (bosses still go down one target at a time)
 - [ ] **Wipes from the fight itself** (raid and dungeon wipes are still a roll, based on gear)
   - Today: group fights never kill anyone (health floors at 5%); boss deaths only come from a roll at the pull
     (`bossWipes` / `wipeChance`), so cooldowns, talents and healing don't decide the outcome

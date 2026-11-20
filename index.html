@@ -1129,11 +1129,11 @@ function knowsAt(c, L, spec) {
 }
 // as many casts as a normal fight of the same length would have
 const castCount = (base, L = S.level) => Math.max(4, Math.round(base / ((9 + 0.12 * L) / 5.5) * (0.85 + Math.random() * 0.3)));
-function rollRot(r, known, n) {
+function rollRot(r, known, n, aoe = []) {
   const first = a => a.find(known) || "Auto Attack", extra = r.extra.filter(known);
   const out = [first(r.open)];
   for (let i = 0; i < n - 2; i++) {
-    let s = extra.length && Math.random() < 0.4 ? pick(extra) : first(r.fill);
+    let s = aoe.length && Math.random() < 0.45 ? pick(aoe) : extra.length && Math.random() < 0.4 ? pick(extra) : first(r.fill);
     if (s === out[out.length - 1] && extra.includes(s)) s = first(r.fill);
     out.push(s);
   }
@@ -1141,10 +1141,10 @@ function rollRot(r, known, n) {
   return out;
 }
 // the hero's own casts in a group fight: role rotation if tank/healer, the normal one for dps
-function heroGroupCasts(base, boss) {
+function heroGroupCasts(base, boss, mobs = 1) {
   const n = castCount(base), role = heroRole();
-  if (role === "dps") return rotation(boss, n);
-  const out = rollRot(GROUP_ROT[role][S.cls], knowsAt(S.cls, S.level, S.spec), n);
+  if (role === "dps") return rotation(boss, n, mobs);
+  const out = rollRot(GROUP_ROT[role][S.cls], knowsAt(S.cls, S.level, S.spec), n, role === "tank" && mobs >= 3 ? heroAoe() : []);
   if (boss) potionCasts(out);
   return out;
 }
@@ -1343,8 +1343,58 @@ function killTask(quest) {
   const mobs = [mob]; for (let i = 1; i < n; i++) mobs.push(Math.random() < 0.7 ? mob : pick(zoneMobs(quest.zone)));
   const d = elite ? `Fighting ${mob} (elite) with a pickup group` : n > 1 ? `${pick(c.verbs)} ${n === 2 ? "two" : "three"} mobs at once` : `${pick(c.verbs)} ${article(mob)}`;
   const gear = clamp(gearScore() / Math.max(1, S.level), 0.5, 1.4);
-  const t = sec((9 + S.level * 0.12) * (elite ? 5 : 1) * (1 + 0.6 * (n - 1)) * clamp(1.35 - gear * 0.35, 0.8, 1.2) * buffSpeed() / talMod("d"));
-  return { k: "kill", d, t, mob, mobs, mobL, qid: quest.id, elite, casts: rotation(elite, n > 1 ? (4 + R(2)) * n : undefined) };
+  const p = packTrim(rotation(elite, n > 1 ? (4 + R(2)) * n : undefined, n), n, 0,
+    sec((9 + S.level * 0.12) * (elite ? 5 : 1) * (1 + 0.6 * (n - 1)) * clamp(1.35 - gear * 0.35, 0.8, 1.2) * buffSpeed() / talMod("d")));
+  return { k: "kill", d, t: p.t, mob, mobs, mobL, qid: quest.id, elite, casts: p.casts };
+}
+
+// ---------- area of effect ----------
+// spells that hit more than one enemy: how many (99 = every enemy close by) and how hard on each,
+// next to a single-target cast of the same weight
+const AOE = { "Arcane Explosion": [99, 0.7], Blizzard: [99, 0.8], Flamestrike: [99, 0.8], "Cone of Cold": [99, 0.6], "Frost Nova": [99, 0.3],
+  "Rain of Fire": [99, 0.8], Hellfire: [99, 0.7], Consecration: [99, 0.6], "Holy Nova": [99, 0.5], Hurricane: [99, 0.8], Volley: [99, 0.8],
+  "Fire Nova Totem": [99, 0.6], "Thunder Clap": [4, 0.5], Whirlwind: [4, 0.9], Cleave: [2, 0.9], "Multi-Shot": [3, 0.85], "Chain Lightning": [3, 0.8] };
+// what each class reaches for with three or more enemies on it
+const AOE_PICK = { Mage: ["Arcane Explosion", "Blizzard", "Flamestrike", "Cone of Cold", "Frost Nova"], Warlock: ["Rain of Fire", "Hellfire"], Warrior: ["Whirlwind", "Cleave", "Thunder Clap"],
+  Paladin: ["Consecration"], Druid: ["Hurricane"], Hunter: ["Multi-Shot", "Volley"], Priest: ["Holy Nova"], Shaman: ["Chain Lightning", "Fire Nova Totem"] };
+// only worth casting on a pack
+const AOE_ONLY = /^(Arcane Explosion|Blizzard|Flamestrike|Rain of Fire|Hellfire|Hurricane|Volley|Holy Nova|Fire Nova Totem)$/;
+// the area spells the hero knows (talent ones too)
+const heroAoe = () => (AOE_PICK[S.cls] || []).filter(n => n in S.spells || talentSpells().some(x => x.name === n));
+// a pack fight cast by cast: a single-target cast hits the focus (the first enemy still up), an area cast hits
+// every enemy still up (or the first few). share is the group's own area damage, spread over the pack on every cast.
+// Each enemy has hp (in cast weights); returns the damage each one took per cast and the cast it died on
+function packSim(casts, w, n, hp, share = 0) {
+  const left = new Array(n).fill(hp), dw = Array.from({ length: n }, () => new Array(casts.length).fill(0)), die = new Array(n).fill(-1);
+  const hit = (j, d, i) => { if (left[j] <= 0 || d <= 0) return; const x = Math.min(left[j], d); left[j] -= x; dw[j][i] += x; if (left[j] <= 1e-9) { left[j] = 0; die[j] = i; } };
+  casts.forEach((s, i) => {
+    const up = []; for (let j = 0; j < n; j++) if (left[j] > 0) up.push(j);
+    if (!up.length) return;
+    const a = AOE[s], wi = w[i] ?? 1;
+    if (a) up.slice(0, a[0]).forEach(j => hit(j, wi * a[1], i));
+    else { hit(up[0], wi * (1 - share), i); if (share) up.forEach(j => hit(j, wi * share * 0.6, i)); }
+  });
+  return { dw, die, done: left.every(x => x <= 0) };
+}
+// the toughest pack that still goes down by the last cast: that's the fight the bars show
+function packFit(casts, w, n, share) {
+  let lo = 0, hi = w.reduce((a, b) => a + b, 0);
+  if (!(hi > 0)) return null;
+  for (let it = 0; it < 40; it++) { const m = (lo + hi) / 2; if (packSim(casts, w, n, m, share).done) lo = m; else hi = m; }
+  const r = packSim(casts, w, n, lo, share);
+  return r.done ? r : null;
+}
+// with area damage a pack dies sooner: the casts it no longer takes are dropped and the pull gets shorter
+function packTrim(casts, n, share, t) {
+  if (n < 2) return { casts, t };
+  const w = casts.map(castWeight), r = packSim(casts, w, n, w.reduce((a, b) => a + b, 0) / n, share), end = Math.max(...r.die);
+  if (!r.done || end < 2 || end >= casts.length - 1) return { casts, t };
+  return { casts: casts.slice(0, end + 1), t: Math.round(t * Math.max(0.65, (end + 1) / casts.length)) };
+}
+// how much of a dungeon group's damage is area damage on a pack: the area classes in the party switch to it
+function groupAoe(n) {
+  if (n < 3 || !S.party) return 0;
+  return Math.min(0.45, 0.12 * S.party.filter(m => m.role !== "heal" && m.L >= 20 && (AOE_PICK[m.cls] || []).length).length);
 }
 
 // a believable fight: opener, filler casts with the odd extra ability, then a finisher
@@ -1362,17 +1412,19 @@ const ROT = {
     : { open: ["Moonfire", "Wrath"], fill: ["Wrath"], extra: ["Moonfire", "Entangling Roots", "Faerie Fire", "Rejuvenation", "Healing Touch"], end: ["Moonfire", "Wrath"] },
 };
 const ULT_ATK = { Warrior: [0, 1, 2], Paladin: [0], Shaman: [1], Warlock: [2] };
-function rotation(elite, count) {
+function rotation(elite, count, mobs = 1) {
   const c = cls(), r = ROT[S.cls](), free = /^(Auto Attack|Auto Shot|Shoot)$/;
   const known = n => (free.test(n) && (n !== "Shoot" || S.level >= 8)) || n in S.spells, first = a => a.find(known) || "Auto Attack";
-  const extra = r.extra.filter(known);
+  let extra = r.extra.filter(known);
   if (S.level >= 40 && (ULT_ATK[S.cls] || []).includes(S.spec)) extra.push(c.ult[S.spec], c.ult[S.spec]);
   const tsp = talentSpells();
   tsp.filter(x => x.kind === "a" && x.name !== c.ult[S.spec]).forEach(x => extra.push(x.name));
+  if (mobs < 3) extra = extra.filter(s => !AOE_ONLY.test(s));
+  const aoe = mobs >= 3 ? heroAoe() : [];
   const out = [first(r.open)], n = count ? count - 2 : (elite ? 6 : 3) + R(3);
   for (let i = 0; i < n; i++) {
-    let s = extra.length && Math.random() < 0.4 ? pick(extra) : first(r.fill);
-    if (s === out[out.length - 1] && extra.includes(s)) s = first(r.fill);
+    let s = aoe.length && Math.random() < 0.55 ? pick(aoe) : extra.length && Math.random() < 0.4 ? pick(extra) : first(r.fill);
+    if (s === out[out.length - 1] && extra.includes(s) && !aoe.includes(s)) s = first(r.fill);
     out.push(s);
   }
   const end = r.end.filter(known);
@@ -1420,7 +1472,8 @@ function queueDungeon(d) {
     const n = raid ? 2 + R(2) : 1 + R(3);
     for (let i = 0; i < n; i++) {
       const main = pick(trash), mobs = Array.from({ length: raid ? 3 + R(3) : 2 + R(3) }, (_, j) => j && Math.random() < 0.3 ? pick(trash) : main);
-      q.push({ k: "trash", d: `Clearing a pack of ${plural(main)}`, t: sec(raid ? 70 : 40), mobs, casts: heroGroupCasts(raid ? 70 : 40, false) });
+      const share = groupAoe(mobs.length), p = packTrim(heroGroupCasts(raid ? 70 : 40, false, mobs.length), mobs.length, share, sec(raid ? 70 : 40));
+      q.push({ k: "trash", d: `Clearing a pack of ${plural(main)}`, t: p.t, mobs, casts: p.casts, aoeShare: share });
     }
     const adds = BOSS_ADDS[b] || [], late = (BOSS_SCRIPT[b] || []).some(p => p.adds);
     q.push({ k: "boss", d: adds.length && !late ? `Fighting ${b} and ${adds.length === 1 ? "an add" : adds.length + " adds"}` : `Fighting ${b}`, t: sec(raid ? 260 : 110), boss: b, dn: d[0], adds, casts: heroGroupCasts(raid ? 260 : 110, true) });
@@ -1932,6 +1985,7 @@ function controlHero(t, units, N) {
 const FOE_HEAL = { Heal: 0.15, Renew: 0.07 };
 function foeCurve(u, w, N) {
   const hp = new Array(N + 1).fill(undefined), heal = i => FOE_HEAL[u.acts[i]] || 0;
+  if (u.dw) w = u.dw;
   hp[0] = 1;
   for (const g of u.segs || []) {
     let s = 0, H = 0; for (let j = g.a; j < g.b; j++) { s += w[j] ?? 1; if (j < g.b - 1) H += heal(j); }
@@ -1972,6 +2026,12 @@ const castWeight = s => LOST.test(s) ? 0 : CD_TYPE[s] ? 0.15 : /^(Auto Attack|Au
   : /Potion|Elixir|Stone|Shield|Form|Seal|Mark|Prowl|Bloodrage|Battle Shout|Heal|Renew|Rejuv|Regrowth|Holy Light|Flash of Light|Life Tap|Lightning Shield|Totem|Prayer|Tranquility|Swiftmend|Lay on Hands|Evocation|Ice Block|Barrier|Armor/.test(s) ? 0.15 : 1;
 function dungeonRow() { return S.dg ? DUNGEONS.concat(RAIDS).find(d => d[0] === S.dg.name) : null; }
 
+// how hard each hero cast hits; the casts right after a burst cooldown hit harder
+function heroWeights(t, casts, N) {
+  const w = casts.map(castWeight);
+  (t.cds || []).filter(c => c.type === "burst").forEach(c => { for (let i = c.at + 1; i <= c.at + 3 && i < N; i++) w[i] *= 1.8; });
+  return w;
+}
 // everyone the hero is fighting in this task, built once and kept on the task
 function foeOf(t) {
   if (!t || !FIGHTS.includes(t.k)) return null;
@@ -1990,8 +2050,17 @@ function foeOf(t) {
   // Packs and adds go down one by one; a scripted boss pauses at its thresholds while its adds are dealt with
   const addW = raid ? 0.07 : 0.14, boss = t.k === "boss" ? units[units.length - 1] : null, sc = boss ? BOSS_SCRIPT[t.boss] || [] : [];
   if (boss && bossWipes(t)) boss.left = 0.08 + Math.random() * 0.4;
-  const chunks = [], marks = [];
-  if (!boss) units.forEach(u => chunks.push({ u, from: 1, to: 0, wt: 1 }));
+  const chunks = [], marks = [], w0 = heroWeights(t, casts, N);
+  // a pack (no boss): played out cast by cast, so area spells hurt every enemy still standing
+  const pack = !boss && units.length > 1 ? packFit(casts, w0, units.length, t.aoeShare || 0) : null;
+  if (pack) {
+    const last = pack.die.indexOf(Math.max(...pack.die));
+    units.forEach((u, j) => {
+      const a = Math.max(0, pack.dw[j].findIndex(x => x > 0));
+      u.dw = pack.dw[j]; u.a = a; u.b = j === last ? N : pack.die[j] + 1; u.spawn = 0;
+      u.segs = [{ a, b: u.b, from: 1, to: 0 }];
+    });
+  } else if (!boss) units.forEach(u => chunks.push({ u, from: 1, to: 0, wt: 1 }));
   else {
     const startAdds = units.slice(0, -1), late = sc.some(p => p.adds), end = boss.left || 0;
     if (!late) startAdds.forEach(u => chunks.push({ u, from: 1, to: 0, wt: addW }));
@@ -2009,7 +2078,7 @@ function foeOf(t) {
   const W = chunks.reduce((a, c) => a + c.wt, 0);
   let acc = 0, prev = 0;
   chunks.forEach((c, i) => { acc += c.wt; c.a = prev; c.b = i === chunks.length - 1 ? N : Math.min(N, Math.max(prev + (N > chunks.length ? 1 : 0), Math.round(acc / W * N))); prev = c.b; });
-  units.forEach(u => {
+  if (!pack) units.forEach(u => {
     const mine = chunks.filter(c => c.u === u);
     u.segs = mine.map(c => ({ a: c.a, b: c.b, from: c.from, to: c.to }));
     const last = mine[mine.length - 1];
@@ -2022,11 +2091,14 @@ function foeOf(t) {
     (boss.phases = boss.phases || []).push({ k, label: m.p.label, pool: m.p.pool, say: m.p.say });
     if (m.p.hide) { (boss.hide = boss.hide || []).push([k, kEnd]); boss.phases.push({ k: kEnd, label: m.p.after, say: m.p.back }); }
   });
-  units.forEach(u => { if (!chunks.some(c => c.u === u)) u.spawn = N + 1; });
+  if (!pack) units.forEach(u => { if (!chunks.some(c => c.u === u)) u.spawn = N + 1; });
   units.forEach(u => { u.max = foeHp(u.L, u.rank); u.res = FOE_RES[u.kind]; u.acts = foeActions(u, N); });
+  // Frost Nova roots everything close by: melee enemies (not bosses) lose their next two actions
+  casts.forEach((c, i) => { if (c === "Frost Nova") units.forEach(u => { if (u.kind !== "caster" && !/boss/.test(u.rank)) for (let j = i + 1; j <= i + 2 && j < u.acts.length; j++) if (u.acts[j]) u.acts[j] = "Frozen"; }); });
   controlHero(t, units, N);
-  const w = casts.map(castWeight);
-  (t.cds || []).filter(c => c.type === "burst").forEach(c => { for (let i = c.at + 1; i <= c.at + 3 && i < N; i++) w[i] *= 1.8; });
+  const w = heroWeights(t, casts, N);
+  // a cast lost to a stun or a fear does no damage to anyone in the pack either
+  units.forEach(u => { if (u.dw) u.dw = u.dw.map((x, i) => w0[i] ? x * w[i] / w0[i] : 0); });
   units.forEach(u => u.hp = foeCurve(u, w, N));
   return (t.foe = { units, w });
 }
@@ -2052,7 +2124,7 @@ function foeTarget() {
 // what an ability does: m = hit size (a normal swing is 1), aoe hits the whole group, dot ticks over the next few actions
 function foeHit(a) {
   if (a === "Deep Breath") return { m: 3.5, aoe: true };
-  if (!a || a === "Submerged" || /^(Summon|Call|Raise)/.test(a) || /^(Heal|Renew|Mana Shield|Evasion|Enrage|Frenzy|Battle Shout|Demoralizing Shout|Furious Howl|Level Up|Essence of the Red|Magic Reflection|Damage Shield|Submit|Teleport|Time Lapse|Burning Adrenaline|Blade Flurry|Bellowing Roar|Class Call|Charge|Pounce|Web|Dominate Mind|Cause Insanity|Will of Hakkar|Threatening Gaze)$/.test(a)) return { m: 0 };
+  if (!a || a === "Submerged" || /^(Summon|Call|Raise)/.test(a) || /^(Heal|Renew|Mana Shield|Evasion|Enrage|Frenzy|Battle Shout|Demoralizing Shout|Furious Howl|Level Up|Essence of the Red|Magic Reflection|Damage Shield|Submit|Teleport|Time Lapse|Burning Adrenaline|Blade Flurry|Bellowing Roar|Class Call|Charge|Pounce|Web|Dominate Mind|Cause Insanity|Will of Hakkar|Threatening Gaze|Frozen)$/.test(a)) return { m: 0 };
   if (/Rend|Poison|Pain|Curse|Corruption|Ignite|Living Bomb|Corrupted Blood|Impending Doom|Garrote|Acid|Shadow Fissure|Frost Burn|Corrosive|Rake|Tendon Rip|Immolate/.test(a)) return { m: 1.2, dot: 3 };
   if (/Explosion|Nova|Volley|Thunder|Stomp|Deep Breath|Inferno|Whirlwind|Tail Sweep|Wing Buffet|Armageddon|Dark Glare|Elemental Fire|Eruption|Antimagic|Frost Blast|Panic|Fear|Lava Bomb|Detonate|Cookie|Wrath of Ragnaros|Knockback|Shadow Flame|Breath|Blood Siphon|Eye Tentacles|Magma Shackles|Cleave|Veil of Shadow/.test(a)) return { m: 1.3, aoe: true };
   if (/^(Kick|Gouge|Cheap Shot|Hamstring|Sunder Armor|Shield Bash|Curse of Weakness|Crippling Poison)$/.test(a)) return { m: 0.6 };
