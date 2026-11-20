@@ -1357,8 +1357,8 @@ function queueDungeon(d) {
       const main = pick(trash), mobs = Array.from({ length: raid ? 3 + R(3) : 2 + R(3) }, (_, j) => j && Math.random() < 0.3 ? pick(trash) : main);
       q.push({ k: "trash", d: `Clearing a pack of ${plural(main)}`, t: sec(raid ? 70 : 40), mobs, casts: heroGroupCasts(raid ? 70 : 40, false) });
     }
-    const adds = BOSS_ADDS[b] || [];
-    q.push({ k: "boss", d: adds.length ? `Fighting ${b} and ${adds.length === 1 ? "an add" : adds.length + " adds"}` : `Fighting ${b}`, t: sec(raid ? 260 : 110), boss: b, dn: d[0], adds, casts: heroGroupCasts(raid ? 260 : 110, true) });
+    const adds = BOSS_ADDS[b] || [], late = (BOSS_SCRIPT[b] || []).some(p => p.adds);
+    q.push({ k: "boss", d: adds.length && !late ? `Fighting ${b} and ${adds.length === 1 ? "an add" : adds.length + " adds"}` : `Fighting ${b}`, t: sec(raid ? 260 : 110), boss: b, dn: d[0], adds, casts: heroGroupCasts(raid ? 260 : 110, true) });
     q.push(regroupTask(raid));
   });
   q.push({ k: "dend", d: `Leaving ${d[0]}`, t: sec(10), dn: d[0] });
@@ -1543,6 +1543,7 @@ function finish(t) {
     case "dtravel": S.loc = "dungeon"; log(`Entering ${t.dn}.`, "dung"); break;
     case "trash": if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); break;
     case "boss": {
+      if (t.foe) t.foe.units.forEach(u => (u.phases || []).forEach(p => { if (p.say) log(p.say, "boss"); }));
       if (bossWipes(t)) {
         S.deaths++; S.repair += S.level * S.level * 5; loseBuffs();
         log(`Wiped on ${t.boss}. Corpse run…`, "death"); S.hpF = 0; (S.party || []).forEach(m => m.hp = 0);
@@ -1763,6 +1764,20 @@ const BOSS_ADDS = {
   "General Rajaxx": ["Captain Qeez", "Captain Tuubid"],
   "Kel'Thuzad": ["Soldier of the Frozen Wastes", "Unstoppable Abomination", "Soul Weaver"],
 };
+// scripted boss moments, triggered when the boss reaches a share of its health:
+// adds: its adds arrive here instead of at the pull; spawn: extra enemies join; hide: the boss can't be hit
+// until those adds are dead (after: the label once it's back); pool: its moves from here on
+const BOSS_SCRIPT = {
+  "Edwin VanCleef": [{ at: 0.5, adds: true, label: "Blackguards called", say: "Half dead, VanCleef whistles for his Blackguards." }],
+  "Ragnaros": [{ at: 0.5, adds: true, hide: true, label: "Submerged", after: "Emerged", say: "Ragnaros sinks into the lava and the Sons of Flame rise in his place.", back: "Ragnaros bursts out of the lava again." }],
+  "Onyxia": [
+    { at: 0.65, adds: true, label: "Phase 2: in the air", pool: ["Fireball", "Fireball", "Deep Breath", "Fireball"], say: "Onyxia takes to the air and whelps pour out of the eggs." },
+    { at: 0.4, label: "Phase 3: landed", pool: ["Bellowing Roar", "Flame Breath", "Cleave", "Tail Sweep", "Wing Buffet", "Auto Attack"], say: "Onyxia lands with a roar that sends the raid running in fear." }],
+  "Nefarian": [{ at: 0.2, spawn: ["Bone Construct", "Bone Construct", "Bone Construct"], label: "Phase 3: the dead rise", say: "The slain drakonids rise again as bone constructs." }],
+  "Kel'Thuzad": [{ at: 0.45, spawn: ["Guardian of Icecrown", "Guardian of Icecrown"], label: "Phase 3: Guardians", say: "Kel'Thuzad calls the Guardians of Icecrown to his side." }],
+  "Patchwerk": [{ at: 0.05, label: "Enraged", pool: ["Hateful Strike", "Hateful Strike", "Auto Attack"], say: "Patchwerk goes berserk as he nears death." }],
+  "Majordomo Executus": [{ at: 0.5, spawn: ["Flamewaker Elite", "Flamewaker Healer"], label: "Reinforcements", say: "Majordomo calls more Flamewakers into the fight." }],
+};
 function foePool(name, kind, rank) {
   const b = BOSS_ROT[name]; if (b) return { open: [b[0]], fill: ["Auto Attack"], extra: b[1].split(","), end: b[2] };
   const big = rank === "boss" || rank === "raid boss", nuke = casterNuke(name);
@@ -1777,14 +1792,18 @@ function foePool(name, kind, rank) {
 }
 // one action per hero cast while it lives; the closer comes when it's nearly dead
 function foeActions(u, n) {
-  const p = foePool(u.name, u.kind, u.rank), out = [p.open[0]], life = Math.max(1, u.b);
-  for (let i = 1; i < life; i++) {
-    let s = i === life - 1 && life > 2 && Math.random() < 0.6 ? p.end : Math.random() < (/boss/.test(u.rank) ? 0.7 : 0.35) ? pick(p.extra) : pick(p.fill);
+  const base = foePool(u.name, u.kind, u.rank), out = new Array(n).fill(null), start = Math.min(n, u.spawn || 0), life = Math.min(n, u.left ? n : Math.max(start + 1, u.b));
+  for (let i = start; i < life; i++) {
+    if (foeHidden(u, i)) { out[i] = "Submerged"; continue; }
+    const ph = foePhase(u, i), p = ph && ph.pool ? { fill: ph.pool, extra: ph.pool, end: base.end } : base;
+    let s = i === start ? base.open[0] : i === life - 1 && life > 2 && !u.left && Math.random() < 0.6 ? p.end : Math.random() < (/boss/.test(u.rank) ? 0.7 : 0.35) ? pick(p.extra) : pick(p.fill);
     if (s === out[i - 1] && s !== "Auto Attack") s = pick(p.fill);
-    out.push(s);
+    out[i] = s;
   }
-  return out.slice(0, n);
+  return out;
 }
+const foeHidden = (u, k) => !!(u.hide && u.hide.some(([a, b]) => k >= a && k < b));
+const foePhase = (u, k) => (u.phases || []).filter(p => p.k <= k).pop() || null;
 const foeHp = (L, rank) => Math.round((L < 10 ? 40 + L * 18 : L * L * 1.1 + L * 20) * ({ elite: 3, boss: 7, "raid elite": 25, "raid boss": 230 }[rank] || 1));
 // how hard a hero cast hits the target (buffs and heals barely count)
 // enemy control: the hero loses the cast it was working on
@@ -1796,7 +1815,7 @@ function controlHero(t, units, N) {
   const c = t.casts || [], onMe = !S.party || foeTarget() === "you";
   units.forEach(u => {
     const life = Math.min(u.left ? N : u.b, u.acts.length);
-    for (let i = 1; i < life && i < c.length - 1; i++) {
+    for (let i = Math.max(1, u.spawn || 0); i < life && i < c.length - 1; i++) {
       const eff = CTRL[u.acts[i]];
       if (!eff || (eff !== "Feared" && !onMe) || LOST.test(c[i]) || /Potion|Heal|Light|Wave|Renew/.test(c[i])) continue;
       if (eff === "Interrupted" && MELEE.test(c[i])) continue; // nothing to interrupt
@@ -1808,15 +1827,18 @@ function controlHero(t, units, N) {
 // its own heals bring it back up a little, which the hero then has to burn through
 const FOE_HEAL = { Heal: 0.15, Renew: 0.07 };
 function foeCurve(u, w, N) {
-  const hp = new Array(N + 1).fill(1), a = u.a, b = u.b, left = u.left || 0, heal = i => i >= a && i < b - 1 ? FOE_HEAL[u.acts[i]] || 0 : 0;
-  let s = 0, H = 0; for (let i = a; i < b; i++) { s += w[i] ?? 1; H += heal(i); }
-  let cur = 1;
-  for (let k = 1; k <= N; k++) {
-    const i = k - 1;
-    if (i >= a && i < b) cur = Math.min(1, cur - (s ? (w[i] ?? 1) / s : 1 / Math.max(1, b - a)) * (1 + H) + heal(i));
-    hp[k] = k >= b ? 0 : Math.max(0.02, cur);
+  const hp = new Array(N + 1).fill(undefined), heal = i => FOE_HEAL[u.acts[i]] || 0;
+  hp[0] = 1;
+  for (const g of u.segs || []) {
+    let s = 0, H = 0; for (let j = g.a; j < g.b; j++) { s += w[j] ?? 1; if (j < g.b - 1) H += heal(j); }
+    let cur = g.from;
+    for (let i = g.a; i < g.b; i++) {
+      cur = i === g.b - 1 ? g.to : Math.max(0.02, Math.min(1, cur - (s ? (w[i] ?? 1) / s : 1 / (g.b - g.a)) * (g.from - g.to + H) + heal(i)));
+      hp[i + 1] = cur;
+    }
   }
-  return left ? hp.map(x => left + (1 - left) * x) : hp;
+  for (let k = 1; k <= N; k++) if (hp[k] === undefined) hp[k] = hp[k - 1]; // holds between its chunks
+  return hp;
 }
 const castWeight = s => LOST.test(s) ? 0 : /^(Auto Attack|Auto Shot|Shoot)$/.test(s) ? 0.5
   : /Potion|Elixir|Stone|Shield|Form|Seal|Mark|Prowl|Bloodrage|Battle Shout|Heal|Renew|Rejuv|Regrowth|Holy Light|Flash of Light|Life Tap|Lightning Shield|Totem|Prayer|Tranquility|Swiftmend|Lay on Hands|Evocation|Ice Block|Barrier|Armor/.test(s) ? 0.15 : 1;
@@ -1836,12 +1858,44 @@ function foeOf(t) {
     (t.adds || BOSS_ADDS[t.boss] || []).forEach(n => units.push(mk(n, raid ? 62 : top, raid ? "raid elite" : "elite")));
     units.push(mk(t.boss, raid ? 63 : top + 1, raid ? "raid boss" : "boss"));
   }
-  // kill order is list order; adds take a small slice each, the boss the rest
-  const share = units.map(u => /boss/.test(u.rank) ? 1 : t.k === "boss" ? (raid ? 0.07 : 0.14) : 1), tot = share.reduce((a, b) => a + b, 0);
+  // the fight as a run of chunks, each one bringing one enemy from one health level to another, in order.
+  // Packs and adds go down one by one; a scripted boss pauses at its thresholds while its adds are dealt with
+  const addW = raid ? 0.07 : 0.14, boss = t.k === "boss" ? units[units.length - 1] : null, sc = boss ? BOSS_SCRIPT[t.boss] || [] : [];
+  if (boss && bossWipes(t)) boss.left = 0.08 + Math.random() * 0.4;
+  const chunks = [], marks = [];
+  if (!boss) units.forEach(u => chunks.push({ u, from: 1, to: 0, wt: 1 }));
+  else {
+    const startAdds = units.slice(0, -1), late = sc.some(p => p.adds), end = boss.left || 0;
+    if (!late) startAdds.forEach(u => chunks.push({ u, from: 1, to: 0, wt: addW }));
+    let hp = 1;
+    sc.forEach(p => {
+      if (p.at <= end) return;
+      chunks.push({ u: boss, from: hp, to: p.at, wt: hp - p.at }); hp = p.at;
+      const m = { p, at: chunks.length, adds: [] };
+      (p.adds ? startAdds : []).concat((p.spawn || []).map(n => { const a = mk(n, boss.L - 1, raid ? "raid elite" : "elite"); units.splice(units.length - 1, 0, a); return a; }))
+        .forEach(a => { m.adds.push(a); chunks.push({ u: a, from: 1, to: 0, wt: addW }); });
+      m.end = chunks.length; marks.push(m);
+    });
+    chunks.push({ u: boss, from: hp, to: end, wt: Math.max(0.05, hp - end) });
+  }
+  const W = chunks.reduce((a, c) => a + c.wt, 0);
   let acc = 0, prev = 0;
-  units.forEach((u, i) => { acc += share[i]; u.a = prev; u.b = i === units.length - 1 ? N : Math.min(N, Math.max(prev + (N > units.length ? 1 : 0), Math.round(acc / tot * N))); prev = u.b; });
+  chunks.forEach((c, i) => { acc += c.wt; c.a = prev; c.b = i === chunks.length - 1 ? N : Math.min(N, Math.max(prev + (N > chunks.length ? 1 : 0), Math.round(acc / W * N))); prev = c.b; });
+  units.forEach(u => {
+    const mine = chunks.filter(c => c.u === u);
+    u.segs = mine.map(c => ({ a: c.a, b: c.b, from: c.from, to: c.to }));
+    const last = mine[mine.length - 1];
+    u.spawn = 0; u.a = mine.length ? mine[0].a : N + 1; u.b = !mine.length ? N + 1 : last.to > 0 ? N : last.b;
+  });
+  // phase marks: when they start (in hero casts), who shows up, and whether the boss hides meanwhile
+  marks.forEach(m => {
+    const k = chunks[m.at - 1].b, kEnd = m.end > m.at ? chunks[m.end - 1].b : k;
+    m.adds.forEach(a => a.spawn = k);
+    (boss.phases = boss.phases || []).push({ k, label: m.p.label, pool: m.p.pool, say: m.p.say });
+    if (m.p.hide) { (boss.hide = boss.hide || []).push([k, kEnd]); boss.phases.push({ k: kEnd, label: m.p.after, say: m.p.back }); }
+  });
+  units.forEach(u => { if (!chunks.some(c => c.u === u)) u.spawn = N + 1; });
   units.forEach(u => { u.max = foeHp(u.L, u.rank); u.res = FOE_RES[u.kind]; u.acts = foeActions(u, N); });
-  if (bossWipes(t)) { const b = units[units.length - 1]; b.left = 0.08 + Math.random() * 0.4; b.acts = foeActions({ ...b, b: N + 1 }, N); }
   controlHero(t, units, N);
   const w = casts.map(castWeight);
   units.forEach(u => u.hp = foeCurve(u, w, N));
@@ -1850,14 +1904,14 @@ function foeOf(t) {
 // state of one enemy after k finished hero casts
 function foeAt(f, u, k) {
   if (f.stop != null) k = Math.min(k, f.stop);
-  const left = u.left || 0, alive = k < u.b || left > 0;
+  const left = u.left || 0, present = k >= (u.spawn || 0), alive = present && (k < u.b || left > 0);
   let hp = 1;
   if (u.hp) hp = u.hp[Math.min(k, u.hp.length - 1)];
   else if (k >= u.b) hp = left;
   else if (k > u.a) { let s = 0, part = 0; for (let i = u.a; i < u.b; i++) { const w = f.w[i] ?? 1; s += w; if (i < k) part += w; } hp = s ? 1 - part / s : 0; hp = left + (1 - left) * hp; }
   const life = Math.max(1, u.b), lp = Math.min(1, k / life);
   const res = u.res === "Mana" ? Math.round(100 - 70 * lp) : pool2(u.res, alive, u.res === "Energy" ? (lp + 0.17) % 1 : lp);
-  return { hp, alive, res, act: alive ? u.acts[Math.min(k, u.acts.length - 1)] : null, ci: Math.min(k, u.acts.length - 1) };
+  return { hp, alive, present, res, hidden: foeHidden(u, k), phase: foePhase(u, k), act: alive ? u.acts[Math.min(k, u.acts.length - 1)] : null, ci: Math.min(k, u.acts.length - 1) };
 }
 // who the enemy is hitting
 function foeTarget() {
@@ -1868,7 +1922,8 @@ function foeTarget() {
 // ---------- enemy damage: the enemy's actions decide when the damage lands and how big each hit is ----------
 // what an ability does: m = hit size (a normal swing is 1), aoe hits the whole group, dot ticks over the next few actions
 function foeHit(a) {
-  if (!a || /^(Summon|Call|Raise)/.test(a) || /^(Heal|Renew|Mana Shield|Evasion|Enrage|Frenzy|Battle Shout|Demoralizing Shout|Furious Howl|Level Up|Essence of the Red|Magic Reflection|Damage Shield|Submit|Teleport|Time Lapse|Burning Adrenaline|Blade Flurry|Bellowing Roar|Class Call|Charge|Pounce|Web|Dominate Mind|Cause Insanity|Will of Hakkar|Threatening Gaze)$/.test(a)) return { m: 0 };
+  if (a === "Deep Breath") return { m: 3.5, aoe: true };
+  if (!a || a === "Submerged" || /^(Summon|Call|Raise)/.test(a) || /^(Heal|Renew|Mana Shield|Evasion|Enrage|Frenzy|Battle Shout|Demoralizing Shout|Furious Howl|Level Up|Essence of the Red|Magic Reflection|Damage Shield|Submit|Teleport|Time Lapse|Burning Adrenaline|Blade Flurry|Bellowing Roar|Class Call|Charge|Pounce|Web|Dominate Mind|Cause Insanity|Will of Hakkar|Threatening Gaze)$/.test(a)) return { m: 0 };
   if (/Rend|Poison|Pain|Curse|Corruption|Ignite|Living Bomb|Corrupted Blood|Impending Doom|Garrote|Acid|Shadow Fissure|Frost Burn|Corrosive|Rake|Tendon Rip|Immolate/.test(a)) return { m: 1.2, dot: 3 };
   if (/Explosion|Nova|Volley|Thunder|Stomp|Deep Breath|Inferno|Whirlwind|Tail Sweep|Wing Buffet|Armageddon|Dark Glare|Elemental Fire|Eruption|Antimagic|Frost Blast|Panic|Fear|Lava Bomb|Detonate|Cookie|Wrath of Ragnaros|Knockback|Shadow Flame|Breath|Blood Siphon|Eye Tentacles|Magma Shackles|Cleave|Veil of Shadow/.test(a)) return { m: 1.3, aoe: true };
   if (/^(Kick|Gouge|Cheap Shot|Hamstring|Sunder Armor|Shield Bash|Curse of Weakness|Crippling Poison)$/.test(a)) return { m: 0.6 };
@@ -1883,7 +1938,7 @@ function foeEvents(t) {
   const N = f.w.length, out = [], stop = f.stop ?? N;
   f.units.forEach(u => {
     const last = Math.min(u.left ? N : u.b, u.acts.length, stop + 1);
-    for (let i = 0; i < last; i++) {
+    for (let i = u.spawn || 0; i < last; i++) {
       const a = u.acts[i], h = foeHit(a);
       if (!h.m) continue;
       if (h.dot) for (let j = 0; j < h.dot && i + j < last; j++) out.push([(i + j + 0.6) / N, h.m / h.dot, false, u.name, a, i + j, u]);
@@ -1967,7 +2022,8 @@ function renderFoe() {
     return;
   }
   const n = f.w.length, k = Math.floor(Math.min(1, t.el / t.t) * n), st = f.units.map(u => foeAt(f, u, k));
-  let mi = st.findIndex(s => s.alive); if (mi < 0) mi = f.units.length - 1;
+  let mi = f.units.findIndex(u => (u.segs || []).some(g => k >= g.a && k < g.b));
+  if (mi < 0 || !st[mi].alive) mi = st.findIndex(s => s.alive && !s.hidden); if (mi < 0) mi = f.units.length - 1;
   const sig = t.d + "|" + t.t;
   if (sig !== foeSig) {
     foeSig = sig; foeMain = -1; box.classList.remove("idle");
@@ -1980,7 +2036,7 @@ function renderFoe() {
     setHtml("eName", esc(u.name));
     setHtml("eSub", `Level <b>${u.rank === "raid boss" ? "??" : u.L}</b> ${FOE_RANK[u.rank] ? `<b class="rank">${FOE_RANK[u.rank]}</b> ` : ""}${u.kind}`);
     $("eMpL").textContent = u.res.toLowerCase(); $("eMpB").style.background = u.res === "Mana" ? "var(--mana)" : u.res === "Rage" ? "var(--rage)" : "var(--energy)";
-    const p = foePool(u.name, u.kind, u.rank), ab = [...new Set([...p.open, ...p.fill, ...p.extra, p.end])];
+    const p = foePool(u.name, u.kind, u.rank), ab = [...new Set([...p.open, ...p.fill, ...p.extra, p.end, ...(u.phases || []).flatMap(x => x.pool || [])])];
     setHtml("eAbil", ab.map(a => `<li>${esc(a)}</li>`).join(""));
   }
   bubble("e" + foeSig + "|" + mi, box.querySelector(".unit"), s.hp, u.max, true);
@@ -1988,11 +2044,11 @@ function renderFoe() {
   $("eHpV").textContent = `${hpNow.toLocaleString()} / ${u.max.toLocaleString()}`;
   $("eHpB").style.width = (s.hp * 100).toFixed(1) + "%"; $("eHpB").style.background = hpCol(s.hp);
   $("eMpV").textContent = u.res === "Mana" ? `${s.res}%` : `${s.res} / 100`; $("eMpB").style.width = s.res + "%";
-  const from = Math.max(0, s.ci - 3), acts = s.alive ? u.acts.slice(from, s.ci + 1) : [];
-  setHtml("eCasts", s.alive ? (from ? "… › " : "") + acts.map((a, i) => `<span${i + from === s.ci ? ' class="cur"' : ""}>${esc(a)}</span>`).join(" › ") : '<span class="dead">dead</span>');
-  setHtml("eAdds", f.units.length > 1 ? f.units.map((x, i) => i === mi ? "" : `<li class="${st[i].alive ? "" : "dead"}"><div class="an"><span>${esc(x.name)}</span><small>${st[i].alive ? esc(st[i].act) : "dead"}</small></div><div class="gbar thin"><i style="width:${(st[i].hp * 100).toFixed(1)}%;background:${hpCol(st[i].hp)}"></i></div></li>`).join("") : "");
-  const left = st.filter(x => x.alive).length;
-  setHtml("eInfo", [["target", esc(foeTarget())], f.units.length > 1 ? ["pack", `${left} of ${f.units.length} standing`] : null, ["health", u.max.toLocaleString()]]
+  const from = Math.max(u.spawn || 0, s.ci - 3), acts = s.alive ? u.acts.slice(from, s.ci + 1) : [];
+  setHtml("eCasts", s.alive ? (from > (u.spawn || 0) ? "… › " : "") + acts.map((a, i) => `<span${i + from === s.ci ? ' class="cur"' : ""}>${esc(a)}</span>`).join(" › ") : '<span class="dead">dead</span>');
+  setHtml("eAdds", f.units.length > 1 ? f.units.map((x, i) => i === mi || !st[i].present ? "" : `<li class="${st[i].alive ? "" : "dead"}"><div class="an"><span>${esc(x.name)}</span><small>${st[i].alive ? esc(st[i].act) : "dead"}</small></div><div class="gbar thin"><i style="width:${(st[i].hp * 100).toFixed(1)}%;background:${hpCol(st[i].hp)}"></i></div></li>`).join("") : "");
+  const left = st.filter(x => x.alive).length, seen = st.filter(x => x.present).length, bi = f.units.findIndex(x => x.phases), ph = bi >= 0 ? st[bi].phase : null;
+  setHtml("eInfo", [ph ? ["phase", esc(ph.label)] : null, ["target", esc(foeTarget())], seen > 1 ? ["pack", `${left} of ${seen} standing`] : null, ["health", u.max.toLocaleString()]]
     .filter(Boolean).map(([a, b]) => `<li><span class="k">${a}</span><span class="v">${b}</span></li>`).join(""));
 }
 

@@ -13,7 +13,8 @@
   - Packs in dungeons and raids, boss adds, and the occasional group of two or three mobs out in the world
   - Real damage: enemy hits sized by level, reduced by armor and gear; deaths come from the fight
   - Stuns, fears and interrupts; enemy heals; floating damage and healing numbers
-- [ ] **Scripted boss moments** (Ragnaros submerging, Onyxia's Deep Breath phase, VanCleef calling his guards at half health)
+- [x] **Scripted boss moments**: VanCleef, Ragnaros, Onyxia, Nefarian, Kel'Thuzad, Patchwerk, Majordomo
+  - [ ] More bosses (Hakkar's Blood Siphon, C'Thun's eye phase, the Four Horsemen, Vaelastrasz)
 - [ ] **Wipes from the fight itself** (raid wipes are still a roll, now based on gear)
 - [ ] **Damage meter for dungeons and raids**
 - [ ] **Expand the talent tree** (it only shows 0 / 0 / 25 right now)
