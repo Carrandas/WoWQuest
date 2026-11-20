@@ -1,6 +1,8 @@
 # TODO
 
-- [ ] **Professions** (gathering + crafting; a third way to gear up, next to dungeons and PvP)
+- [x] **Professions** (gathering + crafting; a third way to gear up, next to dungeons and PvP)
+  - Not done yet: Fishing, recipes as dungeon drops, and the extra Engineering toys (target dummy, your own
+    mechanostrider); Engineering only makes goggles and bombs so far
   - Skill tiers like back then: Apprentice 75, Journeyman 150 (level 10), Expert 225 (level 20), Artisan 300 (level 35);
     recipes orange/yellow/green/grey; pacing target roughly skill = level × 5, so 300 at 60
   - Picking (keep it simple, one pair per character, chosen at creation with a sensible default):
@@ -129,7 +131,7 @@
   - The week at 60: raid when the lockout is open, otherwise battlegrounds or dungeons (maybe a PvP-mood setting)
   - Later with the guild: premades from guildmates win more often and show up in the chronicle
   - Order: Warsong Gulch first, then ranks and rewards, the PvP tab, then Arathi Basin and Alterac Valley
-- [ ] **Gold sinks while raiding** (gold piles up at 60 today; raiding should cost money like it did)
+- [x] **Gold sinks while raiding** (gold piles up at 60 today; raiding should cost money like it did)
   - Enchants: every new item wants an enchant, so each upgrade costs gold; shown on the item ("Enchanted: Crusader",
     or "not enchanted" in grey) and the enchant adds its stats. The hero enchants new gear on the next city visit when
     the gold is there, best slots first (weapon, chest), the expensive ones (Crusader) when it can afford them
