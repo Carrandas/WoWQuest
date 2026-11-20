@@ -172,6 +172,31 @@
       which need Frozen Runes from Naxxramas and Argent Dawn reputation; Frost Protection Potions
   - Goals for it ("Fire resistance set: 140 of 200"), crafters making their own pieces
   - Rebalance so the endgame timeline holds: missing resistance slows those raids, having it doesn't speed them up
+- [ ] **Legendaries and class quest weapons, done properly** (today: shortcuts)
+  - Today: two Bindings of the Windseeker (from any Molten Core boss) make Thunderfury on the spot, the Eye of Sulfuras
+    becomes Sulfuras on the spot, casters get Atiesh from 40 Splinters in Naxxramas; any class can get any of them
+  - Thunderfury: the left and right Bindings from Garr and Baron Geddon only, then Highlord Demitrian in Silithus,
+    10 Elementium Bars (Elementium Ore from Blackwing Lair, a smith to smelt it, lots of gold), and Prince Thunderaan
+    as a raid fight. Swords, fist weapons and tanks only (no priests with Thunderfury)
+  - Sulfuras: the Eye of Sulfuras plus the Sulfuron Hammer, which needs a blacksmith (the hero, or paying one)
+  - Atiesh: the Anachronos quest and the four class versions (mage, warlock, priest, druid)
+  - Class quest weapons:
+    - Benediction / Anathema (priest): the Eye of Divinity from Majordomo Executus, the Splinter of Nordrassil
+    - Rhok'delar and Lok'delar (hunter): the Ancient Petrified Leaf from Majordomo, then four demons to kill alone
+      in Ashenvale, Azshara, Felwood and the Swamp of Sorrows: a real test for the pet
+    - Quel'Serrar (tanks): the Foror's Compendium from Dire Maul, tempered in Onyxia's breath
+    - Shaman and druid quests, and the warlock and paladin epic mount quests as proper chains (mounts already in)
+  - Goals for each ("Thunderfury: 2 of 2 Bindings, 3 of 10 Elementium"), with the long chain as the grind
+- [ ] **World PvP, the 2005 way**
+  - Ganks and skirmishes while levelling: the Crossroads in the Barrens (the Alliance riding through), Hillsbrad and
+    Tarren Mill against Southshore, Stranglethorn Vale, a level 60 camping the flight path. Mostly chronicle moments,
+    sometimes a fight with another player (a player-like unit with a class and gear) and a corpse run
+  - At 60: raids on the other faction's towns (Crossroads, Southshore, Astranaar), the big ones on a capital (an
+    Alliance raid on Orgrimmar to kill Thrall, a Horde raid on Stormwind for King Varian... Bolvar), with the city
+    guards as trash
+  - Dragging a raid boss to town: Kazzak or the Emerald Dragons pulled into a city or a quest hub, and the chaos after
+  - Later with the guild: guild members join, a world PvP night on the guild calendar
+  - Honor and kills count toward the PvP item below once it's in; world PvP gives no gear on its own
 - [ ] **PvP: battlegrounds and honor ranks** (at 60, maybe a bracket now and then while levelling)
   - Battlegrounds, played out like a dungeon run (queue, "X joined Warsong Gulch", a string of fights, win or loss):
     - Warsong Gulch (10 vs 10): capture the flag, first to 3 caps ("Dalwyn picked up the Horde flag!", "2–1 Alliance")
