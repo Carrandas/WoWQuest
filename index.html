@@ -230,6 +230,9 @@ button:disabled { cursor: not-allowed; }
 .ttabs { display: flex; width: 100%; margin: 2px 0 8px; }
 .ttabs button { flex: 1; padding: 5px 6px; font-family: var(--label); font-weight: 700; letter-spacing: .03em; }
 .ttabs button b { font-variant-numeric: tabular-nums; opacity: .8; }
+.talsum { font-size: 13px; color: var(--dim); margin: 0 0 8px; display: flex; flex-direction: column; gap: 2px; }
+.talsum b { color: var(--text); font-weight: 700; }
+.talsum .up { color: var(--good); } .talsum .dn { color: var(--hp-low); }
 .tal { list-style: none; margin: 0; padding: 0; }
 .tal li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 10px; padding: 4px 0; border-bottom: 1px dashed #28314999; }
 .tal li.tier { display: block; border: 0; padding: 8px 0 2px; font-family: var(--label); font-weight: 700; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
@@ -1714,7 +1717,7 @@ function gameShell() {
         <div class="cpane" data-c="bags"><div class="tabmeta"><small id="money"></small></div>
           <h3 class="paneh">Supplies</h3><ul class="rows" id="supplies"></ul>
           <h3 class="paneh">Bags</h3><ul class="rows" id="bags"></ul></div>
-        <div class="cpane" data-c="tal"><div class="tabmeta"><small id="talPts"></small></div><div class="seg ttabs" id="talTabs"></div><ul class="tal" id="tal"></ul></div>
+        <div class="cpane" data-c="tal"><div class="tabmeta"><small id="talPts"></small></div><div class="talsum" id="talSum"></div><div class="seg ttabs" id="talTabs"></div><ul class="tal" id="tal"></ul></div>
         <div class="cpane" data-c="spells"><div class="tabmeta"><small id="spCount"></small></div><ul class="rows" id="spells"></ul></div>
       </div>
     </div>
@@ -2257,7 +2260,9 @@ const TALENTS = {
     "Improved Mark of the Wild/5/h/0.6/1;Furor/5/m/1/1;Improved Healing Touch/5/l/1/2;Nature's Focus/5/l/0.5/2;Intensity/3/m/1/3;Subtlety/2/m/0.5/3;Insect Swarm/1/a/0/3;Tranquil Spirit/2/m/1/4;Gift of Nature/2/l/2/5;Swiftmend/1/u/0/7"],
 };
 const TAL_FX = { d: "damage", t: "damage taken", m: "mana cost", h: "health", l: "healing" };
-const talTree = (c, i) => (talTree.cache[c + i] ||= TALENTS[c][i].split(";").map(x => { const [name, max, fx, per, tier] = x.split("/"); return { name, max: +max, fx, per: +per, tier: +tier }; }));
+// the listed values are scaled up so talents are felt (real Improved Frostbolt is worth well over 5%)
+const TAL_SCALE = 2;
+const talTree = (c, i) => (talTree.cache[c + i] ||= TALENTS[c][i].split(";").map(x => { const [name, max, fx, per, tier] = x.split("/"); return { name, max: +max, fx, per: +per * TAL_SCALE, tier: +tier }; }));
 talTree.cache = {};
 // points per tree at a level (the main spec first to 31, then the next tree up to 20)
 function talentSplit(L, spec) {
@@ -2310,8 +2315,8 @@ function talentGains(L0, L1) {
 }
 function talentLine(tl, r) {
   if (/[acu]/.test(tl.fx)) return tl.fx === "u" ? "31-point talent spell" : "talent spell";
-  const v = +(r * tl.per).toFixed(1), sign = tl.fx === "t" || tl.fx === "m" ? "−" : "+";
-  return r ? `${sign}${v}% ${TAL_FX[tl.fx]}` : `${sign}${tl.per}% ${TAL_FX[tl.fx]} per rank`;
+  const v = +(r * tl.per).toFixed(1), sign = tl.fx === "t" || tl.fx === "m" ? "−" : "+", per = +tl.per.toFixed(1);
+  return r && tl.max > 1 ? `${sign}${per}% ${TAL_FX[tl.fx]} per rank · ${sign}${v}% total` : r ? `${sign}${v}% ${TAL_FX[tl.fx]}` : `${sign}${per}% ${TAL_FX[tl.fx]} per rank`;
 }
 let talTab = -1;
 function renderTalents() {
@@ -2326,6 +2331,13 @@ function renderTalents() {
     rows += `<li class="t-${st}${/[acu]/.test(tl.fx) ? " spell" : ""}"><span class="tn">${esc(tl.name)}</span><span class="tr">${r}/${tl.max}</span><span class="tx">${talentLine(tl, r)}</span></li>`;
   });
   setHtml("talTabs", tabs); setHtml("tal", rows);
+  const fx = talentFx(S.cls, S.level, S.spec), heals = /Paladin|Priest|Shaman|Druid/.test(S.cls);
+  const keys = ["d", "t", "m", "h", "l"].filter(k => (k !== "m" || c.mp) && (k !== "l" || heals));
+  const pct = v => Math.round(v * 100), neg = k => k === "t" || k === "m";
+  const mine = keys.filter(k => fx[k] > 0).map(k => `${neg(k) ? "−" : "+"}${pct(fx[k])}% ${TAL_FX[k]}`);
+  const say = (k, p) => k === "t" ? `${Math.abs(p)}% ${p > 0 ? "less" : "more"} damage taken` : k === "m" ? `spells ${Math.abs(p)}% ${p > 0 ? "cheaper" : "dearer"}` : `${p > 0 ? "+" : "−"}${Math.abs(p)}% ${TAL_FX[k]}`;
+  const vs = keys.map(k => { const m = talMod(k), p = Math.round((neg(k) ? 1 - m : m - 1) * 100); return p ? `<span class="${p > 0 ? "up" : "dn"}">${say(k, p)}</span>` : ""; }).filter(Boolean);
+  setHtml("talSum", S.level >= 10 ? `<div><b>Your build:</b> ${mine.join(" · ") || "nothing yet"}</div><div><b>Against an average build:</b> ${vs.join(" · ") || "about the same"}</div>` : "");
 }
 
 // where the hero is right now, shown above the current task
