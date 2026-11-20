@@ -835,9 +835,9 @@ function vitalEnd(t) {
   const hp = S.hpF ?? 1, mp = S.mpF ?? 1, r = (a, b) => a + Math.random() * (b - a), lo = x => Math.max(0.04, x), up = x => Math.min(1, x);
   let e;
   if (t.k === "kill") {
-    const n = 1 + 0.8 * ((t.mobs || [1]).length - 1), fate = killFate(t);
+    const n = 1 + 0.8 * ((t.mobs || [1]).length - 1), sf = S.party ? null : soloFight(t);
     e = t.elite ? [lo(hp - r(0.35, 0.6)), lo(mp - r(0.3, 0.5))] : [lo(hp - r(0.07, 0.17) * n), lo(mp - r(0.08, 0.18) * n)];
-    if (fate === "die") e[0] = 0; else if (fate === "close") e[0] = 0.6;
+    if (sf) e[0] = sf.end;
   }
   else if (t.k === "trash" || t.k === "boss") { const d = fightDrop(heroRole(), t.k); e = [lo(hp - d[0]), lo(mp - d[1])]; }
   else if (t.k === "rest" || t.k === "rez" || t.k === "regroup") e = [1, 1];
@@ -1105,8 +1105,14 @@ function healAmt(s) {
 // play a pull out as a timeline: everyone takes a hit on each of their own casts, and every
 // finished heal lands on whoever is hurt most right then (a tank, if it's close)
 // whether this boss pull ends in a wipe: rolled once, so the bars can show it coming
-const bossWipes = t => t.k === "boss" && (t.wipe ?? (t.wipe = Math.random() < (RAID_INFO[t.dn] ? RAID_INFO[t.dn].wipe : 0.06)));
+// undergeared raids and underleveled dungeon groups wipe more, well-geared ones less
+function wipeChance(t) {
+  const ri = RAID_INFO[t.dn]; if (ri) return ri.wipe * clamp(1 + (ri.gs - gearScore()) / 25, 0.5, 2);
+  const d = DUNGEONS.find(x => x[0] === t.dn); return 0.06 * (d ? clamp(1 + (d[2] - 2 - S.level) * 0.12, 0.4, 2) : 1);
+}
+const bossWipes = t => t.k === "boss" && (t.wipe ?? (t.wipe = Math.random() < wipeChance(t)));
 function simFight(t) {
+  foeOf(t);
   const raid = S.dg && S.dg.raid, base = t.k === "boss" ? (raid ? 260 : 110) : (raid ? 70 : 40), lo = x => Math.max(0.05, x);
   const P = [{ name: S.name, role: heroRole(), hp: S.hpF ?? 1, mp: S.mpF ?? 1, casts: (t.casts || []).map(s => s.replace(/ on .+$/, "")) },
     ...S.party.map(m => ({ name: m.name, role: m.role, hp: m.hp, mp: m.mp, casts: rollRot(GROUP_ROT[m.role][m.cls], knowsAt(m.cls, m.L, m.spec), castCount(base, m.L)) }))];
@@ -1114,7 +1120,8 @@ function simFight(t) {
   let supply = 0;
   P.forEach(p => { if (p.role === "heal") p.casts.forEach(s => { if (isHeal(s)) supply += 0.15; }); });
   const W = { tank: 3, dps: 0.6, heal: 0.3 }, wsum = P.reduce((a, p) => a + W[p.role], 0);
-  P.forEach(p => { const d = fightDrop(p.role, t.k); p.mpEnd = lo(p.mp - d[1]); p.hit = (d[0] + supply * HEAL_EFF * W[p.role] / wsum) / (p.casts.length || 1); p.cur = p.hp; p.tl = [[0, p.hp]]; });
+  const tough = heroTaken(false, (dungeonRow() || [0, 0, S.level])[2]);
+  P.forEach((p, i) => { const d = fightDrop(p.role, t.k); if (!i) d[0] *= tough; p.mpEnd = lo(p.mp - d[1]); p.hit = (d[0] + supply * HEAL_EFF * W[p.role] / wsum) / (p.casts.length || 1); p.cur = p.hp; p.tl = [[0, p.hp]]; });
   const ev = []; P.forEach((p, i) => p.casts.forEach((s, k) => ev.push([(k + 1) / p.casts.length, i, k])));
   // the enemy's hits: single-target ones on whoever it is attacking, aoe on everyone. Members it never
   // hits this pull (no aoe) keep taking their usual splash damage on their own casts
@@ -1223,7 +1230,7 @@ function plan() {
     }
     const mb = missingBuff();
     if (mb) { q.push({ k: "buff", d: mb.cast, t: sec(2.5), b: mb }); return; }
-    if (S.since > 3 + R(6)) {
+    if (S.since > 3 + R(6) || (S.hpF ?? 1) < 0.45 || (cls().mp && (S.mpF ?? 1) < 0.3)) {
       const dry = restKinds().find(k => !(S.cons[k] > 0) && canConjure(k));
       if (dry) { q.push(...rationTasks(h).filter(x => x.k === "conjure")); return; }
       S.since = 0; q.push(restTask()); return;
@@ -1416,11 +1423,12 @@ function finish(t) {
     case "hub": S.loc = "hub"; break;
     case "kill": {
       S.since = (S.since || 0) + 1;
-      const fate = killFate(t), who = n => t.elite ? n : article(n), by = t.killer ? `${who(t.killer.src)}'s ${t.killer.a}` : who(t.mob);
-      if (fate) {
-        if (fate === "close") {
-          if (S.cons.hp > 0) S.cons.hp--; if (!S.feats.includes("close call")) S.feats.push("close call");
-          S.hpF = 0.6; log(`Close call! Nearly died to ${article(t.mob)}, but ${article(hpPot())} saved the day.`, "death");
+      const sf = soloFight(t), who = n => t.elite ? n : article(n), by = t.killer ? `${who(t.killer.src)}'s ${t.killer.a}` : who(t.mob);
+      if (sf.drank && S.cons.hp > 0) S.cons.hp--;
+      if (sf.drank || sf.end <= 0) {
+        if (sf.end > 0) {
+          if (!S.feats.includes("close call")) S.feats.push("close call");
+          log(`Close call! Nearly died to ${who(t.mob)}, but ${article(hpPot())} saved the day.`, "death");
         } else {
         S.deaths++; loseBuffs(); S.repair += S.level * S.level * 4 + 20;
         log(`Killed by ${by}. Releasing spirit…`, "death"); S.hpF = 0;
@@ -1763,7 +1771,38 @@ function foeActions(u, n) {
 }
 const foeHp = (L, rank) => Math.round((L < 10 ? 40 + L * 18 : L * L * 1.1 + L * 20) * ({ elite: 3, boss: 7, "raid elite": 25, "raid boss": 230 }[rank] || 1));
 // how hard a hero cast hits the target (buffs and heals barely count)
-const castWeight = s => /^(Auto Attack|Auto Shot|Shoot)$/.test(s) ? 0.5
+// enemy control: the hero loses the cast it was working on
+const CTRL = { Gouge: "Stunned", "Cheap Shot": "Stunned", Bash: "Stunned", "War Stomp": "Stunned", Kick: "Interrupted", "Shield Bash": "Interrupted", "Antimagic Pulse": "Interrupted",
+  Fear: "Feared", Panic: "Feared", "Bellowing Roar": "Feared" };
+const LOST = /^(Stunned|Interrupted|Feared)$/;
+const MELEE = /^(Auto Attack|Auto Shot|Shoot)$|Strike|Shot$|Sting|Bite|Claw|Shred|Rake|Maul|Slam|Execute|Eviscerate|Backstab|Rend|Overpower|Sunder|Revenge|Cleave|Whirlwind|Hamstring|Charge|Ambush|Garrote|Gouge|Kick/;
+function controlHero(t, units, N) {
+  const c = t.casts || [], onMe = !S.party || foeTarget() === "you";
+  units.forEach(u => {
+    const life = Math.min(u.left ? N : u.b, u.acts.length);
+    for (let i = 1; i < life && i < c.length - 1; i++) {
+      const eff = CTRL[u.acts[i]];
+      if (!eff || (eff !== "Feared" && !onMe) || LOST.test(c[i]) || /Potion|Heal|Light|Wave|Renew/.test(c[i])) continue;
+      if (eff === "Interrupted" && MELEE.test(c[i])) continue; // nothing to interrupt
+      c[i] = eff;
+    }
+  });
+}
+// an enemy's health after each hero cast: the hero's hits bring it down (it dies on its last one),
+// its own heals bring it back up a little, which the hero then has to burn through
+const FOE_HEAL = { Heal: 0.15, Renew: 0.07 };
+function foeCurve(u, w, N) {
+  const hp = new Array(N + 1).fill(1), a = u.a, b = u.b, left = u.left || 0, heal = i => i >= a && i < b - 1 ? FOE_HEAL[u.acts[i]] || 0 : 0;
+  let s = 0, H = 0; for (let i = a; i < b; i++) { s += w[i] ?? 1; H += heal(i); }
+  let cur = 1;
+  for (let k = 1; k <= N; k++) {
+    const i = k - 1;
+    if (i >= a && i < b) cur = Math.min(1, cur - (s ? (w[i] ?? 1) / s : 1 / Math.max(1, b - a)) * (1 + H) + heal(i));
+    hp[k] = k >= b ? 0 : Math.max(0.02, cur);
+  }
+  return left ? hp.map(x => left + (1 - left) * x) : hp;
+}
+const castWeight = s => LOST.test(s) ? 0 : /^(Auto Attack|Auto Shot|Shoot)$/.test(s) ? 0.5
   : /Potion|Elixir|Stone|Shield|Form|Seal|Mark|Prowl|Bloodrage|Battle Shout|Heal|Renew|Rejuv|Regrowth|Holy Light|Flash of Light|Life Tap|Lightning Shield|Totem|Prayer|Tranquility|Swiftmend|Lay on Hands|Evocation|Ice Block|Barrier|Armor/.test(s) ? 0.15 : 1;
 function dungeonRow() { return S.dg ? DUNGEONS.concat(RAIDS).find(d => d[0] === S.dg.name) : null; }
 
@@ -1787,14 +1826,18 @@ function foeOf(t) {
   units.forEach((u, i) => { acc += share[i]; u.a = prev; u.b = i === units.length - 1 ? N : Math.min(N, Math.max(prev + (N > units.length ? 1 : 0), Math.round(acc / tot * N))); prev = u.b; });
   units.forEach(u => { u.max = foeHp(u.L, u.rank); u.res = FOE_RES[u.kind]; u.acts = foeActions(u, N); });
   if (bossWipes(t)) { const b = units[units.length - 1]; b.left = 0.08 + Math.random() * 0.4; b.acts = foeActions({ ...b, b: N + 1 }, N); }
-  return (t.foe = { units, w: casts.map(castWeight) });
+  controlHero(t, units, N);
+  const w = casts.map(castWeight);
+  units.forEach(u => u.hp = foeCurve(u, w, N));
+  return (t.foe = { units, w });
 }
 // state of one enemy after k finished hero casts
 function foeAt(f, u, k) {
   if (f.stop != null) k = Math.min(k, f.stop);
   const left = u.left || 0, alive = k < u.b || left > 0;
   let hp = 1;
-  if (k >= u.b) hp = left;
+  if (u.hp) hp = u.hp[Math.min(k, u.hp.length - 1)];
+  else if (k >= u.b) hp = left;
   else if (k > u.a) { let s = 0, part = 0; for (let i = u.a; i < u.b; i++) { const w = f.w[i] ?? 1; s += w; if (i < k) part += w; } hp = s ? 1 - part / s : 0; hp = left + (1 - left) * hp; }
   const life = Math.max(1, u.b), lp = Math.min(1, k / life);
   const res = u.res === "Mana" ? Math.round(100 - 70 * lp) : pool2(u.res, alive, u.res === "Energy" ? (lp + 0.17) % 1 : lp);
@@ -1817,7 +1860,7 @@ function foeHit(a) {
   if (/bolt|Fireball|Smite|Lightning|Shock|Burst|Blast|Eye Beam|Hateful|Incinerate|Chains/i.test(a)) return { m: 2 };
   return { m: 1.5 };
 }
-// every hit the enemies land in a fight: [time 0..1, size, aoe, who, ability, action index]
+// every hit the enemies land in a fight: [time 0..1, size, aoe, who, ability, action index, unit]
 // action i is on screen while the hero works on cast i, and lands just past the middle of it
 function foeEvents(t) {
   const f = foeOf(t); if (!f) return [];
@@ -1827,47 +1870,51 @@ function foeEvents(t) {
     for (let i = 0; i < last; i++) {
       const a = u.acts[i], h = foeHit(a);
       if (!h.m) continue;
-      if (h.dot) for (let j = 0; j < h.dot && i + j < last; j++) out.push([(i + j + 0.6) / N, h.m / h.dot, false, u.name, a, i + j]);
-      else out.push([(i + 0.6) / N, h.m, !!h.aoe, u.name, a, i]);
+      if (h.dot) for (let j = 0; j < h.dot && i + j < last; j++) out.push([(i + j + 0.6) / N, h.m / h.dot, false, u.name, a, i + j, u]);
+      else out.push([(i + 0.6) / N, h.m, !!h.aoe, u.name, a, i, u]);
     }
   });
   return out.sort((a, b) => a[0] - b[0]);
 }
-// how a solo pull ends, rolled once when it starts: "" (fine), "close" (a potion saves you) or "die"
-// more mobs at once are more dangerous
-const killFate = t => t.fate ?? (t.fate = (() => {
-  const n = (t.mobs || [1]).length, c = t.elite ? 0.06 : [0.003, 0.012, 0.03][n - 1] || 0.03;
-  if (Math.random() >= c) return "";
-  return S.cons.hp > 0 && Math.random() < 0.7 ? "close" : "die";
-})());
-// the hero's health through a solo pull: enemy hits push it down, the hero's own heals and potions lift it,
-// and it ends exactly where the task says it ends
+// ---------- how hard enemies hit, and how well the hero takes it ----------
+// a typical hero's health at a level: enemy hits are sized against this, so stamina and gear make a real difference
+const refHp = L => 38 * L + 200;
+const ARMOR_TAKEN = { Cloth: 1.1, Leather: 1, Mail: 0.9, Plate: 0.8 };
+const SPELLY = /bolt|Fire|Flame|Frost|Shadow|Lightning|Shock|Breath|Lava|Magma|Arcane|Holy|Smite|Nova|Blast|Curse|Pain|Doom|Inferno|Volley|Wrath|Corrupt|Immolate|Blood|Insanity|Eye|Glare|Ignite|Living Bomb/i;
+// how much of a hit gets through: armor type (physical hits only), gear for the level, and the level gap
+function heroTaken(spell, mobL) {
+  const gear = clamp(gearScore() / Math.max(1, S.level), 0.5, 1.4);
+  return (spell ? 1 : ARMOR_TAKEN[armorType()] || 1) * (1.35 - 0.35 * gear) * clamp(1 + 0.1 * (mobL - S.level), 0.5, 1.8);
+}
+// the hero's health through a solo pull, played out hit by hit in real numbers:
+// every living mob hits on its actions, the hero's heals land, a potion goes down when it gets dangerous,
+// and if health runs out the hero dies to that exact hit. Worked out once and kept on the task
 function soloFight(t) {
-  let f = PF.get(t); if (f) return f;
-  const fo = foeOf(t), fate = killFate(t), start = S.hpF ?? 1, end = vitalEnd(t)[0], N = fo.w.length, casts = t.casts || [];
-  let ev = foeEvents(t);
-  const heals = [];
-  casts.forEach((s, k) => { if (/Healing Potion/.test(s)) heals.push([(k + 1) / N, 0.35]); else if (isHeal(s)) heals.push([(k + 1) / N, healAmt(s) * 0.6]); });
-  let killer = null;
-  if (fate === "die" && ev.length) {
-    // the killing blow: a hit late in the fight; the enemies stop there with health to spare
-    let j = ev.length - 1; while (j > 0 && ev[j][0] > 0.95) j--;
-    killer = ev[j]; ev = ev.slice(0, j + 1); fo.stop = killer[5];
-    t.killer = { src: killer[3], a: killer[4] };
-  }
-  const target = fate === "die" ? 0 : fate === "close" ? 0.05 : end;
-  if (killer) heals.splice(0, heals.length, ...heals.filter(h => h[0] < killer[0]));
-  const H = heals.reduce((a, h) => a + h[1], 0), W = ev.reduce((a, e) => a + e[1], 0) || 1;
-  const scale = Math.max(0, start + H - target) / W, all = ev.map(e => [e[0], -e[1] * scale]).concat(heals).sort((a, b) => a[0] - b[0]);
-  const tl = [[0, start]]; let cur = start;
-  all.forEach(([at, d]) => {
-    cur = Math.min(1, Math.max(0.05, cur + d));
-    tl.push([at, cur]);
+  if (t.sf) return t.sf;
+  const fo = foeOf(t), N = fo.w.length, casts = t.casts || [], hm = hpMax();
+  let cur = Math.max(1, (S.hpF ?? 1) * hm), low = cur, drank = false, killer = null;
+  const potion = S.cons.hp > 0 && !casts.some(c => /Healing Potion/.test(c));
+  // some pulls just go badly: a mob that keeps critting, a parry streak, a resist at the wrong moment
+  const luck = 0.85 + 0.45 * Math.random() ** 4;
+  const ev = foeEvents(t).map(e => {
+    const u = e[6], spell = (u.kind === "caster" && e[4] !== "Auto Attack") || SPELLY.test(e[4]), crit = Math.random() < 0.08;
+    const base = refHp(u.L) * (u.rank === "elite" ? 0.046 : 0.016);
+    return [e[0], -Math.max(1, Math.round(base * luck * e[1] * heroTaken(spell, u.L) * (0.8 + Math.random() * 0.4) * (crit ? 1.5 : 1))), e[3], e[4], e[5]];
   });
-  if (tl.length > 1) tl[tl.length - 1][1] = target;
-  if (fate === "close") tl.push([Math.min(1, tl[tl.length - 1][0] + 0.2 / N), 0.6]);
-  f = { tl, end: tl[tl.length - 1][1] };
-  PF.set(t, f); return f;
+  casts.forEach((s, k) => {
+    if (/Healing Potion/.test(s)) ev.push([(k + 1) / N, Math.round(hm * 0.35), null, s, k]);
+    else if (isHeal(s)) ev.push([(k + 1) / N, Math.round(hm * healAmt(s) * 0.6), null, s, k]);
+  });
+  ev.sort((a, b) => a[0] - b[0]);
+  const tl = [[0, cur / hm]];
+  for (const e of ev) {
+    cur = Math.min(hm, cur + e[1]);
+    if (cur <= 0) { cur = 0; killer = e; tl.push([e[0], 0]); break; }
+    tl.push([e[0], cur / hm]); low = Math.min(low, cur);
+    if (potion && !drank && cur < hm * 0.25) { drank = true; cur = Math.min(hm, cur + Math.round(hm * 0.4)); tl.push([e[0], cur / hm]); }
+  }
+  if (killer) { fo.stop = killer[4]; t.killer = { src: killer[2], a: killer[3] }; }
+  return (t.sf = { tl, end: cur / hm, drank, low: low / hm });
 }
 // what's next when nothing is being fought
 function foeIdle() {
