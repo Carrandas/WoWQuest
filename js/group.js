@@ -102,7 +102,7 @@ function heroGroupCasts(base, boss, mobs = 1) {
 }
 
 // how much a pull costs each role (health, mana) as a fraction of the pool
-function fightDrop(role, k, r = (a, b) => a + Math.random() * (b - a)) {
+function fightDrop(role, k, r = rnd) {
   const boss = k === "boss";
   if (role === "tank") return boss ? [r(0.3, 0.55), r(0.1, 0.25)] : [r(0.1, 0.22), r(0.04, 0.12)];
   if (role === "heal") return boss ? [r(0.02, 0.15), r(0.25, 0.42)] : [r(0, 0.05), r(0.08, 0.18)];
@@ -112,21 +112,21 @@ const GROUP_HEALS = /^(Prayer of Healing|Tranquility)$/;
 const isHeal = s => HEALS.test(s) || GROUP_HEALS.test(s);
 // how much of the target's health a heal restores
 function healAmt(s) {
-  const r = (a, b) => a + Math.random() * (b - a);
+  const r = rnd;
   if (/Lay on Hands/.test(s)) return 1;
   if (/Renew|Rejuvenation|Power Word: Shield/.test(s)) return r(0.05, 0.09);
   if (/Flash|Lesser|Regrowth|Holy Shock|Swiftmend/.test(s)) return r(0.08, 0.14);
   return r(0.12, 0.22);
 }
-// play a pull out as a timeline: everyone takes a hit on each of their own casts, and every
-// finished heal lands on whoever is hurt most right then (a tank, if it's close)
 // whether this boss pull ends in a wipe: rolled once, so the bars can show it coming
 // undergeared raids and underleveled dungeon groups wipe more, well-geared ones less
 function wipeChance(t) {
   const ri = RAID_INFO[t.dn]; if (ri) return ri.wipe * clamp(1 + (ri.gs - gearScore()) / 25, 0.5, 2);
-  const d = DUNGEONS.find(x => x[0] === t.dn); return 0.06 * (d ? clamp(1 + (d[2] - 2 - S.level) * 0.12, 0.4, 2) : 1);
+  const d = instanceRow(t.dn); return 0.06 * (d ? clamp(1 + (d[2] - 2 - S.level) * 0.12, 0.4, 2) : 1);
 }
 const bossWipes = t => t.k === "boss" && (t.wipe ?? (t.wipe = Math.random() < wipeChance(t)));
+// play a pull out as a timeline: everyone takes a hit on each of their own casts, and every
+// finished heal lands on whoever is hurt most right then (a tank, if it's close)
 function simFight(t) {
   foeOf(t);
   const raid = S.dg && S.dg.raid, base = t.k === "boss" ? (raid ? 260 : 110) : (raid ? 70 : 40), lo = x => Math.max(0.05, x);

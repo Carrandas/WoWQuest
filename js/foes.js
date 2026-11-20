@@ -98,7 +98,6 @@ function foeActions(u, n) {
 const foeHidden = (u, k) => !!(u.hide && u.hide.some(([a, b]) => k >= a && k < b));
 const foePhase = (u, k) => (u.phases || []).filter(p => p.k <= k).pop() || null;
 const foeHp = (L, rank) => Math.round((L < 10 ? 40 + L * 18 : L * L * 1.1 + L * 20) * ({ elite: 3, boss: 7, "raid elite": 25, "raid boss": 230 }[rank] || 1));
-// how hard a hero cast hits the target (buffs and heals barely count)
 // enemy control: the hero loses the cast it was working on
 const CTRL = { Gouge: "Stunned", "Cheap Shot": "Stunned", Bash: "Stunned", "War Stomp": "Stunned", Kick: "Interrupted", "Shield Bash": "Interrupted", "Antimagic Pulse": "Interrupted",
   Fear: "Feared", Panic: "Feared", "Bellowing Roar": "Feared" };
@@ -149,20 +148,21 @@ const cdType = n => CD_TYPE[n] || "burst";
 const toughFight = t => t.k === "boss" || (t.k === "kill" && (t.elite || (t.mobs || []).length >= 3));
 function useCooldowns(t) {
   if (!S || !t || !FIGHTS.includes(t.k) || t.cds || !toughFight(t) || !(t.casts || []).length) return;
-  const ready = talentSpells().filter(x => x.kind === "c" && (S.cd?.[x.name] || 0) <= S.time);
+  const ready = talentSpells().filter(x => x.kind === "c" && (S.cd[x.name] || 0) <= S.time);
   t.cds = [];
   ready.slice(0, 2).forEach((x, j) => {
     const at = Math.min(t.casts.length - 1, 1 + j);
     t.casts.splice(at, 0, x.name); t.cds.push({ name: x.name, type: cdType(x.name), at });
-    (S.cd ||= {})[x.name] = S.time + (x.tree === S.spec && x.name === cls().ult[S.spec] ? 300 : 180) * 1000 * SPAN(S.level);
+    S.cd[x.name] = S.time + (x.tree === S.spec && x.name === cls().ult[S.spec] ? 300 : 180) * 1000 * SPAN(S.level);
     if (cdType(x.name) === "burst" && t.k === "kill") t.t = Math.round(t.t * 0.88); // the pull goes down faster
   });
   // an engineer opens with a bomb
-  if (S.cons.bomb > 0 && t.casts.length > 2) { S.cons.bomb--; t.casts.splice(Math.min(t.casts.length - 1, 1 + t.cds.length), 0, BOMBS[Math.min(4, Math.max(0, skillTier(profSkill("Engineering"))))]); }
+  if (S.cons.bomb > 0 && t.casts.length > 2) { S.cons.bomb--; t.casts.splice(Math.min(t.casts.length - 1, 1 + t.cds.length), 0, profItem(BOMBS, "Engineering")); }
 }
-const castWeight = s => LOST.test(s) ? 0 : /Bomb|Grenade|Dynamite/.test(s) ? 1.6 : CD_TYPE[s] ? 0.15 : /^(Auto Attack|Auto Shot|Shoot)$/.test(s) ? 0.5
+// how hard a hero cast hits the target (buffs and heals barely count)
+const castWeight = s => LOST.test(s) ? 0 : /Bomb|Grenade|Dynamite/.test(s) ? 1.6 : CD_TYPE[s] ? 0.15 : FREE_ATK.test(s) ? 0.5
   : /Potion|Elixir|Stone|Shield|Form|Seal|Mark|Prowl|Bloodrage|Battle Shout|Heal|Renew|Rejuv|Regrowth|Holy Light|Flash of Light|Life Tap|Lightning Shield|Totem|Prayer|Tranquility|Swiftmend|Lay on Hands|Evocation|Ice Block|Barrier|Armor/.test(s) ? 0.15 : 1;
-function dungeonRow() { return S.dg ? DUNGEONS.concat(RAIDS).find(d => d[0] === S.dg.name) : null; }
+function dungeonRow() { return S.dg ? instanceRow(S.dg.name) : null; }
 
 // how hard each hero cast hits; the casts right after a burst cooldown hit harder
 function heroWeights(t, casts, N) {
@@ -293,7 +293,7 @@ const ARMOR_TAKEN = { Cloth: 1.1, Leather: 1, Mail: 0.9, Plate: 0.8 };
 const SPELLY = /bolt|Fire|Flame|Frost|Shadow|Lightning|Shock|Breath|Lava|Magma|Arcane|Holy|Smite|Nova|Blast|Curse|Pain|Doom|Inferno|Volley|Wrath|Corrupt|Immolate|Blood|Insanity|Eye|Glare|Ignite|Living Bomb/i;
 // how much of a hit gets through: armor type (physical hits only), gear for the level, and the level gap
 function heroTaken(spell, mobL) {
-  const gear = clamp(gearScore() / Math.max(1, S.level), 0.5, 1.4);
+  const gear = gearFor();
   return (spell ? 1 : ARMOR_TAKEN[armorType()] || 1) * (1.35 - 0.35 * gear) * clamp(1 + 0.1 * (mobL - S.level), 0.5, 1.8) * talMod("t");
 }
 // the hero's health through a solo pull, played out hit by hit in real numbers:

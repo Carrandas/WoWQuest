@@ -165,6 +165,7 @@ function xpBubble(el, n) {
 }
 const memberMax = (c, L) => CLASSES[c].hp * L + (20 + 2 * L) * 10;
 // health bar colour, same as the hero's: green, yellow, orange, red
+const resCol = res => res === "Mana" ? "var(--mana)" : res === "Rage" ? "var(--rage)" : "var(--energy)";
 const hpCol = f => f > 0.6 ? "var(--hp-ok)" : f > 0.35 ? "var(--hp-mid)" : f > 0.15 ? "var(--hp-low)" : "var(--hp-crit)";
 // the enemy frame mirrors the hero's: name, health, resource, what it's doing; the rest of the pack below
 const FOE_RANK = { elite: "Elite", boss: "Boss", "raid elite": "Elite", "raid boss": "Boss" };
@@ -192,7 +193,7 @@ function renderFoe() {
     box.classList.toggle("elite", u.rank === "elite" || u.rank === "raid elite"); box.classList.toggle("boss", /boss/.test(u.rank));
     setHtml("eName", esc(u.name));
     setHtml("eSub", `Level <b>${u.rank === "raid boss" ? "??" : u.L}</b> ${FOE_RANK[u.rank] ? `<b class="rank">${FOE_RANK[u.rank]}</b> ` : ""}${u.kind}`);
-    $("eMpL").textContent = u.res.toLowerCase(); $("eMpB").style.background = u.res === "Mana" ? "var(--mana)" : u.res === "Rage" ? "var(--rage)" : "var(--energy)";
+    $("eMpL").textContent = u.res.toLowerCase(); $("eMpB").style.background = resCol(u.res);
     const p = foePool(u.name, u.kind, u.rank), ab = [...new Set([...p.open, ...p.fill, ...p.extra, p.end, ...(u.phases || []).flatMap(x => x.pool || [])])];
     setHtml("eAbil", ab.map(a => `<li>${esc(a)}</li>`).join(""));
   }
@@ -232,9 +233,9 @@ function meterNow(t, raw) {
   const total = f.units.reduce((a, u) => a + Math.max(0, 1 - foeAt(f, u, k).hp) * u.max, 0);
   return { dmg: m.share.map(s => s * total), heal: m.heal.map(ev => ev.reduce((a, e) => a + (e[0] <= raw + 1e-9 ? e[1] : 0), 0)), secs: raw * t.t / 1000 / SPAN(S.level) };
 }
-// a finished pull goes into the run's totals
-// saves from before the meter existed start one mid-run
+// the run's totals (saves from before the meter existed start one mid-run)
 const meterRun = () => S.meter || (S.dg && S.party ? (S.meter = { dn: S.dg.name, dmg: [], heal: [], secs: 0, last: null }) : null);
+// a finished pull goes into the run's totals
 function meterFinish(t) {
   const M = meterRun(), mn = M && meterNow(t, 1); if (!mn) return;
   mn.dmg.forEach((v, i) => M.dmg[i] = (M.dmg[i] || 0) + v);
@@ -312,7 +313,6 @@ function renderLists() {
   $("gs").textContent = `avg item level ${Math.round(SLOTS.reduce((a, s) => a + (S.equip[s] ? S.equip[s].ilvl : 0), 0) / SLOTS.length)}`;
   $("equip").innerHTML = SLOTS.map(s => { const it = S.equip[s]; return `<li><span class="k">${s.toLowerCase()}</span><span class="v">${it ? `<span class="q${it.q}">${esc(it.name)}</span><span class="ilvl">${it.ilvl}</span>${it.ench ? `<small class="ench">${esc(it.ench.name)}</small>` : ENCH[s] && it.q >= 2 && S.level >= 20 ? '<small class="ench no">not enchanted</small>' : ""}` : '<span class="empty">empty</span>'}</span></li>`; }).join("");
   renderProfs();
-  const tal = talents();
   renderTalents();
   const known = c.list.filter(sp => spellName(sp.name) in S.spells).reverse();
   const tsp = talentSpells().filter(x => !known.some(sp => spellName(sp.name) === x.name));
@@ -330,7 +330,7 @@ function renderLists() {
   $("bCount").textContent = `${act.length} active`;
   $("buffs").innerHTML = act.map(n => { const left = S.buffs[n] - S.time; return `<li><span class="l buff">${esc(n)}</span><span class="rank">${left > 1e13 ? "" : Math.max(1, Math.ceil(left / MIN)) + " min"}</span></li>`; }).join("") || `<li><span class="empty">none right now</span></li>`;
   const sup = [...restKinds().map(k => [k, rationName(k)]), ["hp", hpPot()], ["mp", cls().mp && S.level >= 5 ? mpPot() : null], ["elix", elixirName()], ["stone", usesStone() ? stoneName() : null], ["flask", flaskName()],
-    ["band", BANDAGES[Math.max(0, Math.min(4, skillTier(profSkill("First Aid"))))]], ["feast", DISHES[Math.max(0, Math.min(4, skillTier(profSkill("Cooking"))))]], ["bomb", BOMBS[Math.max(0, Math.min(4, skillTier(profSkill("Engineering"))))]]].filter(x => x[1] && S.cons[x[0]] > 0);
+    ["band", profItem(BANDAGES, "First Aid")], ["feast", profItem(DISHES, "Cooking")], ["bomb", profItem(BOMBS, "Engineering")]].filter(x => x[1] && S.cons[x[0]] > 0);
   $("supplies").innerHTML = sup.map(([k, n]) => `<li><span class="l">${esc(n)}</span><span class="rank">×${S.cons[k]}</span></li>`).join("") || `<li><span class="empty">restocks in the capital</span></li>`;
   renderJournal();
   $("log").innerHTML = S.log.map(l => `<li class="${l.k}${l.id > lastLogId && lastLogId ? " fresh" : ""}"><time>${fmtTime(l.t)}</time><span>${esc(l.txt)}</span></li>`).join("");
@@ -349,14 +349,14 @@ function renderBars() {
   if (t) { const p = Math.min(1, t.el / t.t); $("tDesc").textContent = t.d;
     const cs = t.casts || [], ci = Math.min(cs.length - 1, Math.floor(p * cs.length));
     const from = Math.max(0, ci - 5); $("tCasts").innerHTML = (from ? "… › " : "") + cs.slice(from, ci + 1).map((s, i) => `<span${i + from === ci ? ' class="cur"' : ""}>${esc(s)}</span>`).join(" › "); $("tFill").style.width = (p * 100).toFixed(1) + "%"; $("tPct").textContent = Math.floor(p * 100) + "%"; }
-  const [hf, mf] = vitalsNow(), hm = hpMax(), poolCol = f => f > 0.6 ? "var(--hp-ok)" : f > 0.35 ? "var(--hp-mid)" : f > 0.15 ? "var(--hp-low)" : "var(--hp-crit)";
+  const [hf, mf] = vitalsNow(), hm = hpMax();
   bubble("hero", document.querySelector(".unit.hero"), hf, hm, !!(t && FIGHTS.includes(t.k)));
   if (hf <= 0 && t && FIGHTS.includes(t.k)) $("tCasts").innerHTML = '<span class="dead">dead</span>';
   $("hpV").textContent = `${Math.round(hf * hm).toLocaleString()} / ${hm.toLocaleString()}`;
-  $("hpB").style.width = (hf * 100).toFixed(1) + "%"; $("hpB").style.background = poolCol(hf);
+  $("hpB").style.width = (hf * 100).toFixed(1) + "%"; $("hpB").style.background = hpCol(hf);
   const res = cls().res; $("mpL").textContent = res.toLowerCase();
-  if (cls().mp) { const mm = resMax(); $("mpV").textContent = `${Math.round(mf * mm).toLocaleString()} / ${mm.toLocaleString()}`; $("mpB").style.width = (mf * 100).toFixed(1) + "%"; $("mpB").style.background = "var(--mana)"; }
-  else { const v = secondPool(); $("mpV").textContent = `${v} / 100`; $("mpB").style.width = v + "%"; $("mpB").style.background = res === "Rage" ? "var(--rage)" : "var(--energy)"; }
+  if (cls().mp) { const mm = resMax(); $("mpV").textContent = `${Math.round(mf * mm).toLocaleString()} / ${mm.toLocaleString()}`; $("mpB").style.width = (mf * 100).toFixed(1) + "%"; $("mpB").style.background = resCol(res); }
+  else { const v = secondPool(); $("mpV").textContent = `${v} / 100`; $("mpB").style.width = v + "%"; $("mpB").style.background = resCol(res); }
   const need = xpNeed(S.level);
   if (xpPop > 0) { const el = document.querySelector(".m-xp"); if (el) xpBubble(el, xpPop); xpPop = 0; }
   if (S.level >= 60) { const g = raidGoal(); $("xpV").textContent = g.val; $("xpB").style.width = (g.p * 100) + "%"; }
@@ -412,13 +412,12 @@ function renderGroup(hf, mf) {
       <div class="gbar thin"><i id="gm${i}"></i><span id="gmv${i}"></span></div>
       <div class="gcast" id="gc${i}"></div></div>`).join("");
   }
-  const poolCol = f => f > 0.6 ? "var(--hp-ok)" : f > 0.35 ? "var(--hp-mid)" : f > 0.15 ? "var(--hp-low)" : "var(--hp-crit)";
   const paint = (i, c, hp, mp, fight, p, cast, L) => {
     bubble("g" + box.dataset.sig + "|" + i, $("gh" + i).closest(".gcard,.rcell"), hp, memberMax(c, L), fight);
     const C = CLASSES[c], v = C.mp ? Math.round(mp * 100) : pool2(C.res, fight, p), key = Math.round(hp * 1000) + "|" + v + "|" + cast;
     if (gCache[i] === key) return; gCache[i] = key;
-    $("gh" + i).style.width = (hp * 100).toFixed(1) + "%"; $("gh" + i).style.background = poolCol(hp); $("ghv" + i).textContent = Math.round(hp * 100) + "%";
-    $("gm" + i).style.width = v + "%"; $("gm" + i).style.background = C.mp ? "var(--mana)" : C.res === "Rage" ? "var(--rage)" : "var(--energy)"; $("gmv" + i).textContent = C.mp ? v + "%" : v;
+    $("gh" + i).style.width = (hp * 100).toFixed(1) + "%"; $("gh" + i).style.background = hpCol(hp); $("ghv" + i).textContent = Math.round(hp * 100) + "%";
+    $("gm" + i).style.width = v + "%"; $("gm" + i).style.background = resCol(C.res); $("gmv" + i).textContent = C.mp ? v + "%" : v;
     $("gc" + i).innerHTML = cast;
   };
   const raidUi = box.classList.contains("raid"), t = S.task, castHtml = (cs, ci) => ci < 0 ? "&nbsp;" : (ci > 0 && !raidUi ? `<span>${esc(cs[ci - 1])}</span> › ` : "") + `<span class="cur">${esc(cs[ci])}</span>`;

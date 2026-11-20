@@ -56,7 +56,7 @@ function killTask(quest) {
   const roll = Math.random(), n = elite || S.level < 6 ? 1 : roll < 0.03 ? 3 : roll < 0.13 ? 2 : 1;
   const mobs = [mob]; for (let i = 1; i < n; i++) mobs.push(Math.random() < 0.7 ? mob : pick(zoneMobs(quest.zone)));
   const d = elite ? `Fighting ${mob} (elite) with a pickup group` : n > 1 ? `${pick(c.verbs)} ${n === 2 ? "two" : "three"} mobs at once` : `${pick(c.verbs)} ${article(mob)}`;
-  const gear = clamp(gearScore() / Math.max(1, S.level), 0.5, 1.4);
+  const gear = gearFor();
   const p = packTrim(rotation(elite, n > 1 ? (4 + R(2)) * n : undefined, n), n, 0,
     sec((9 + S.level * 0.12) * (elite ? 5 : 1) * (1 + 0.6 * (n - 1)) * clamp(1.35 - gear * 0.35, 0.8, 1.2) * buffSpeed() / talMod("d")));
   return { k: "kill", d, t: p.t, mob, mobs, mobL, qid: quest.id, elite, casts: p.casts };
@@ -127,8 +127,8 @@ const ROT = {
 };
 const ULT_ATK = { Warrior: [0, 1, 2], Paladin: [0], Shaman: [1], Warlock: [2] };
 function rotation(elite, count, mobs = 1) {
-  const c = cls(), r = ROT[S.cls](), free = /^(Auto Attack|Auto Shot|Shoot)$/;
-  const known = n => (free.test(n) && (n !== "Shoot" || S.level >= 8)) || n in S.spells, first = a => a.find(known) || "Auto Attack";
+  const c = cls(), r = ROT[S.cls]();
+  const known = n => (FREE_ATK.test(n) && (n !== "Shoot" || S.level >= 8)) || n in S.spells, first = a => a.find(known) || "Auto Attack";
   let extra = r.extra.filter(known);
   if (S.level >= 40 && (ULT_ATK[S.cls] || []).includes(S.spec)) extra.push(c.ult[S.spec], c.ult[S.spec]);
   const tsp = talentSpells();
@@ -160,8 +160,10 @@ function queueCity() {
   q.push({ k: "choose", d: `Studying the map for the next adventure`, t: sec(6) });
 }
 
+// a dungeon or raid by name
+const instanceRow = n => DUNGEONS.concat(RAIDS).find(d => d[0] === n);
 // a raid is open when the previous tier is cleared, your gear is ready and you are not saved to it
-const raidLocked = n => S.lock && S.lock[n] && S.time - S.lock[n] < RAID_INFO[n].lock * 86400000;
+const raidLocked = n => S.lock[n] && S.time - S.lock[n] < RAID_INFO[n].lock * 86400000;
 const raidOpen = r => { const i = RAID_INFO[r[0]]; return gearScore() >= i.gs && (!i.need || S.dungeons.includes(i.need)) && !raidLocked(r[0]); };
 function pickDungeon() {
   const ok = d => d[3] === "B" || d[3] === S.faction[0];

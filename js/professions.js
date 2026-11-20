@@ -33,7 +33,11 @@ const skillTier = sk => { let t = -1; MAT_REQ.forEach((r, i) => { if (sk >= r) t
 // orange always teaches something, yellow usually, green now and then, grey never
 const skillChance = (sk, req) => { const d = sk - req; return d < 0 ? 0 : d < 25 ? 1 : d < 50 ? 0.55 : d < 90 ? 0.18 : 0; };
 const profSkill = n => (S.prof && S.prof.sk[n]) || 0;
+// what a profession makes at its current skill (bandages, dishes, bombs)
+const profItem = (list, n) => list[clamp(skillTier(profSkill(n)), 0, list.length - 1)];
 const hasProf = n => !!(S.prof && (S.prof.a === n || S.prof.b === n));
+// enchanters disenchant instead of selling, and enchant their own gear
+const isEnchanter = () => !!(S.prof && S.prof.b === "Enchanting" && S.prof.cap);
 // the crafts in the pair (Tailoring + Enchanting has two)
 const crafts = () => S.prof ? [S.prof.a, S.prof.b].filter(n => CRAFT_AT[n]) : [];
 function skillUp(n, req) {
@@ -93,7 +97,6 @@ const GOGGLES = ["Flying Tiger Goggles", "Green Tinted Goggles", "Catseye Ultra 
 const BOMBS = ["Rough Copper Bomb", "Coarse Dynamite", "Iron Grenade", "Mithril Frag Bomb", "Thorium Grenade"];
 const BANDAGES = ["Linen Bandage", "Wool Bandage", "Silk Bandage", "Mageweave Bandage", "Runecloth Bandage"];
 const DISHES = ["Roasted Boar Meat", "Bear Steak", "Roast Raptor", "Tender Wolf Steak", "Monster Omelet"];
-const ROD = ["Runed Copper Rod", "Lesser Magic Wand", "Runed Silver Rod", "Greater Mystic Wand", "Runed Arcanite Rod"];
 const ARMOR_SLOTS = ["Head", "Shoulder", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet"];
 // the gear slots a craft can make for this hero
 function craftSlots(craft) {
@@ -116,9 +119,9 @@ function craftItem(craft, r, slot) {
 // what the hero still wants from a consumable craft, and what it's called
 const CONS_CRAFT = {
   Alchemy: () => [["hp", hpPot(), 8], ...(cls().mp && S.level >= 5 ? [["mp", mpPot(), 8]] : []), ...(elixirName() ? [["elix", elixirName(), 5]] : []), ...(S.level >= 60 && profSkill("Alchemy") >= 300 ? [["flask", flaskName(), 3]] : [])],
-  Engineering: () => [["bomb", BOMBS[Math.min(4, skillTier(profSkill("Engineering")))], 5]],
-  "First Aid": () => [["band", BANDAGES[Math.min(4, skillTier(profSkill("First Aid")))], 10]],
-  Cooking: () => [["feast", DISHES[Math.min(4, skillTier(profSkill("Cooking")))], 10]],
+  Engineering: () => [["bomb", profItem(BOMBS, "Engineering"), 5]],
+  "First Aid": () => [["band", profItem(BANDAGES, "First Aid"), 10]],
+  Cooking: () => [["feast", profItem(DISHES, "Cooking"), 10]],
 };
 // the AH can make up a shortfall when the skill falls behind (cloth and dust are hard to come by)
 function buyMats(src, t, n, why) {
@@ -219,7 +222,8 @@ function masterwork(craft) {
 // ---------- gold: what's spare, and where it went this week ----------
 const WEEK = 7 * 86400000;
 // gold kept back for the next mount
-const mountReserve = () => S.level >= 34 && S.mount < 1 ? 900000 : S.level >= 56 && S.mount < 2 ? 10000000 : 0;
+const MOUNT_COST = 900000, EPIC_MOUNT_COST = 10000000; // 90g at 40, 1000g at 60
+const mountReserve = () => S.level >= 34 && S.mount < 1 ? MOUNT_COST : S.level >= 56 && S.mount < 2 ? EPIC_MOUNT_COST : 0;
 const spendable = () => Math.max(0, S.money - mountReserve());
 function spend(kind, c) {
   c = Math.max(0, Math.round(c)); S.money -= c;

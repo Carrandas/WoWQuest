@@ -10,6 +10,7 @@ function migrate() {
   S.dungeons.forEach(n => { const e = dungeonEntry(n); if (!e.runs) { e.runs = 1; e.old = 1; } });
   if (!S.ach) { S.ach = {}; checkAch(true); }
   ["band", "bomb", "feast", "flask"].forEach(k => S.cons[k] = S.cons[k] || 0);
+  S.parts = S.parts || {}; S.legendaries = S.legendaries || []; S.lock = S.lock || {}; S.cd = S.cd || {}; S.runs = S.runs || 0; S.trip = S.trip || 0;
   // heroes from before professions pick up their class's pair, already on pace for their level
   if (!S.prof) { S.prof = newProf(PAIR_FOR[S.cls], S.level); if (S.prof.cap) log(`Picked up ${S.prof.a} and ${S.prof.b} (${S.prof.sk[S.prof.b]} / ${S.prof.cap}).`, "spell"); }
 }

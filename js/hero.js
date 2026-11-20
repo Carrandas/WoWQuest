@@ -66,17 +66,18 @@ function setPiece(tier, ilvl, slot) {
   slot = slot || pick(SET_SLOTS[tier] || SET_SLOTS[0]); const set = SETS[S.cls][tier];
   return { name: (SETSHORT[set] || set) + " " + ARMOR_BASE[armorType()][slot], ilvl, q: tier ? 4 : 3, slot, set: tier };
 }
+const sellValue = it => Math.round(it.ilvl * it.ilvl * 2 * QMULT[it.q]);
 // equip if better, otherwise into the bags as something to sell
 function gain(it, how) {
   const cur = S.equip[it.slot];
   if (power(it) > power(cur)) {
     S.equip[it.slot] = it;
     log(`${how} ${it.name} (item level ${it.ilvl}). Equipped.`, "loot" + Math.min(5, Math.max(2, it.q)));
-    if (cur && cur.q >= 1) addBag({ name: cur.name, val: Math.round(cur.ilvl * cur.ilvl * 2 * QMULT[cur.q]), q: cur.q });
+    if (cur && cur.q >= 1) addBag({ name: cur.name, val: sellValue(cur), q: cur.q });
     return true;
   }
   if (it.q >= 3) log(`${how} ${it.name}, but it's no upgrade. Into the bags.`, "loot" + Math.min(4, it.q));
-  addBag({ name: it.name, val: Math.round(it.ilvl * it.ilvl * 2 * QMULT[it.q]), q: it.q });
+  addBag({ name: it.name, val: sellValue(it), q: it.q });
   return false;
 }
 // a bigger bag than the smallest one carried (or a free bag slot)
@@ -86,6 +87,10 @@ function giveBag(bag, how) {
   log(`${how} ${article(bag[1])} (${bag[2]} slots).`, "gold");
 }
 function addBag(x) { if (S.bags.length < bagCap()) S.bags.push(x); }
+// the slot with the weakest item (the first one, on a tie)
+function weakestSlot() { let slot = SLOTS[0]; SLOTS.forEach(s => { if (power(S.equip[s]) < power(S.equip[slot])) slot = s; }); return slot; }
+// gear for the level: about 1 when it's level-appropriate
+const gearFor = () => clamp(gearScore() / Math.max(1, S.level), 0.5, 1.4);
 function gearScore() { let n = 0, s = 0; for (const k of SLOTS) { const it = S.equip[k]; s += it ? power(it) + enchBonus(it) * QMULT[it.q] : 0; n++; } return s / n; }
 
 // ---------- spells & level ups ----------
@@ -183,8 +188,7 @@ const stoneName = () => tierAt(STONE)[1] + (S.cls === "Paladin" ? " Weightstone"
 const hpPot = () => tierAt(HP_POT)[1], mpPot = () => (tierAt(MP_POT) || MP_POT[0])[1];
 // the stat that matters most for this class and spec (feral druids and enhancement shamans don't want intellect)
 const mainStat = () => isCaster() ? "INT" : cls().prime !== "INT" ? cls().prime : S.cls === "Shaman" ? "STR" : "AGI";
-const elixKey = mainStat;
-function elixirName() { const e = tierAt(ELIXIR[elixKey()]); return e && e[1]; }
+function elixirName() { const e = tierAt(ELIXIR[mainStat()]); return e && e[1]; }
 function flaskName() { return S.cls === "Priest" || (S.cls === "Druid" && S.spec === 2) || (S.cls === "Paladin" && S.spec === 0) ? "Flask of Distilled Wisdom" : isCaster() ? "Flask of Supreme Power" : "Flask of the Titans"; }
 
 // food & drink: everyone eats, mana users also drink; mages conjure their own
@@ -201,7 +205,7 @@ function rationName(k) {
 }
 // a rest task that eats from the bags, or a slow rest when they are empty
 function restTask() {
-  if (S.cons.band > 0 && (S.hpF ?? 1) < 0.6) { S.cons.band--; return { k: "rest", d: `Using ${article(BANDAGES[Math.min(4, Math.max(0, skillTier(profSkill("First Aid"))))])} and catching a breath`, t: sec(9) }; }
+  if (S.cons.band > 0 && (S.hpF ?? 1) < 0.6) { S.cons.band--; return { k: "rest", d: `Using ${article(profItem(BANDAGES, "First Aid"))} and catching a breath`, t: sec(9) }; }
   const have = restKinds().filter(k => S.cons[k] > 0);
   have.forEach(k => S.cons[k]--);
   if (!have.length) return { k: "rest", d: cls().mp ? "Out of food and water. Sitting down to recover slowly" : "Out of food. Sitting down to recover slowly", t: sec(26) };
@@ -226,7 +230,7 @@ const FIGHTS = ["kill", "trash", "boss"];
 function vitalEnd(t) {
   const f = partyFight(t); if (f && f.hero) return [f.hero.end, f.hero.mpEnd];
   if (t.ve) return t.ve;
-  const hp = S.hpF ?? 1, mp = S.mpF ?? 1, r = (a, b) => a + Math.random() * (b - a), lo = x => Math.max(0.04, x), up = x => Math.min(1, x);
+  const hp = S.hpF ?? 1, mp = S.mpF ?? 1, r = rnd, lo = x => Math.max(0.04, x), up = x => Math.min(1, x);
   let e;
   if (t.k === "kill") {
     const n = 1 + 0.8 * ((t.mobs || [1]).length - 1), sf = S.party ? null : soloFight(t);
@@ -268,7 +272,7 @@ function wantedBuffs() {
   for (const [chain, min] of CLASS_BUFFS[S.cls]()) { const n = chain.find(x => x in S.spells); if (n) out.push({ name: n, min, cast: /^(Summon|Call)/.test(n) ? `${n.replace("Summon", "Summoning").replace("Call Pet", "Calling your pet")}` : `Casting ${n}` }); }
   if (S.cls === "Rogue" && "Instant Poison" in S.spells) { const n = "Instant Poison" + ROMAN[S.spells["Instant Poison"]]; out.push({ name: n, min: 30, cast: `Applying ${n} to both daggers` }); }
   else if (usesStone() && S.cons.stone > 0) out.push({ name: stoneName(), min: 30, item: "stone", cast: `Using ${article(stoneName())} on your weapon` });
-  if (S.cons.feast > 0) out.push({ name: "Well Fed", min: 15, item: "feast", cast: `Eating ${DISHES[Math.min(4, Math.max(0, skillTier(profSkill("Cooking"))))]} for the Well Fed buff` });
+  if (S.cons.feast > 0) out.push({ name: "Well Fed", min: 15, item: "feast", cast: `Eating ${profItem(DISHES, "Cooking")} for the Well Fed buff` });
   return out;
 }
 const buffUp = n => (S.buffs[n] || 0) > S.time;
@@ -298,7 +302,7 @@ const FLASK_PRICE = 150000;
 function buySupplies(budget) {
   const L = S.level, price = tier => Math.round(tier * tier * 3 + 30), want = [["hp", 5, tierAt(HP_POT)[0]]];
   if (cls().mp && L >= 5) want.push(["mp", 5, tierAt(MP_POT)[0]]);
-  if (elixirName()) want.push(["elix", 3, tierAt(ELIXIR[elixKey()])[0]]);
+  if (elixirName()) want.push(["elix", 3, tierAt(ELIXIR[mainStat()])[0]]);
   if (usesStone()) want.push(["stone", 4, tierAt(STONE)[0]]);
   let spent = 0; const got = [];
   for (const [k, n, tier] of want) {
@@ -307,7 +311,7 @@ function buySupplies(budget) {
     if (b) { S.cons[k] = (S.cons[k] || 0) + b; got.push(k); }
   }
   // a flask for every raid night at 60 (alchemists make their own)
-  if (S.level >= 60 && !(S.prof && S.prof.b === "Alchemy" && S.prof.sk.Alchemy >= 300)) {
+  if (S.level >= 60 && !(hasProf("Alchemy") && profSkill("Alchemy") >= 300)) {
     let b = 0; while ((S.cons.flask || 0) + b < 2 && spent + FLASK_PRICE <= budget * 3 && spendable() - spent >= FLASK_PRICE * 3) { b++; spent += FLASK_PRICE; }
     if (b) { S.cons.flask = (S.cons.flask || 0) + b; got.push("flask"); }
   }
@@ -324,6 +328,7 @@ function newHero(f) {
     loc: "start", arrived: null, quests: [], zq: {}, done: [], dungeons: [], nextCity: 2, cycleQ: 0, mount: 0,
     buffs: {}, cons: { hp: 0, mp: 0, elix: 0, stone: 0, food: 10, drink: CLASSES[f.cls].mp ? 10 : 0, band: 0, bomb: 0, feast: 0, flask: 0 },
     prof: newProf(pairsFor(f.cls).includes(f.prof) ? f.prof : PAIR_FOR[f.cls], 1), elites: [], feats: [], zones: [], dstat: {}, ach: {},
+    parts: {}, legendaries: [], lock: {}, runs: 0, trip: 0, cd: {},
     kills: 0, deaths: 0, qdone: 0, qid: 0, since: 0, curQ: 0, repair: 0, dg: null, time: 0, log: [], logId: 0, task: null, queue: [], speed: 1, savedAt: Date.now() };
   SLOTS.forEach(s => S.equip[s] = null);
   S.equip["Main Hand"] = { name: c.start, ilvl: 2, q: 1, slot: "Main Hand" };
