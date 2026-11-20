@@ -15,19 +15,19 @@ function randomSlot() { let best = null; for (let i = 0; i < 3; i++) { const s =
 function lootDrop(dn, boss) {
   const d = instanceRow(dn); if (!d) return;
   const raid = RAIDS.includes(d), caster = isCaster();
-  const fits = d[7].filter(x => { const t = x.split("|")[1]; return !t || (t === "c") === caster; });
+  const fits = d.loot.filter(x => { const t = x.split("|")[1]; return !t || (t === "c") === caster; });
   // named items ("Smite's Mighty Hammer") only drop from the boss they are named after
   const keys = b => b.replace(/'s?\b/g, "").split(/[ ,.]+/).filter(w => w.length > 3 && !/^(the|Lord|Lady|Baron|Captain|High|King|Prince|Commander|General|Master|Emperor|Doctor|Instructor|Chief|Witch|Overlord|Houndmaster|Interrogator|Inquisitor)$/.test(w));
-  const owner = x => d[6].split(",").find(b => keys(b).some(w => x.replace(/'s?\b/g, "").includes(w)));
+  const owner = x => d.bosses.find(b => keys(b).some(w => x.replace(/'s?\b/g, "").includes(w)));
   const mine = fits.filter(x => owner(x) === boss), free = fits.filter(x => !owner(x));
   const pool = mine.length && Math.random() < 0.7 ? mine : free.length ? free : mine;
   const ri = RAID_INFO[dn], r = Math.random();
-  const dropIlvl = () => ri ? ri.ilvl[0] + R(ri.ilvl[1] - ri.ilvl[0] + 1) : Math.round((d[1] + d[2]) / 2) + 3;
+  const dropIlvl = () => ri ? ri.ilvl[0] + R(ri.ilvl[1] - ri.ilvl[0] + 1) : Math.round((d.min + d.max) / 2) + 3;
   let it;
   if (ri && ri.set != null && r < 0.55) {
     const pin = boss === "Onyxia" ? "Head" : boss === "Ragnaros" ? "Legs" : null, tier = pin ? 2 : ri.set;
     it = setPiece(tier, SET_ILVL[tier], pin);
-  } else if (!raid && d[1] >= 52 && S.level >= 58 && r < 0.3) it = setPiece(0, SET_ILVL[0]);
+  } else if (!raid && d.min >= 52 && S.level >= 58 && r < 0.3) it = setPiece(0, SET_ILVL[0]);
   // a generic piece for the weakest slot, so every slot can reach blue (dungeons) or purple (raids)
   else if (r > 0.8) it = makeItem(weakestSlot(), dropIlvl(), ri ? 4 : 3);
   else if (pool.length) {
@@ -72,7 +72,7 @@ const FINISH = {
     const before = S.quests.length; S.quests = S.quests.filter(x => x.zone === t.zone);
     if (before > S.quests.length) log(`Abandoned ${before - S.quests.length} unfinished quest${before - S.quests.length > 1 ? "s" : ""} from the last zone.`);
     const z = ZONES[t.zone]; zoneEntry(t.zone);
-    log(`Entered ${t.zone} (levels ${z[0]}–${z[1]}).`, "zone");
+    log(`Entered ${t.zone} (levels ${z.min}–${z.max}).`, "zone");
   },
   field() { flushTrip(); S.loc = "field"; },
   hub() { S.loc = "hub"; },
@@ -225,7 +225,7 @@ const FINISH = {
   gather(t) { finishGather(t); },
   craft() { finishCraft(); },
   farm(t) {
-    const c = Math.round(t.t / 3600000 * 150000), g = ["Mining", "Herbalism", "Skinning"].find(hasProf);
+    const c = Math.round(t.t / HOUR * 150000), g = ["Mining", "Herbalism", "Skinning"].find(hasProf);
     S.money += c; if (g) addMat(g, 4, 6 + R(8));
     log(`${t.d.replace(/^\w+ing/, m => m === "Running" ? "Ran" : "Farmed")}: ${moneyTxt(c)}${g ? ` and some ${MATS[g][4]}` : ""}.`, "gold");
   },
@@ -273,7 +273,7 @@ function advance(dt) {
 }
 // progress made while the tab was closed (at 1x, capped at 12 hours)
 function catchUp(ms) {
-  ms = Math.min(ms, 12 * 3600 * 1000);
+  ms = Math.min(ms, 12 * HOUR);
   if (ms < 60000) return;
   const L0 = S.level, q0 = S.qdone;
   simClock = Date.now() - ms;

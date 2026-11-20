@@ -138,9 +138,9 @@ const PARTS = [
   [/Tiger|Panther|Saber|Cougar|Lion|Leopard|Stalker|Jaguar|Cheetah/, ["Pelt", "Fang"]],
 ];
 function mobPart(mob) { for (const [re, a] of PARTS) if (re.test(mob)) return mob.replace(/^(Young|Elder|Dire|Giant|Greater|Adult) /, "") + " " + pick(a); return mob + " " + pick(["Trophy", "Totem", "Sample", "Ear"]); }
-function zoneMobs(z = curZone()) { return ZONES[z][4].split(","); }
+function zoneMobs(z = curZone()) { return ZONES[z].mobs; }
 function newQuest() {
-  const z = curZone(), list = ZONES[z][5].split(";"), i = S.zq[z] || 0, mob = pick(zoneMobs(z));
+  const z = curZone(), list = ZONES[z].quests, i = S.zq[z] || 0, mob = pick(zoneMobs(z));
   let name;
   if (i < list.length) { name = list[i]; S.zq[z] = i + 1; }
   else { const taken = S.quests.map(x => x.name); const opts = [`${mob} Menace`, `Thinning the ${plural(mob)}`, `Bounty: ${plural(mob)}`, `Culling the ${plural(mob)}`, `Trouble in ${z}`, `A Task for ${hub()}`, `${hub()} Needs You`, `Supplies for ${hub()}`].filter(n => !taken.includes(n)); name = pick(opts.length ? opts : [`${plural(mob)} Again`]); }
@@ -160,7 +160,7 @@ const questDone = q => q.prog >= q.max;
 function plural(s) { return /Tooth$/.test(s) ? s.slice(0, -5) + "Teeth" : /[^aeiou]y$/.test(s) ? s.slice(0, -1) + "ies" : /(ss|x|ch|sh)$/.test(s) ? s + "es" : /s$/.test(s) ? s : /(Wolf|Thief)$/.test(s) ? s.slice(0, -1) + "ves" : s + "s"; }
 
 // ---------- buffs & supplies ----------
-const MIN = 60000, FOREVER = 1e15;
+const FOREVER = 1e15;
 const tierAt = (list, L = S.level) => { let r = null; for (const e of list) if (e[0] <= L) r = e; return r; };
 const ROMAN = ["", "", " II", " III", " IV", " V", " VI", " VII", " VIII"];
 const HP_POT = [[1, "Minor Healing Potion"], [3, "Lesser Healing Potion"], [12, "Healing Potion"], [21, "Greater Healing Potion"], [35, "Superior Healing Potion"], [45, "Major Healing Potion"]];

@@ -28,7 +28,7 @@ const CRAFT_SRC = { Blacksmithing: "Mining", Engineering: "Mining", Alchemy: "He
 const CRAFT_AT = { Blacksmithing: "at the anvil", Leatherworking: "at the leatherworking bench", Tailoring: "at the loom", Alchemy: "at the alchemy lab", Engineering: "at the engineering bench", Enchanting: "at the enchanting table" };
 const BLACK_LOTUS = 60000; // a flask's rare herb, bought on the AH
 const matPrice = t => (t + 1) * (t + 1) * 500; // copper per material on the Auction House
-const zoneTier = (z = curZone()) => { const d = ZONES[z], m = d ? (d[0] + d[1]) / 2 : S.level; return m < 13 ? 0 : m < 23 ? 1 : m < 33 ? 2 : m < 45 ? 3 : 4; };
+const zoneTier = (z = curZone()) => { const d = ZONES[z], m = d ? (d.min + d.max) / 2 : S.level; return m < 13 ? 0 : m < 23 ? 1 : m < 33 ? 2 : m < 45 ? 3 : 4; };
 const skillTier = sk => { let t = -1; MAT_REQ.forEach((r, i) => { if (sk >= r) t = i; }); return t; };
 // orange always teaches something, yellow usually, green now and then, grey never
 const skillChance = (sk, req) => { const d = sk - req; return d < 0 ? 0 : d < 25 ? 1 : d < 50 ? 0.55 : d < 90 ? 0.18 : 0; };
@@ -222,7 +222,6 @@ function masterwork(craft) {
 }
 
 // ---------- gold: what's spare, and where it went this week ----------
-const WEEK = 7 * 86400000;
 // gold kept back for the next mount
 const MOUNT_COST = 900000, EPIC_MOUNT_COST = 10000000; // 90g at 40, 1000g at 60
 const mountReserve = () => S.level >= 34 && S.mount < 1 ? MOUNT_COST : S.level >= 56 && S.mount < 2 ? EPIC_MOUNT_COST : 0;

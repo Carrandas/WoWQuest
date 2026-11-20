@@ -122,7 +122,7 @@ function healAmt(s) {
 // undergeared raids and underleveled dungeon groups wipe more, well-geared ones less
 function wipeChance(t) {
   const ri = RAID_INFO[t.dn]; if (ri) return ri.wipe * clamp(1 + (ri.gs - gearScore()) / 25, 0.5, 2);
-  const d = instanceRow(t.dn); return 0.06 * (d ? clamp(1 + (d[2] - 2 - S.level) * 0.12, 0.4, 2) : 1);
+  const d = instanceRow(t.dn); return 0.06 * (d ? clamp(1 + (d.max - 2 - S.level) * 0.12, 0.4, 2) : 1);
 }
 const bossWipes = t => t.k === "boss" && (t.wipe ?? (t.wipe = Math.random() < wipeChance(t)));
 // play a pull out as a timeline: everyone takes a hit on each of their own casts, and every
@@ -136,7 +136,7 @@ function simFight(t) {
   let supply = 0;
   P.forEach(p => { if (p.role === "heal") p.casts.forEach(s => { if (isHeal(s)) supply += 0.15; }); });
   const W = { tank: 3, dps: 0.6, heal: 0.3 }, wsum = P.reduce((a, p) => a + W[p.role], 0);
-  const tough = heroTaken(false, (dungeonRow() || [0, 0, S.level])[2]);
+  const tough = heroTaken(false, (dungeonRow() || { max: S.level }).max);
   P.forEach((p, i) => { const d = fightDrop(p.role, t.k); if (!i) { d[0] *= tough; d[1] *= talMod("m"); } p.mpEnd = lo(p.mp - d[1]); p.hit = (d[0] + supply * HEAL_EFF * W[p.role] / wsum) / (p.casts.length || 1); p.cur = p.hp; p.tl = [[0, p.hp]]; });
   const ev = []; P.forEach((p, i) => p.casts.forEach((s, k) => ev.push([(k + 1) / p.casts.length, i, k])));
   // the enemy's hits: single-target ones on whoever it is attacking, aoe on everyone. Members it never

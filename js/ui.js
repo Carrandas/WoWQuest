@@ -277,11 +277,11 @@ function where() {
 }
 // the level 60 goal: clear every raid once (the current first clear counts boss by boss)
 function raidGoal() {
-  const left = RAIDS.filter(r => !S.dungeons.includes(r[0])), done = RAIDS.length - left.length;
-  const cur = S.dg && S.dg.raid && left.some(r => r[0] === S.dg.name) ? S.dg : null;
+  const left = RAIDS.filter(r => !S.dungeons.includes(r.name)), done = RAIDS.length - left.length;
+  const cur = S.dg && S.dg.raid && left.some(r => r.name === S.dg.name) ? S.dg : null;
   // next raid plus the next boss to kill in it (bosses fall in list order)
-  const r = cur ? left.find(x => x[0] === cur.name) : left[0], bosses = r ? r[6].split(",") : [], k = cur ? cur.killed : 0;
-  return { name: r ? `Next: ${r[0]} – ${k < bosses.length ? bosses[k] : "cleared"}` : "Every raid cleared", val: `${done} / ${RAIDS.length} raids`,
+  const r = cur ? left.find(x => x.name === cur.name) : left[0], bosses = r ? r.bosses : [], k = cur ? cur.killed : 0;
+  return { name: r ? `Next: ${r.name} – ${k < bosses.length ? bosses[k] : "cleared"}` : "Every raid cleared", val: `${done} / ${RAIDS.length} raids`,
     p: (done + (cur ? cur.killed / cur.total : 0)) / RAIDS.length };
 }
 // the quest meter: a dungeon or raid quest inside an instance, otherwise the current zone quest
@@ -295,7 +295,7 @@ function legInfo() {
   const r = route();
   if (S.leg >= r.length) return { name: `Endgame · ${curZone()}`, val: `${Math.min(S.cycleQ, 8)} / 8 quests`, p: Math.min(1, S.cycleQ / 8) };
   const start = S.leg ? r[S.leg - 1].until : 1, end = r[S.leg].until, lv = S.level + S.xp / xpNeed(S.level);
-  return { name: `${r[S.leg].z} (${ZONES[r[S.leg].z][0]}–${ZONES[r[S.leg].z][1]})`, val: `until level ${end}`, p: clamp((lv - start) / Math.max(1, end - start), 0, 1) };
+  return { name: `${r[S.leg].z} (${ZONES[r[S.leg].z].min}–${ZONES[r[S.leg].z].max})`, val: `until level ${end}`, p: clamp((lv - start) / Math.max(1, end - start), 0, 1) };
 }
 
 let lastLogId = 0;
@@ -456,10 +456,10 @@ function renderJournal() {
   const shown = ACH.filter(a => !a.show || a.show()), got = shown.filter(a => S.ach[a.id]);
   const r = route(), legs = [...new Set(r.map(l => l.z))], extra = S.zones.filter(e => !legs.includes(e.z));
   const doneZ = S.zones.filter(e => e.z !== S.arrived || S.leg >= r.length).length;
-  const dl = factionDungeons().concat(RAIDS).sort((a, b) => a[1] - b[1]);
+  const dl = factionDungeons().concat(RAIDS).sort((a, b) => a.min - b.min);
   $("tab-ach").textContent = ` ${got.length}/${shown.length}`;
   $("tab-zones").textContent = ` ${S.zones.length}`;
-  $("tab-dung").textContent = ` ${dl.filter(d => S.dungeons.includes(d[0])).length}/${dl.length}`;
+  $("tab-dung").textContent = ` ${dl.filter(d => S.dungeons.includes(d.name)).length}/${dl.length}`;
   $("log").hidden = uiTab !== "log"; $("quests").hidden = uiTab !== "quests"; $("journal").hidden = uiTab === "log" || uiTab === "quests";
   $("elapsed").textContent = uiTab === "log" ? "/played " + fmtTime(S.time) : uiTab === "quests" ? `${S.quests.length + (S.dq || []).length} active` : uiTab === "ach" ? `${got.length} of ${shown.length} earned` : uiTab === "zones" ? `${doneZ} zones done` : `${S.dungeons.length} cleared`;
   if (uiTab === "log" || uiTab === "quests") return;
@@ -468,16 +468,16 @@ function renderJournal() {
     const order = got.slice().sort((a, b) => (S.ach[b.id].p ?? -1) - (S.ach[a.id].p ?? -1)).concat(shown.filter(a => !S.ach[a.id]));
     h = order.map(a => { const e = S.ach[a.id]; return `<li class="${e ? "got" : "locked"}"><span class="ico">${e ? "★" : "☆"}</span><div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span>${e ? `<time>${when(e.at, e.L, e.p)}</time>` : ""}</div></li>`; }).join("");
   } else if (uiTab === "zones") {
-    const row = (z, e, cur) => { const [a, b] = ZONES[z] || [0, 0];
+    const row = (z, e, cur) => { const { min: a, max: b } = ZONES[z] || { min: 0, max: 0 };
       const st = cur ? "in progress" : e ? "done" : "ahead";
       const det = e ? (e.old ? "visited before the journal existed" : `level ${e.L0}${e.L1 > e.L0 ? "–" + e.L1 : ""} · ${e.q} quests · ${e.k.toLocaleString()} kills${e.t0 ? " · from " + fmtDate(e.t0) : ""}`) : `levels ${a}–${b}`;
       return `<li class="${st === "ahead" ? "locked" : st === "in progress" ? "cur" : "got"}"><span class="ico">${st === "done" ? "✓" : st === "in progress" ? "▸" : "·"}</span><div><b>${esc(z)}</b><span>${det}</span></div><em>${st}</em></li>`; };
     h = legs.map(z => row(z, S.zones.find(x => x.z === z), z === curZone() && S.leg < r.length)).join("")
       + extra.map(e => row(e.z, e, e.z === curZone())).join("");
   } else {
-    h = dl.map(d => { const e = S.dstat[d[0]], raid = RAIDS.includes(d), done = S.dungeons.includes(d[0]) && e;
+    h = dl.map(d => { const e = S.dstat[d.name], raid = RAIDS.includes(d), done = S.dungeons.includes(d.name) && e;
       const loot = done && e.loot.length ? `<span class="loot">${e.loot.map(x => `<i class="q${x.q}">${esc(x.n)}</i>`).join(", ")}</span>` : "";
-      return `<li class="${done ? "got" : "locked"}"><span class="ico">${done ? "✓" : "·"}</span><div><b>${esc(d[0])}${raid ? ` (${RAID_INFO[d[0]].size}-man raid)` : ""}</b><span>${done ? `cleared ${e.runs}× · ${e.old ? "first clear before the journal" : "first at level " + e.L + " on " + fmtDate(e.at)}${raid && raidLocked(d[0]) ? ` · saved, resets in ${Math.ceil((RAID_INFO[d[0]].lock * 864e5 - (S.time - S.lock[d[0]])) / 864e5)}d` : ""}` : `levels ${d[1]}–${d[2]}`}</span>${loot}</div></li>`; }).join("");
+      return `<li class="${done ? "got" : "locked"}"><span class="ico">${done ? "✓" : "·"}</span><div><b>${esc(d.name)}${raid ? ` (${RAID_INFO[d.name].size}-man raid)` : ""}</b><span>${done ? `cleared ${e.runs}× · ${e.old ? "first clear before the journal" : "first at level " + e.L + " on " + fmtDate(e.at)}${raid && raidLocked(d.name) ? ` · saved, resets in ${Math.ceil((RAID_INFO[d.name].lock * DAY - (S.time - S.lock[d.name])) / DAY)}d` : ""}` : `levels ${d.min}–${d.max}`}</span>${loot}</div></li>`; }).join("");
   }
   $("journal").innerHTML = h;
 }

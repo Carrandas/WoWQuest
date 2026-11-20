@@ -55,7 +55,7 @@ function groupBags() {
 }
 
 function killTask(quest) {
-  const c = cls(), [zmin, zmax] = ZONES[quest.zone] || [S.level, S.level];
+  const c = cls(), zr = ZONES[quest.zone], zmin = zr ? zr.min : S.level, zmax = zr ? zr.max : S.level;
   const elite = quest.type === "elite";
   const mobL = elite ? Math.min(S.level + 2, zmax + 2) : clamp(S.level + R(3) - 1, Math.max(1, zmin - 1), zmax + 2);
   const mob = elite ? quest.mob : quest.type === "col" && Math.random() < 0.15 ? pick(zoneMobs(quest.zone)) : quest.mob;
@@ -168,30 +168,30 @@ function queueCity() {
 }
 
 // a dungeon or raid by name
-const instanceRow = n => DUNGEONS.concat(RAIDS).find(d => d[0] === n);
+const instanceRow = n => DUNGEONS.concat(RAIDS).find(d => d.name === n);
 // a raid is open when the previous tier is cleared, your gear is ready and you are not saved to it
-const raidLocked = n => S.lock[n] && S.time - S.lock[n] < RAID_INFO[n].lock * 86400000;
-const raidOpen = r => { const i = RAID_INFO[r[0]]; return gearScore() >= i.gs && (!i.need || S.dungeons.includes(i.need)) && !raidLocked(r[0]); };
+const raidLocked = n => S.lock[n] && S.time - S.lock[n] < RAID_INFO[n].lock * DAY;
+const raidOpen = r => { const i = RAID_INFO[r.name]; return gearScore() >= i.gs && (!i.need || S.dungeons.includes(i.need)) && !raidLocked(r.name); };
 function pickDungeon() {
-  const ok = d => d[3] === "B" || d[3] === S.faction[0];
+  const ok = d => d.side === "B" || d.side === S.faction[0];
   if (S.level >= 60) {
     const open = RAIDS.filter(raidOpen);
     if (open.length && Math.random() < 0.7) return Math.random() < 0.7 ? open[open.length - 1] : pick(open);
-    return pick(DUNGEONS.filter(d => d[1] >= 52 && ok(d)));
+    return pick(DUNGEONS.filter(d => d.min >= 52 && ok(d)));
   }
-  return DUNGEONS.find(d => ok(d) && !S.dungeons.includes(d[0]) && S.level >= d[1] && S.level <= d[1] + 6);
+  return DUNGEONS.find(d => ok(d) && !S.dungeons.includes(d.name) && S.level >= d.min && S.level <= d.min + 6);
 }
 const regroupTask = raid => ({ k: "regroup", d: pick(["Waiting for the healer to drink", "Drinking up before the next pull", "Regrouping and drinking", "Looting and drinking up"]), t: sec(raid ? 12 : 8) });
 function queueDungeon(d) {
-  const q = S.queue, raid = RAIDS.includes(d), bosses = d[6].split(","), trash = d[5].split(",");
-  const chat = pick([`LFM ${d[4]}, need heals`, `LF1M ${d[4]}, have summon`, `LFG ${d[4]}, ${S.cls.toLowerCase()} lvl ${S.level}`, `LF tank for ${d[4]} then GO`, `${d[4]} run, LF2M, PST`]);
-  S.dg = { name: d[0], killed: 0, total: bosses.length, raid, rep0: S.repair };
+  const q = S.queue, raid = RAIDS.includes(d), { name: dn, abbr, bosses, trash } = d;
+  const chat = pick([`LFM ${abbr}, need heals`, `LF1M ${abbr}, have summon`, `LFG ${abbr}, ${S.cls.toLowerCase()} lvl ${S.level}`, `LF tank for ${abbr} then GO`, `${abbr} run, LF2M, PST`]);
+  S.dg = { name: dn, killed: 0, total: bosses.length, raid, rep0: S.repair };
   S.party = makeParty(raid);
-  S.meter = { dn: d[0], dmg: [], heal: [], secs: 0, last: null };
-  const dq = S.dungeons.includes(d[0]) ? [] : (DQUESTS[d[0]] || []).map(x => x.split("|")).filter(x => !x[3] || x[3] === S.faction[0]);
-  if (dq.length) q.push({ k: "dqpick", d: `Picking up quests for ${d[0]}`, t: sec(6 + 3 * dq.length), dn: d[0], dq: dq.map(x => ({ name: x[0], boss: x[1], obj: x[2], raid, done: false })) });
-  q.push({ k: "lfg", d: raid ? `Waiting on the raid invite for ${d[0]}` : `Looking for group: "${chat}"`, t: sec(raid ? 120 : 60 + R(120)), chat: raid ? `[Raid] ${d[4]} invites going out, ${RAID_INFO[d[0]].size} man, be on time!` : chat, dn: d[0] });
-  q.push({ k: "dtravel", d: `Traveling to ${d[0]} with the group`, t: sec(raid ? 180 : 120), dn: d[0] });
+  S.meter = { dn, dmg: [], heal: [], secs: 0, last: null };
+  const dq = S.dungeons.includes(dn) ? [] : (DQUESTS[dn] || []).map(x => x.split("|")).filter(x => !x[3] || x[3] === S.faction[0]);
+  if (dq.length) q.push({ k: "dqpick", d: `Picking up quests for ${dn}`, t: sec(6 + 3 * dq.length), dn, dq: dq.map(x => ({ name: x[0], boss: x[1], obj: x[2], raid, done: false })) });
+  q.push({ k: "lfg", d: raid ? `Waiting on the raid invite for ${dn}` : `Looking for group: "${chat}"`, t: sec(raid ? 120 : 60 + R(120)), chat: raid ? `[Raid] ${abbr} invites going out, ${RAID_INFO[dn].size} man, be on time!` : chat, dn });
+  q.push({ k: "dtravel", d: `Traveling to ${dn} with the group`, t: sec(raid ? 180 : 120), dn });
   q.push({ k: "dbuff", d: raid ? "Buffing up and drinking a flask at the instance portal" : "Buffing up at the instance entrance", t: sec(8), raid });
   bosses.forEach(b => {
     const n = raid ? 2 + R(2) : 1 + R(3);
@@ -201,9 +201,9 @@ function queueDungeon(d) {
       q.push({ k: "trash", d: `Clearing a pack of ${plural(main)}`, t: p.t, mobs, casts: p.casts, aoeShare: share });
     }
     const adds = BOSS_ADDS[b] || [], late = (BOSS_SCRIPT[b] || []).some(p => p.adds);
-    q.push({ k: "boss", d: adds.length && !late ? `Fighting ${b} and ${adds.length === 1 ? "an add" : adds.length + " adds"}` : `Fighting ${b}`, t: sec(raid ? 260 : 110), boss: b, dn: d[0], adds, casts: heroGroupCasts(raid ? 260 : 110, true) });
+    q.push({ k: "boss", d: adds.length && !late ? `Fighting ${b} and ${adds.length === 1 ? "an add" : adds.length + " adds"}` : `Fighting ${b}`, t: sec(raid ? 260 : 110), boss: b, dn, adds, casts: heroGroupCasts(raid ? 260 : 110, true) });
     q.push(regroupTask(raid));
   });
-  q.push({ k: "dend", d: `Leaving ${d[0]}`, t: sec(10), dn: d[0] });
-  if (dq.length) q.push({ k: "dqturn", d: `Turning in the ${d[0]} quests`, t: sec(8 + 4 * dq.length), dn: d[0] });
+  q.push({ k: "dend", d: `Leaving ${dn}`, t: sec(10), dn });
+  if (dq.length) q.push({ k: "dqturn", d: `Turning in the ${dn} quests`, t: sec(8 + 4 * dq.length), dn });
 }

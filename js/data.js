@@ -127,7 +127,7 @@ const DRINK = ["Refreshing Spring Water", "Ice Cold Milk", "Melon Juice", "Sweet
 const CLOTH = ["Linen Cloth", "Wool Cloth", "Silk Cloth", "Mageweave Cloth", "Runecloth"];
 const BAGS = [[10, "Linen Bag", 6, 300], [16, "Woolen Bag", 8, 1200], [24, "Silk Bag", 10, 4000], [34, "Mageweave Bag", 12, 12000], [48, "Runecloth Bag", 14, 40000]];
 
-// ---------- zones: [min, max, Alliance hub, Horde hub, mobs, quests] ----------
+// ---------- zones: [min, max, Alliance hub, Horde hub, mobs, quests], turned into objects below ----------
 const ZONES = {
   "Northshire Valley": [1, 5, "Northshire Abbey", "", "Young Wolf,Kobold Vermin,Kobold Worker,Defias Thug,Kobold Laborer", "A Threat Within;Kobold Camp Cleanup;Wolves Across the Border;Investigate Echo Ridge;Brotherhood of Thieves;Bounty on Garrick Padfoot;Skirmish at Echo Ridge"],
   "Elwynn Forest": [5, 11, "Goldshire", "", "Stonetusk Boar,Murloc Streamfin,Prowler,Riverpaw Gnoll,Defias Bandit,Kobold Miner,Forest Spider", "Kobold Candles;The Fargodeep Mine;Gold Dust Exchange;Princess Must Die!;Bounty on Murlocs;Wanted: \"Hogger\";The Jasperlode Mine;Protect the Frontier;Lost Necklace;Red Linen Goods"],
@@ -173,7 +173,10 @@ const ZONES = {
   "Winterspring": [53, 60, "Everlook", "Everlook", "Frostsaber Stalker,Winterfall Ursa,Ice Thistle Yeti,Chillwind Chimaera,Frostmaul Giant,Shardtooth Mauler,Cobalt Wyrmkin", "Are We There, Yeti?;Winterfall Activity;Wildkin of Elune;Enraged Wildkin;Threat of the Winterfall;Ursius of the Shardtooth;Brumeran of the Chillwind;Shy-Rotam;Luck Be With You;Strange Sources"],
   "Silithus": [55, 60, "Cenarion Hold", "Cenarion Hold", "Hive'Ashi Worker,Twilight Geolord,Dune Smasher,Stonelash Scorpid,Sand Skitterer,Desert Rumbler,Twilight Avenger", "Securing the Supply Lines;Deadly Desert Venom;Dearest Natalia;Wanted - Deathclasp, Terror of the Sands;The Twilight Mystery;Noggle's Last Hope;Twilight Geolords;Stepping Up Security"],
 };
-const ZONE_HUB = (z, f) => { const d = ZONES[z]; return (f === "Alliance" ? d[2] : d[3]) || d[2] || d[3]; };
+// each zone becomes { min, max, hubA, hubH, mobs: [...], quests: [...] }
+for (const [z, [min, max, hubA, hubH, mobs, quests]] of Object.entries(ZONES)) ZONES[z] = { min, max, hubA, hubH, mobs: mobs.split(","), quests: quests.split(";") };
+// the faction's quest hub in a zone (or the other faction's, if it has none)
+const ZONE_HUB = (z, f) => { const d = ZONES[z]; return (f === "Alliance" ? d.hubA : d.hubH) || d.hubA || d.hubH; };
 
 // ---------- routes: each leg is "Zone:leave at level" ----------
 const ROUTES = {
@@ -192,7 +195,7 @@ function routeFor(race) {
   return (ROUTES[r.start] + "," + ROUTES[r.f]).split(",").map(s => { const [z, l] = s.split(":"); return { z, until: +l }; });
 }
 
-// ---------- dungeons: [name, min, max, faction(A/H/B), abbr, trash, bosses, loot] ----------
+// ---------- dungeons: [name, min, max, faction(A/H/B), abbr, trash, bosses, loot], turned into objects below ----------
 // loot tag: |c caster, |m melee/physical, no tag = anyone
 const DUNGEONS = [
   ["Ragefire Chasm", 13, 18, "H", "RFC", "Ragefire Trogg,Searing Blade Cultist,Molten Elemental", "Oggleflint,Taragaman the Hungerer,Jergosh the Invoker,Bazzalan", "Cursed Felblade|m,Subterranean Cape,Robe of Evocation|c,Bloodfire Talons|m,Ghostly Mantle|c"],
@@ -244,7 +247,9 @@ const LEGENDARY = {
   "Bindings of the Windseeker": { name: "Thunderfury, Blessed Blade of the Windseeker", parts: 2 },
   "Eye of Sulfuras": { name: "Sulfuras, Hand of Ragnaros", parts: 1 },
 };
-for (const d of DUNGEONS.concat(RAIDS)) d[7] = d[7].split(",");
+// each dungeon and raid becomes { name, min, max, side (A, H or B for both), abbr, trash: [...], bosses: [...], loot: [...] }
+for (const list of [DUNGEONS, RAIDS]) list.forEach(([name, min, max, side, abbr, trash, bosses, loot], i) =>
+  list[i] = { name, min, max, side, abbr, trash: trash.split(","), bosses: bosses.split(","), loot: loot.split(",") });
 // ---------- dungeon quests, picked up before the first run: name|boss that completes it|objective|faction ----------
 const DQUESTS = {
   "Ragefire Chasm": ["Slaying the Beast|Taragaman the Hungerer|Taragaman's Heart", "Hidden Enemies|Jergosh the Invoker|Jergosh's Head", "Searching for the Lost Satchel|Oggleflint|Maur Grimtotem's Satchel"],

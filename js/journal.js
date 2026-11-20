@@ -9,7 +9,7 @@ const eq = f => SLOTS.some(s => S.equip[s] && f(S.equip[s]));
 const full = f => SLOTS.every(s => S.equip[s] && f(S.equip[s]));
 const fullSet = t => (SET_SLOTS[t] || SET_SLOTS[0]).every(s => S.equip[s] && S.equip[s].set >= t);
 const onRoute = z => route().some(l => l.z === z);
-const factionDungeons = () => DUNGEONS.filter(d => d[3] === "B" || d[3] === S.faction[0]);
+const factionDungeons = () => DUNGEONS.filter(d => d.side === "B" || d.side === S.faction[0]);
 const ACH = [
   ...[10, 20, 30, 40, 50].map(n => ({ id: "L" + n, name: `Level ${n}`, desc: `Reach level ${n}.`, test: () => S.level >= n })),
   { id: "L60", name: "Level 60", desc: "Reach the level cap.", test: () => S.level >= 60 },
@@ -48,10 +48,10 @@ const ACH = [
   { id: "z10", name: "Explorer", desc: "Quest in 10 zones.", test: () => S.zones.length >= 10 },
   { id: "z20", name: "World Traveler", desc: "Quest in 20 zones.", test: () => S.zones.length >= 20 },
   { id: "d1", name: "Dungeon Delver", desc: "Clear your first dungeon.", test: () => S.dungeons.length >= 1 },
-  { id: "d10", name: "Seasoned Adventurer", desc: "Clear 10 different dungeons.", test: () => S.dungeons.filter(n => !RAIDS.some(r => r[0] === n)).length >= 10 },
-  { id: "dall", name: "Dungeon Master", desc: "Clear every dungeon open to your faction.", test: () => factionDungeons().every(d => S.dungeons.includes(d[0])) },
-  ...RAIDS.map(r => ({ id: "raid-" + r[4], name: r[0], desc: `Defeat ${RAID_INFO[r[0]].last} (${RAID_INFO[r[0]].size}-man raid).`, test: () => S.dungeons.includes(r[0]) })),
-  { id: "raidall", name: "Raider", desc: "Clear every raid, from Molten Core to Naxxramas.", test: () => RAIDS.every(r => S.dungeons.includes(r[0])) },
+  { id: "d10", name: "Seasoned Adventurer", desc: "Clear 10 different dungeons.", test: () => S.dungeons.filter(n => !RAIDS.some(r => r.name === n)).length >= 10 },
+  { id: "dall", name: "Dungeon Master", desc: "Clear every dungeon open to your faction.", test: () => factionDungeons().every(d => S.dungeons.includes(d.name)) },
+  ...RAIDS.map(r => ({ id: "raid-" + r.abbr, name: r.name, desc: `Defeat ${RAID_INFO[r.name].last} (${RAID_INFO[r.name].size}-man raid).`, test: () => S.dungeons.includes(r.name) })),
+  { id: "raidall", name: "Raider", desc: "Clear every raid, from Molten Core to Naxxramas.", test: () => RAIDS.every(r => S.dungeons.includes(r.name)) },
 ];
 function checkAch(quiet) {
   for (const a of ACH) {

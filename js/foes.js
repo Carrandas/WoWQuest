@@ -175,7 +175,7 @@ function foeOf(t) {
   if (!t || !FIGHTS.includes(t.k)) return null;
   if (t.foe) return t.foe;
   const casts = t.casts || [], N = Math.max(1, casts.length), d = dungeonRow(), raid = !!(S.dg && S.dg.raid), units = [];
-  const top = d ? d[2] : S.level, mk = (name, L, rank) => ({ name, L, rank, kind: foeKind(name) });
+  const top = d ? d.max : S.level, mk = (name, L, rank) => ({ name, L, rank, kind: foeKind(name) });
   if (t.k === "kill") (t.mobs || [t.mob]).forEach(n => units.push(mk(n, t.mobL || S.level, t.elite ? "elite" : "")));
   else if (t.k === "trash") {
     const names = t.mobs || (() => { const m = /pack of (.+)$/.exec(t.d || ""), n = m ? m[1].replace(/ies$/, "y").replace(/ves$/, "f").replace(/s$/, "") : "Enemy"; return [n, n, n]; })();
@@ -334,7 +334,7 @@ function soloFight(t) {
 }
 // what's next when nothing is being fought
 function foeIdle() {
-  if (S.dg) { const b = (dungeonRow() || [])[6]; const next = b ? b.split(",")[S.dg.killed] : null; return next ? `Next boss: ${next}` : "Nothing left to fight"; }
+  if (S.dg) { const d = dungeonRow(), next = d ? d.bosses[S.dg.killed] : null; return next ? `Next boss: ${next}` : "Nothing left to fight"; }
   const q = S.quests.find(x => x.id === S.curQ && !questDone(x));
   return q && q.mob ? `Next: ${q.mob}` : "";
 }
