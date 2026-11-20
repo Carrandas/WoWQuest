@@ -82,6 +82,9 @@
   - [ ] Raid numbers run low (about 125 dps/hps per player); raise raid boss health and heal sizes
 - [x] **Talent trees**: real talents per tree, talent spells, effects, cooldowns
 - [ ] **Guild system**
+  - Server firsts: the guild races other named guilds on the realm to the first kills (Onyxia, Ragnaros, Nefarian,
+    C'Thun, Kel'Thuzad), with a realm progress board and a "Server first!" chronicle moment (or "<Rival guild> got
+    there first"). It was competitive
   - The guild grows with you: at some level your character founds a guild with a name
   - Members join over time, enough for a 5-man dungeon first; dungeon groups are then made from the guild
   - Keep recruiting until there are 40 members at level 60, then raiding starts
@@ -194,9 +197,14 @@
   - At 60: raids on the other faction's towns (Crossroads, Southshore, Astranaar), the big ones on a capital (an
     Alliance raid on Orgrimmar to kill Thrall, a Horde raid on Stormwind for Highlord Bolvar Fordragon, since King Varian was missing in vanilla), with the city
     guards as trash
-  - Dragging a raid boss to town: Kazzak or the Emerald Dragons pulled into a city or a quest hub, and the chaos after
+  - Dragging a boss to town: Lord Kazzak pulled out of the Blasted Lands into Stormwind (the classic), or the
+    Emerald Dragons into a quest hub, and the chaos after
+  - Hakkar's Corrupted Blood: a raid comes back from Zul'Gurub with the plague (or a hunter's pet carries it), and it
+    spreads through Ironforge or Orgrimmar. Low levels drop dead in the streets, everyone else stays out of town for
+    a day. A chronicle event, and a reason the hero skips the city visit
   - Later with the guild: guild members join, a world PvP night on the guild calendar
-  - Honor and kills count toward the PvP item below once it's in; world PvP gives no gear on its own
+  - Flavour and fun, no gear: world PvP never gave any. Easier to add after the PvP item below (player-like enemies,
+    honor kills), so it comes after that one
 - [ ] **PvP: battlegrounds and honor ranks** (at 60, maybe a bracket now and then while levelling)
   - Battlegrounds, played out like a dungeon run (queue, "X joined Warsong Gulch", a string of fights, win or loss):
     - Warsong Gulch (10 vs 10): capture the flag, first to 3 caps ("Dalwyn picked up the Horde flag!", "2–1 Alliance")
