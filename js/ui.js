@@ -249,6 +249,8 @@ function meterFinish(t) {
   mn.heal.forEach((v, i) => M.heal[i] = (M.heal[i] || 0) + v);
   M.secs += mn.secs; M.last = { dmg: mn.dmg.map(Math.round), heal: mn.heal.map(Math.round), secs: mn.secs, what: t.boss || "trash" };
 }
+// a darker shade of a class colour (the stripes on a pet's part of the meter bar)
+const shade = c => "#" + c.slice(1).match(/../g).map(h => Math.round(parseInt(h, 16) * 0.55).toString(16).padStart(2, "0")).join("");
 const fmtN = n => n >= 1e6 ? (n / 1e6).toFixed(2) + "M" : n >= 1e4 ? (n / 1e3).toFixed(1) + "k" : Math.round(n).toLocaleString();
 let dmMode = "dmg", dmScope = "fight", dmTick = 0;
 function renderMeter(force) {
@@ -266,13 +268,18 @@ function renderMeter(force) {
   } else {
     vals = all.map((_, i) => (M[dmMode][i] || 0) + (live ? live[dmMode][i] : 0)); secs = M.secs + (live ? live.secs : 0); what = M.dn;
   }
-  const rows = all.map((a, i) => ({ ...a, v: vals[i] || 0 })).sort((a, b) => b.v - a.v), top = rows[0].v || 1, sum = rows.reduce((s, r) => s + r.v, 0);
+  // a pet's damage goes on its owner's bar: the owner's part solid, the pet's part striped
+  const rows = all.map((a, i) => ({ ...a, v: vals[i] || 0 }));
+  if (S.pet) { const p = rows.pop(); rows[0].pet = p.v; rows[0].v += p.v; }
+  rows.sort((a, b) => b.v - a.v);
+  const top = rows[0].v || 1, sum = rows.reduce((s, r) => s + r.v, 0);
   rows.forEach((r, i) => r.rank = i + 1);
   const shown = rows.slice(0, 10), me = rows.find(r => r.me);
   if (me.rank > 10) shown.push(me);
   setHtml("dmNote", `${esc(what)} · ${fmtN(sum)} ${dmMode === "dmg" ? "damage" : "healing"} in ${Math.max(1, Math.round(secs))}s`);
-  setHtml("dmRows", shown.map(r => { const c = CLASSES[r.cls].color;
-    return `<li class="${r.me ? "me" : ""}"><i style="width:${(r.v / top * 100).toFixed(1)}%;background:${c}"></i><span class="dmn"><b>${r.rank}</b> <span style="color:${c}">${esc(r.name)}</span></span><span class="dmv">${fmtN(r.v)} · ${fmtN(secs > 0 ? r.v / secs : 0)} ${dmMode === "dmg" ? "dps" : "hps"}</span></li>`; }).join(""));
+  setHtml("dmRows", shown.map(r => { const c = CLASSES[r.cls].color, own = r.pet ? (r.v - r.pet) / (r.v || 1) * 100 : 100;
+    const bg = r.pet ? `linear-gradient(90deg, ${c} 0 ${own.toFixed(1)}%, transparent ${own.toFixed(1)}%), repeating-linear-gradient(-45deg, ${c} 0 4px, ${shade(c)} 4px 8px)` : c;
+    return `<li class="${r.me ? "me" : ""}"${r.pet ? ` title="${esc(S.name)} ${fmtN(r.v - r.pet)} · ${esc(S.pet.name)} ${fmtN(r.pet)}"` : ""}><i style="width:${(r.v / top * 100).toFixed(1)}%;background:${bg}"></i><span class="dmn"><b>${r.rank}</b> <span style="color:${c}">${esc(r.name)}</span>${r.pet ? ` <small class="dmpet">+ ${esc(S.pet.name)}</small>` : ""}</span><span class="dmv">${fmtN(r.v)} · ${fmtN(secs > 0 ? r.v / secs : 0)} ${dmMode === "dmg" ? "dps" : "hps"}</span></li>`; }).join(""));
 }
 
 // where the hero is right now, shown above the current task
