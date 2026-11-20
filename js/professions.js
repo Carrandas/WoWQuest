@@ -178,7 +178,9 @@ function craftRun(craft, primary) {
   if (vend) S.money += vend;
   if (!crafts) return;
   const gained = p.sk[craft] - sk0;
-  log(`${craft}${made.length ? ": made " + made.join(", ") : ""}${ups ? `${made.length ? ", plus" : ":"} ${ups} practice piece${ups > 1 ? "s" : ""}` : ""}${gained ? ` (${craft} ${sk0} → ${p.sk[craft]})` : ""}.${Object.keys(notes).length ? " Bought " + Object.entries(notes).map(([k, [n, c]]) => `${n} ${k} for ${moneyTxt(c)}`).join(", ") + " on the AH." : ""}`, primary ? "spell" : "");
+  const practice = ups ? `${made.length ? ", plus" : ":"} ${ups} practice piece${ups > 1 ? "s" : ""}` : "";
+  const bought = Object.keys(notes).length ? " Bought " + Object.entries(notes).map(([k, [n, c]]) => `${n} ${k} for ${moneyTxt(c)}`).join(", ") + " on the AH." : "";
+  log(`${craft}${made.length ? ": made " + made.join(", ") : ""}${practice}${gained ? ` (${craft} ${sk0} → ${p.sk[craft]})` : ""}.${bought}`, primary ? "spell" : "");
   if (primary) p.recent.unshift(...made.map(n => ({ n, L: S.level })));
   if (p.recent.length > 8) p.recent.length = 8;
 }

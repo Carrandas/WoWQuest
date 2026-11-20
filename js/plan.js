@@ -28,7 +28,14 @@ function plan() {
       S.since = 0; q.push(restTask()); return;
     }
     let quest = S.quests.find(x => x.id === S.curQ && !questDone(x)) || open[0];
-    if (quest.id !== S.curQ) { S.curQ = quest.id; if (quest.type === "elite" && elixirName() && S.cons.elix > 0) q.push({ k: "elixir", d: `Drinking ${article(elixirName())} before the fight`, t: sec(3) }); q.push({ k: "move", d: quest.type === "elite" ? `Looking for a group to kill ${quest.mob}` : `Heading out to find ${plural(quest.mob)} for "${quest.name}"`, t: sec((quest.type === "elite" ? 40 : 20) * mountF()) }); return; }
+    // a new quest: walk to its mobs (an elite needs a group, and an elixir first)
+    if (quest.id !== S.curQ) {
+      S.curQ = quest.id;
+      const elite = quest.type === "elite";
+      if (elite && elixirName() && S.cons.elix > 0) q.push({ k: "elixir", d: `Drinking ${article(elixirName())} before the fight`, t: sec(3) });
+      q.push({ k: "move", d: elite ? `Looking for a group to kill ${quest.mob}` : `Heading out to find ${plural(quest.mob)} for "${quest.name}"`, t: sec((elite ? 40 : 20) * mountF()) });
+      return;
+    }
     q.push(killTask(quest));
     return;
   }

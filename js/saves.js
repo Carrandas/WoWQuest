@@ -42,24 +42,25 @@ function pickSaveFile() {
   };
   inp.click();
 }
-function confirmLoad(data) {
+// a yes/no dialog: title and text are HTML (escape names first); clicking outside or "no" closes it
+function confirmBox(title, text, no, yes, onYes) {
   const m = document.createElement("div");
   m.className = "modal";
-  const what = `level ${data.level} ${esc(data.race)} ${esc(data.cls.toLowerCase())}`;
-  m.innerHTML = `<div class="box" role="dialog" aria-modal="true" aria-labelledby="mt"><h3 id="mt">Load ${esc(data.name)}?</h3><p>Loads ${esc(data.name)}, a ${what}${S ? `. This replaces ${esc(S.name)} (level ${S.level}) in this browser, so save them to a file first if you want to keep them` : ""}.</p><div class="acts"><button type="button" class="ghost" id="mNo">Cancel</button><button type="button" class="danger" id="mYes">Load save</button></div></div>`;
+  m.innerHTML = `<div class="box" role="dialog" aria-modal="true" aria-labelledby="mt"><h3 id="mt">${title}</h3><p>${text}</p>`
+    + `<div class="acts"><button type="button" class="ghost" id="mNo">${no}</button><button type="button" class="danger" id="mYes">${yes}</button></div></div>`;
   document.body.appendChild(m);
   $("mNo").focus();
   $("mNo").onclick = () => m.remove();
   m.addEventListener("click", e => { if (e.target === m) m.remove(); });
-  $("mYes").onclick = () => { m.remove(); S = data; migrate(); S.savedAt = Date.now(); save(); startGame(); toast(`Loaded ${S.name}`); };
+  $("mYes").onclick = () => { m.remove(); onYes(); };
+}
+function confirmLoad(data) {
+  const what = `level ${data.level} ${esc(data.race)} ${esc(data.cls.toLowerCase())}`;
+  const replaces = S ? `. This replaces ${esc(S.name)} (level ${S.level}) in this browser, so save them to a file first if you want to keep them` : "";
+  confirmBox(`Load ${esc(data.name)}?`, `Loads ${esc(data.name)}, a ${what}${replaces}.`, "Cancel", "Load save",
+    () => { S = data; migrate(); S.savedAt = Date.now(); save(); startGame(); toast(`Loaded ${S.name}`); });
 }
 function confirmRetire() {
-  const m = document.createElement("div");
-  m.className = "modal";
-  m.innerHTML = `<div class="box" role="dialog" aria-modal="true" aria-labelledby="mt"><h3 id="mt">Delete ${esc(S.name)}?</h3><p>This deletes your level ${S.level} ${esc(S.cls.toLowerCase())} and all progress. A new character starts at level 1.</p><div class="acts"><button type="button" class="ghost" id="mNo">Keep playing</button><button type="button" class="danger" id="mYes">Delete character</button></div></div>`;
-  document.body.appendChild(m);
-  $("mNo").focus();
-  $("mNo").onclick = () => m.remove();
-  m.addEventListener("click", e => { if (e.target === m) m.remove(); });
-  $("mYes").onclick = () => { m.remove(); wipe(); S = null; showCreate(); };
+  confirmBox(`Delete ${esc(S.name)}?`, `This deletes your level ${S.level} ${esc(S.cls.toLowerCase())} and all progress. A new character starts at level 1.`, "Keep playing", "Delete character",
+    () => { wipe(); S = null; showCreate(); });
 }
