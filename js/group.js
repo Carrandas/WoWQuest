@@ -129,16 +129,35 @@ const bossWipes = t => t.k === "boss" && (t.wipe ?? (t.wipe = Math.random() < wi
 // finished heal lands on whoever is hurt most right then (a tank, if it's close)
 function simFight(t) {
   foeOf(t);
-  const raid = S.dg && S.dg.raid, base = t.k === "boss" ? (raid ? 260 : 110) : (raid ? 70 : 40), lo = x => Math.max(0.05, x);
-  const P = [{ name: S.name, role: heroRole(), hp: S.hpF ?? 1, mp: S.mpF ?? 1, mx: hpMax(), healEv: [], casts: (t.casts || []).map(s => s.replace(/ on .+$/, "")) },
+  const P = pullMembers(t);
+  pullCosts(P, t);
+  playPull(P, t, pullEvents(P, t));
+  // a wipe: late in the fight the group goes down, tank first, then the healers, then everyone else
+  if (bossWipes(t)) {
+    const order = P.slice().sort((a, b) => "thd".indexOf(a.role[0]) - "thd".indexOf(b.role[0]));
+    order.forEach((p, j) => { const at = 0.7 + 0.28 * (j + Math.random() * 0.8) / order.length; p.tl = p.tl.filter(x => x[0] < at); p.tl.push([at, 0]); p.cur = 0; });
+  }
+  P.forEach(p => p.end = p.cur);
+  return P;
+}
+// everyone in the pull: the hero (casts already rolled) and the companions (their casts rolled here)
+function pullMembers(t) {
+  const raid = S.dg && S.dg.raid, base = t.k === "boss" ? (raid ? 260 : 110) : (raid ? 70 : 40);
+  return [{ name: S.name, role: heroRole(), hp: S.hpF ?? 1, mp: S.mpF ?? 1, mx: hpMax(), healEv: [], casts: (t.casts || []).map(s => s.replace(/ on .+$/, "")) },
     ...S.party.map(m => ({ name: m.name, role: m.role, hp: m.hp, mp: m.mp, mx: memberMax(m.cls, m.L), healEv: [], casts: rollRot(GROUP_ROT[m.role][m.cls], knowsAt(m.cls, m.L, m.spec), castCount(base, m.L)) }))];
+}
+// each member's mana at the end, and the damage they take per cast of their own
+function pullCosts(P, t) {
+  const lo = x => Math.max(0.05, x);
   // the damage each role soaks is the pull's usual cost plus its share of the healing on offer
   let supply = 0;
   P.forEach(p => { if (p.role === "heal") p.casts.forEach(s => { if (isHeal(s)) supply += 0.15; }); });
   const W = { tank: 3, dps: 0.6, heal: 0.3 }, wsum = P.reduce((a, p) => a + W[p.role], 0);
   const tough = heroTaken(false, (dungeonRow() || { max: S.level }).max);
   P.forEach((p, i) => { const d = fightDrop(p.role, t.k); if (!i) { d[0] *= tough; d[1] *= talMod("m"); } p.mpEnd = lo(p.mp - d[1]); p.hit = (d[0] + supply * HEAL_EFF * W[p.role] / wsum) / (p.casts.length || 1); p.cur = p.hp; p.tl = [[0, p.hp]]; });
-  // what happens in the pull, in time order: member i's cast k ({ at, i, k }) and the enemy's hits on them ({ at, i, dmg })
+}
+// what happens in the pull, in time order: member i's cast k ({ at, i, k }) and the enemy's hits on them ({ at, i, dmg })
+function pullEvents(P, t) {
   const ev = []; P.forEach((p, i) => p.casts.forEach((s, k) => ev.push({ at: (k + 1) / p.casts.length, i, k })));
   // the enemy's hits: single-target ones on whoever it is attacking, aoe on everyone. Members it never
   // hits this pull (no aoe) keep taking their usual splash damage on their own casts
@@ -156,6 +175,10 @@ function simFight(t) {
     hs.forEach((e, j) => ev.push({ at: e.at, i, dmg: budget * share * wt[j] / W }));
   });
   ev.sort((a, b) => a.at - b.at);
+  return ev;
+}
+// the pull, event by event: hits land (a shield soaks the hero's), cooldowns fire, healers heal whoever is hurt most
+function playPull(P, t, ev) {
   const put = (p, at, v) => { p.cur = Math.min(1, Math.max(0.05, v)); p.tl.push([at, p.cur]); };
   const heal = (h, q, at, v) => { const was = q.cur; put(q, at, v); if (q.cur > was) h.healEv.push({ at, amt: Math.round((q.cur - was) * q.mx) }); };
   let shield = 0;
@@ -175,13 +198,6 @@ function simFight(t) {
     if (/Chain Heal/.test(s)) hurt.filter(([, x]) => P[x] !== q).slice(0, 2).forEach(([, x], n) => heal(p, P[x], at, P[x].cur + (n ? 0.04 : 0.07)));
     p.casts[k] = `${s} on ${q.name}`;
   }
-  // a wipe: late in the fight the group goes down, tank first, then the healers, then everyone else
-  if (bossWipes(t)) {
-    const order = P.slice().sort((a, b) => "thd".indexOf(a.role[0]) - "thd".indexOf(b.role[0]));
-    order.forEach((p, j) => { const at = 0.7 + 0.28 * (j + Math.random() * 0.8) / order.length; p.tl = p.tl.filter(x => x[0] < at); p.tl.push([at, 0]); p.cur = 0; });
-  }
-  P.forEach(p => p.end = p.cur);
-  return P;
 }
 let HEAL_EFF = 1.05;
 // the group's side of a task, worked out once when it starts (kept in memory, not in the save)
