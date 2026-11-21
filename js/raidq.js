@@ -13,33 +13,33 @@
 const ATT_CHAINS = {
   mc: { raid: "Molten Core", name: "Attunement to the Core", steps: [
     ["go", "Find Lothos Riftwaker at the foot of Blackrock Mountain", 40],
-    ["run", "Bring Lothos a Core Fragment from the Molten Core portal in Blackrock Depths", "Blackrock Depths", 0.45],
+    ["run", "Bring Lothos a Core Fragment from the Molten Core portal in Blackrock Depths", "Blackrock Depths", 0.7],
     ["run", "Clear Blackrock Depths with the guild until everyone has their fragment", "Blackrock Depths/Lower Blackrock Spire", "x2"],
   ] },
   onyA: { raid: "Onyxia's Lair", side: "A", name: "The Drakefire Amulet", steps: [
     ["go", "Dragonkin Menace: kill Blackrock dragonspawn in the Burning Steppes", 150],
     ["go", "The True Masters: report to Magistrate Solomon in Lakeshire, then Highlord Bolvar in Stormwind", 60],
     ["go", "Marshal Windsor: find him at the top of Blackrock Mountain", 50],
-    ["run", "Abandoned Hope: Marshal Windsor's lost notes in Blackrock Depths", "Blackrock Depths", 0.6],
-    ["run", "Jail Break!: free Marshal Windsor from the Detention Block", "Blackrock Depths", 0.55],
+    ["run", "Abandoned Hope: Marshal Windsor's lost notes in Blackrock Depths", "Blackrock Depths", 0.85],
+    ["run", "Jail Break!: free Marshal Windsor from the Detention Block", "Blackrock Depths", 0.85],
     ["go", "Stormwind Rendezvous and The Great Masquerade: unmask Lady Prestor in front of Bolvar", 70],
     ["go", "The Dragon's Eye: take it to Haleh at the top of Mazthoril in Winterspring", 90],
-    ["run", "Seal of Ascension: three gemstones from Lower Blackrock Spire, for the key to the upper spire", "Lower Blackrock Spire", 0.5],
-    ["run", "Drakefire Amulet: kill General Drakkisath for the Blood of the Black Dragon Champion", "Upper Blackrock Spire", 0.6],
+    ["run", "Seal of Ascension: three gemstones from Lower Blackrock Spire, for the key to the upper spire", "Lower Blackrock Spire", 0.8],
+    ["run", "Drakefire Amulet: kill General Drakkisath for the Blood of the Black Dragon Champion", "Upper Blackrock Spire", 0.85],
   ] },
   onyH: { raid: "Onyxia's Lair", side: "H", name: "The Blood of the Black Dragon Champion", steps: [
-    ["run", "Warlord's Command: Highlord Omokk, War Master Voone, Overlord Wyrmthalak and the Important Blackrock Documents", "Lower Blackrock Spire", 0.45],
+    ["run", "Warlord's Command: Highlord Omokk, War Master Voone, Overlord Wyrmthalak and the Important Blackrock Documents", "Lower Blackrock Spire", 0.8],
     ["go", "Eitrigg's Wisdom: report to Thrall in Orgrimmar", 50],
-    ["run", "For the Horde!: bring back Warchief Rend Blackhand's head", "Upper Blackrock Spire", 0.6],
+    ["run", "For the Horde!: bring back Warchief Rend Blackhand's head", "Upper Blackrock Spire", 0.85],
     ["go", "What the Wind Carries and The Champion of the Horde: Rexxar in Desolace", 80],
     ["go", "Oculus Illusions: Myranda the Hag's disguise in the Western Plaguelands", 60],
     ["go", "Emberstrife: fly into the Wyrmbog in Dustwallow Marsh, disguised as a black dragon", 70],
     ["go", "The Test of Skulls: Scryer in Winterspring, Somnus in the Swamp of Sorrows, Chronalis in Tanaris", 160],
     ["go", "Ascension: Emberstrife's last test", 40],
-    ["run", "Blood of the Black Dragon Champion: kill General Drakkisath", "Upper Blackrock Spire", 0.6],
+    ["run", "Blood of the Black Dragon Champion: kill General Drakkisath", "Upper Blackrock Spire", 0.85],
   ] },
   bwl: { raid: "Blackwing Lair", name: "Blackhand's Command", steps: [
-    ["run", "Blackhand's Command: the Scarshield Quartermaster's orders in Blackrock Spire", "Lower Blackrock Spire", 0.5],
+    ["run", "Blackhand's Command: the Scarshield Quartermaster's orders in Blackrock Spire", "Lower Blackrock Spire", 0.7],
     ["run", "Touch the orb in General Drakkisath's chamber, after Drakkisath falls", "Upper Blackrock Spire", 0.8],
   ] },
   naxx: { raid: "Naxxramas", name: "The Dread Citadel", steps: [
@@ -98,7 +98,7 @@ function resLine(boss) {
   const k = resFor(boss); if (!k || !resNow(k) || Math.random() < 0.5) return;
   log(`${S.name} swaps into ${ATT_CHAINS[k].res} resistance gear for ${boss} (${resNow(k)} ${ATT_CHAINS[k].res} resistance). ${pick(["It barely tickles.", "The healers notice.", "Worth every Thorium Bar."])}`, "spell");
 }
-const ATT_PREF = 0.5;  // without a goal: the chance a free evening goes to the dungeon the next step needs
+const ATT_PREF = 0.75; // without a goal: the chance a free evening goes to the dungeon the next step needs
 // the chain for a raid (for this faction), and the raids each chain opens
 const attChain = raid => Object.keys(ATT_CHAINS).find(k => ATT_CHAINS[k].raid === raid && (!ATT_CHAINS[k].side || ATT_CHAINS[k].side === S.faction[0])) || null;
 const attStep = k => S.att[k] || 0;
