@@ -175,6 +175,8 @@
     Shifting Sands quest line (Anachronos, the Green Dragonflight, the Nefarian and Vaelastrasz parts), and the one who
     bangs the gong in Silithus gets the Black Qiraji Resonating Crystal, the black battle tank, the rarest mount of all.
     The Ten Hours War follows, and only then do Ruins and Temple of Ahn'Qiraj open (they'd start locked)
+    - It fits the raid lockouts already there: the gates open on the raid timeline (around when AQ40 is due today),
+      then Ruins of Ahn'Qiraj resets every three days like Zul'Gurub and the Temple weekly with the other big raids
   - Doing things for fun, mostly chronicle flavour: guild chat, duels outside Orgrimmar or Ironforge, world PvP in
     Hillsbrad, a lap around the world, /dance on the Ironforge bank
   - Achievements for the collections (10 / 25 minipets, 5 mounts, Deathcharger, Exalted with 5 factions)
@@ -192,7 +194,11 @@
       Greater Nature Protection Potions
     - Frost: the Argent Dawn sets (Glacial for tailors, Polar and Icy Scale for leatherworkers, Icebane for smiths),
       which need Frozen Runes from Naxxramas and Argent Dawn reputation; Frost Protection Potions
-  - Goals for it ("Fire resistance set: 140 of 200"), crafters making their own pieces
+  - Goals for it ("Fire resistance set: 140 of 200"), crafters making their own pieces; the player can pick a
+    resistance set as a goal (fire before Ragnaros, nature before Huhuran, frost before Sapphiron), and the hero
+    farms the reputation, the quests and the mats for it between raid nights
+  - Gear from quests too: the Cenarion Circle and Argent Dawn quest rewards, the Onyxia Scale Cloak against
+    Nefarian's Shadow Flame, so each set is a short quest line and not only a shopping list
   - Rebalance so the endgame timeline holds: missing resistance slows those raids, having it doesn't speed them up
 - [ ] **Legendaries and class quest weapons, done properly** (today: shortcuts)
   - Today: two Bindings of the Windseeker (from any Molten Core boss) make Thunderfury on the spot, the Eye of Sulfuras
@@ -285,6 +291,18 @@
   - When gold runs low: skip the luxury (no flask, cheaper enchant), or go farming for a while ("Farming Thorium in
     Winterspring", "Running Stratholme for gold"), so the gold actually matters
   - A small money line on the character tab: gold spent this week on enchants, consumables and repairs
+- [ ] **Raid attunement quest chains, as goals** (today an attunement is just a count of level 60 dungeon clears)
+  - Each raid behind its real chain: Attunement to the Core (Lothos Riftwaker, a Core Fragment from Blackrock Depths)
+    for Molten Core; the Drakefire Amulet for Onyxia (Alliance: Marshal Windsor, the Blackrock Spire escape, Unfired
+    Plate Gauntlets and the Blood of the Black Dragon Champion; Horde: Rexxar, the Warlord's Command, Emberstrife);
+    Blackhand's Command (the Scarshield Quartermaster's note in Blackrock Spire) for Blackwing Lair; the Argent Dawn
+    reputation and the gold or mats for Naxxramas; Ahn'Qiraj opening for everyone with the gates
+  - Steps that send the hero to real places (dungeons, Burning Steppes, Dustwallow Marsh), shown as a chain in the
+    Quests tab with the current step
+  - The player can pick a chain as a goal ("Drakefire Amulet: step 6 of 14"), otherwise the hero works on them on its
+    own as today; the guild waits on members who aren't attuned yet (a slot to fill, the chronicle grumbling)
+  - World raid bosses, Zul'Gurub and Ruins of Ahn'Qiraj need no attunement, as in classic
+  - Keep the timeline: the chains take about as long as the dungeon clears they replace
 - [ ] **World raid bosses** (the outdoor bosses as real raid fights, not just a name in the world events line above)
   - Azuregos in Azshara, Lord Kazzak in the Blasted Lands, the four Emerald Dragons (Ysondre, Lethon, Emeriss,
     Taerar) at the Great Trees in Duskwood, Ashenvale, Feralas and the Hinterlands
