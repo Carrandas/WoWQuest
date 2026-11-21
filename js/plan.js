@@ -38,7 +38,7 @@ function planField(q, h) {
   let quest = S.quests.find(x => x.id === S.curQ && !questDone(x)) || open[0];
   // a new quest: walk to its mobs (an elite needs a group, and an elixir first)
   if (quest.id !== S.curQ) {
-    S.curQ = quest.id;
+    S.curQ = quest.id; duoStart();
     const elite = quest.type === "elite";
     if (elite && elixirName() && S.cons.elix > 0) q.push({ k: "elixir", d: `Drinking ${article(elixirName())} before the fight`, t: sec(3) });
     q.push({ k: "move", d: elite ? `Looking for a group to kill ${quest.mob}` : `Heading out to find ${plural(quest.mob)} for "${quest.name}"`, t: sec((elite ? 40 : 20) * mountF()) });
@@ -70,11 +70,13 @@ function killTask(quest) {
   // now and then a second or third mob joins in (sometimes a local wanderer)
   const roll = Math.random(), n = elite || S.level < 6 ? 1 : roll < 0.03 ? 3 : roll < 0.13 ? 2 : 1;
   const mobs = [mob]; for (let i = 1; i < n; i++) mobs.push(Math.random() < 0.7 ? mob : pick(zoneMobs(quest.zone)));
-  const d = elite ? `Fighting ${mob} (elite) with a pickup group` : n > 1 ? `${pick(c.verbs)} ${n === 2 ? "two" : "three"} mobs at once` : `${pick(c.verbs)} ${article(mob)}`;
+  const d = elite ? `Fighting ${mob} (elite) with a group` : n > 1 ? `${pick(c.verbs)} ${n === 2 ? "two" : "three"} mobs at once` : `${pick(c.verbs)} ${article(mob)}`;
   const gear = gearFor();
   const p = packTrim(rotation(elite, n > 1 ? (4 + R(2)) * n : undefined, n), n, 0,
     sec((9 + S.level * 0.12) * (elite ? 5 : 1) * (1 + 0.6 * (n - 1)) * clamp(1.35 - gear * 0.35, 0.8, 1.2) * buffSpeed() * petSpeed() / talMod("d")));
-  return { k: "kill", d, t: p.t, mob, mobs, mobL, qid: quest.id, elite, casts: p.casts };
+  const t = { k: "kill", d, t: p.t, mob, mobs, mobL, qid: quest.id, elite, casts: p.casts };
+  killHelpers(t); // company: helpers on elites, a friend questing along
+  return t;
 }
 
 // ---------- area of effect ----------
@@ -208,7 +210,7 @@ function queueDungeon(d) {
   S.meter = { dn, dmg: [], heal: [], secs: 0, last: null };
   const dq = S.dungeons.includes(dn) ? [] : (DQUESTS[dn] || []).map(x => { const [name, boss, obj, side] = x.split("|"); return { name, boss, obj, side }; }).filter(x => !x.side || x.side === S.faction[0]);
   if (dq.length) q.push({ k: "dqpick", d: `Picking up quests for ${dn}`, t: sec(6 + 3 * dq.length), dn, dq: dq.map(x => ({ name: x.name, boss: x.boss, obj: x.obj, raid, done: false })) });
-  q.push({ k: "lfg", d: raid ? `Waiting on the raid invite for ${dn}` : `Looking for group: "${chat}"`, t: sec(raid ? 120 : 60 + R(120)), chat: raid ? `[Raid] ${abbr} invites going out, ${RAID_INFO[dn].size} man, be on time!` : chat, dn });
+  q.push({ k: "lfg", d: raid ? `Waiting on the raid invite for ${dn}` : `Looking for group: "${chat}"`, t: sec(raid ? 120 : 60 + R(120)), chat: raid ? `[${S.guild ? "Guild" : "Raid"}] ${abbr} invites going out, ${RAID_INFO[dn].size} man, be on time!` : chat, dn });
   q.push({ k: "dtravel", d: `Traveling to ${dn} with the group`, t: sec(raid ? 180 : 120), dn });
   const petBoss = petDungeon(q, raid, bosses);
   q.push({ k: "dbuff", d: raid ? "Buffing up and drinking a flask at the instance portal" : "Buffing up at the instance entrance", t: sec(8), raid });

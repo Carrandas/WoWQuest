@@ -24,12 +24,15 @@ function migrate() {
   if (S.pet === undefined) S.pet = null;
   if (!S.mounts) { S.mounts = {}; mountOwn(true); }
   S.rep = S.rep || {}; S.wintersaber = S.wintersaber || 0; if (S.wsToday === undefined) S.wsToday = null;
+  if (!S.friends) { S.friends = []; S.duo = null; S.guild = S.guild || null; seedSocial(); }
+  if (S.duo === undefined) S.duo = null;
   S.goals = S.goals || []; S.goalsDone = S.goalsDone || {}; if (S.goalAuto === undefined) S.goalAuto = true;
   S.minipets = S.minipets || {}; S.oox = S.oox || []; if (S.companion === undefined) S.companion = null;
   S.demons = S.demons || {}; S.petStats = S.petStats || { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 }; S.rareHunt = S.rareHunt || null;
   ["Call Pet", "Summon Imp", "Summon Voidwalker", "Summon Succubus", "Summon Felhunter"].forEach(n => delete S.buffs[n]);
   // profession achievements came later: the ones already earned are noted quietly instead of all at once
   if (!S.achProf) { S.achProf = 1; checkAch(true, "prof"); }
+  if (!S.achSocial) { S.achSocial = 1; checkAch(true, "social"); }
 }
 
 // ---------- save files: the same data as the browser save, as a download ----------

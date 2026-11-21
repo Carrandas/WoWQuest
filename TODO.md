@@ -82,6 +82,12 @@
   - [ ] Raid numbers run low (about 125 dps/hps per player); raise raid boss health and heal sizes
 - [x] **Talent trees**: real talents per tree, talent spells, effects, cooldowns
 - [ ] **Guild system**
+  - **Done** (first part): friends from elite quests and dungeons (up to 10, with a personality and a history), a friend
+    questing along now and then, friends filling the dungeon groups, the guild founded or joined around level 20-30,
+    recruiting to about 50, the guild roster filling the raids, personality lines in the chronicle, friends drifting
+    away, the server-first race against a rival guild (Onyxia, Ragnaros, Nefarian, C'Thun, Kel'Thuzad), the Guild
+    tab, five achievements. Helpers are company only: kill outcomes are the solo ones. Still to come: each member's
+    own gear and loot (DKP), the guild bank, mid-run swaps and "LFM tank" recruiting, battlegrounds with the core group
   - Server firsts: the guild races other named guilds on the realm to the first kills (Onyxia, Ragnaros, Nefarian,
     C'Thun, Kel'Thuzad), with a realm progress board and a "Server first!" chronicle moment (or "<Rival guild> got
     there first"). It was competitive

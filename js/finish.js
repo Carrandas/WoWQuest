@@ -100,6 +100,7 @@ const FINISH = {
       if (questDone(q)) log(`Objective complete: ${questText(q)}.`, "quest");
     }
     if (t.elite) { log(`${t.mob} has been slain.`, "boss"); if (!S.elites.includes(t.mob)) S.elites.push(t.mob); }
+    helpersAfter(t);
     if (S.arrived) { const ze = zoneEntry(S.arrived); ze.k++; ze.L1 = S.level; ze.t1 = realNow(); }
     const L = S.level, junk = () => Math.round((L * L * 0.35 + 3) * (0.5 + Math.random()) * (L >= 60 ? 0.35 : 1));
     if (S.prof) { profLoot(t); if (Math.random() < 0.4) addBag({ name: pick(GREYS), val: junk(), q: 0 }); }
@@ -146,6 +147,7 @@ const FINISH = {
   repair() { const c = Math.min(S.repair, S.money); spend("rep", c); S.repair = 0; if (c) log(`Repaired everything for ${moneyTxt(c)}.`, "gold"); },
   shop() {
     const L = S.level;
+    socialCity(); // the guild: founded, recruiting
     minipetShop(); // a cheap vendor pet comes before the rest of the shopping
     buySupplies(spendable() * 0.5); // potions and the like come first: half of the spare gold may go to supplies
     const bag = BAGS.filter(b => b.lvl <= L).pop();
@@ -194,7 +196,7 @@ const FINISH = {
     if (S.party.length > 4) {
       const all = [{ name: S.name, role: heroRole() }, ...S.party], tanks = all.filter(m => m.role === "tank").map(m => m.name);
       log(`Raid assembled: ${all.length} players, ${tanks.length} tanks and ${all.filter(m => m.role === "heal").length} healers. Main tank: ${tanks[0]}.`, "chat");
-    } else log(`Group formed: ${S.party.map(m => `${m.name} (${m.cls.toLowerCase()} ${ROLE_NAME[m.role].toLowerCase()})`).join(", ")}.`, "chat");
+    } else log(`Group formed: ${S.party.map(m => `${m.name} (${m.cls.toLowerCase()} ${ROLE_NAME[m.role].toLowerCase()}${m.friend ? ", friend" : ""})`).join(", ")}.`, "chat");
   },
   dqpick(t) { S.dq = t.dq; log(`Picked up ${t.dq.length} quest${t.dq.length > 1 ? "s" : ""} for ${t.dn}: ${t.dq.map(x => `"${x.name}"`).join(", ")}.`, "quest"); },
   dqturn(t) {
@@ -210,7 +212,7 @@ const FINISH = {
     S.dq = null;
   },
   dtravel(t) { S.loc = "dungeon"; log(`Entering ${t.dn}.`, "dung"); },
-  trash(t) { if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); petAfterFight(t, null); minipetDrops(t.mobs || []); },
+  trash(t) { if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); petAfterFight(t, null); minipetDrops(t.mobs || []); friendChatter(); },
   boss(t) {
     if (t.foe) t.foe.units.forEach(u => (u.phases || []).forEach(p => { if (p.say) log(p.say, "boss"); }));
     const raid = !!(S.dg && S.dg.raid);
@@ -234,7 +236,7 @@ const FINISH = {
     if (raid) {
       const first = !(S.bossKills[t.boss] > 0), l = raidLock(t.dn) || (S.lock[t.dn] = { at: S.time, killed: 0, last: 0 });
       l.killed = S.dg.killed; S.bossKills[t.boss] = (S.bossKills[t.boss] || 0) + 1;
-      if (first) log(`First kill: ${t.boss}!`, "ach");
+      if (first) { log(`First kill: ${t.boss}!`, "ach"); serverFirst(t.boss); }
     }
     log(`${t.boss} has been defeated.`, "boss");
     (S.dq || []).filter(x => !x.done && x.boss === t.boss).forEach(x => { x.done = true; log(`Objective complete: ${x.obj} ("${x.name}").`, "quest"); });
@@ -279,6 +281,7 @@ const FINISH = {
     log(full ? `${t.dn} cleared!` : `Leaving ${t.dn} with ${S.dg.killed} of ${S.dg.total} bosses down. Same time tomorrow.`, "dung");
     const bill = S.dg && S.dg.raid ? S.repair - (S.dg.rep0 || 0) : 0;
     if (bill > 0) log(`Repair bill after ${t.dn}: ${moneyTxt(bill)}.`, "gold");
+    socialDungeonEnd();
     S.dg = null; S.party = null; S.loc = "city";
   },
   // nothing to do when these end: the hero just moves on (health and mana are set in finish)

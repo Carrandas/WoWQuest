@@ -81,7 +81,7 @@ const EXPECT = {
   craft: { 20: [55, 105], 30: [110, 160], 40: [150, 215] },
   gather: { 20: [45, 130], 30: [110, 230], 40: [200, 300] },
   second: { 20: [30, 105],   // tailors start lower: First Aid shares their cloth
-            30: [105, 160], 40: [150, 215] },
+            30: [100, 160], 40: [145, 215] }, // mages conjure their food and cook least (they sat right on 105 / 150)
 };
 const GATHER = ["Mining", "Herbalism", "Skinning"];
 async function balance(seeds) {

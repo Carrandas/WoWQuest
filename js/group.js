@@ -32,8 +32,9 @@ function makeParty(raid) {
   const size = raid && S.dg && RAID_INFO[S.dg.name] ? RAID_INFO[S.dg.name].size : 5, [nt, nh] = RAID_ROLES[size] || RAID_ROLES[5];
   const roles = [...Array(nt).fill("tank"), ...Array(nh).fill("heal")]; while (roles.length < size) roles.push("dps");
   roles.splice(roles.indexOf(heroRole()), 1);
-  const taken = [S.name];
+  const taken = takenNames(), used = [];
   const members = roles.map(role => {
+    const known = socialMember(role, raid, used); if (known) return { ...known, gear: contentGear() }; // friends, then the guild
     const c = pick(ROLE_CLASSES[role].filter(k => k !== "Paladin" || S.faction === "Alliance").filter(k => k !== "Shaman" || S.faction === "Horde"));
     const race = pick(Object.keys(ALLOWED).filter(r => RACES[r].f === S.faction && ALLOWED[r].includes(c)));
     const name = randName(taken); taken.push(name);

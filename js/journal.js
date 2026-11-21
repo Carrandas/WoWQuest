@@ -96,6 +96,14 @@ const PROF_ACH = [
   { id: "p-crusader", name: "Crusader", desc: "Get Crusader on your weapon, bought or enchanted yourself.", test: () => eq(it => it.ench && it.ench.name === "Crusader") },
 ];
 ACH.push(...PROF_ACH.map(a => ({ ...a, cat: "prof" })));
+// friends and the guild
+ACH.push(...[
+  { id: "fr1", name: "A Friend Indeed", desc: "Make your first friend.", test: () => (S.friends || []).length >= 1 },
+  { id: "fr10", name: "Full Friends List", desc: "Have ten friends at once.", test: () => (S.friends || []).length >= 10 },
+  { id: "guild", name: "Guilded", desc: "Found or join a guild.", test: () => !!S.guild },
+  { id: "guild40", name: "Raiding Guild", desc: "Have 40 members in your guild.", test: () => !!S.guild && S.guild.roster.length + S.friends.length + 1 >= 40 },
+  { id: "sfirst", name: "Server First!", desc: "Beat the rival guild to a server first.", test: () => !!S.guild && Object.values(S.guild.firsts).some(x => x.us) },
+].map(a => ({ ...a, cat: "social" })));
 // minipets
 const mp = () => S.minipets || {}, mpHas = names => names.every(n => mp()[n]);
 ACH.push(...[

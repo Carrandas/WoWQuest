@@ -118,6 +118,7 @@ const TAB_ICONS = {
   spells: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19"/><path d="M12 7l1 2.2 2.2 1-2.2 1L12 13.4l-1-2.2-2.2-1 2.2-1z"/>',
   log: '<path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7"/><path d="M7 3a2 2 0 0 0-2 2v2h4V5a2 2 0 0 0-2-2z"/><path d="M10 9h6M10 13h6M10 17h4"/>',
   quests: '<path d="M12 4v10"/><circle cx="12" cy="19" r="1.3" fill="currentColor" stroke="none"/>',
+  guild: '<path d="M6 3v18"/><path d="M6 4h12l-3 4 3 4H6"/>',
   ach: '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4M9 21h6M10 17h4"/>',
   zones: '<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',
   coll: '<circle cx="7" cy="9" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="17" cy="9" r="2"/><path d="M8 18c0-3 1.8-5 4-5s4 2 4 5c0 1.5-1.5 2-4 2s-4-.5-4-2z"/>',
@@ -324,7 +325,7 @@ function renderHero() {
   const c = cls();
   $("hName").textContent = S.name; $("hName").style.color = c.color;
   $("tWhere").textContent = where();
-  $("hSub").innerHTML = `Level <b>${S.level}</b> ${esc(S.race)} <b style="color:${c.color}">${esc(S.cls)}</b> · ${esc(c.trees[S.spec])}`;
+  $("hSub").innerHTML = `Level <b>${S.level}</b> ${esc(S.race)} <b style="color:${c.color}">${esc(S.cls)}</b> · ${esc(c.trees[S.spec])}${S.guild ? ` <span class="gtag">&lt;${esc(S.guild.name)}&gt;</span>` : ""}`;
   $("stats").innerHTML = STATS.map(k => `<div class="stat ${k === mainStat() ? "prime" : ""}"><span class="lbl">${k}</span><b>${S.stats[k]}</b></div>`).join("");
   $("vitals").innerHTML = [
     ["money", money(S.money)],
@@ -433,15 +434,30 @@ const memberBars = i => `<div class="gbar"><i id="gh${i}"></i><span id="ghv${i}"
         <div class="gcast" id="gc${i}"></div>`;
 // party / raid frames: the hero plus the companions
 let gCache = {};
+// who to draw: the dungeon or raid group, the helpers on an elite quest, or a friend questing along
+function groupView() {
+  if (S.party && S.dg && S.dg.formed) return { list: S.party, inst: true, title: S.dg.name };
+  const t = S.task;
+  if (t && t.k === "kill" && t.helpers) return { list: t.helpers, title: t.elite ? `${t.mob} (elite)` : `questing with ${t.helpers[0].name}` };
+  const f = S.duo && S.loc === "field" && S.friends.find(x => x.name === S.duo.name);
+  return f ? { list: [asMember(f)], title: `questing with ${f.name}` } : null;
+}
+// a quest helper's health and casts through the fight (no casts between fights)
+function helperNow(m, t) {
+  if (!t || !m.casts) return { hp: 1, mp: 1, p: 0, fight: false, ci: -1, casts: [] };
+  const raw = taskDone(t), n = m.casts.length, p = Math.floor(raw * n) / n;
+  return { hp: 1 + (m.hpEnd - 1) * p, mp: 1 + (m.mpEnd - 1) * p, p, fight: true, ci: Math.min(n - 1, Math.floor(raw * n)), casts: m.casts };
+}
 function renderGroup(hf, mf) {
-  const show = !!(S.party && S.dg && S.dg.formed), box = $("group");
+  const v = groupView(), show = !!v, box = $("group");
   if (box.hidden === show) box.hidden = !show;
   if (!show) return;
-  const sig = S.party.map(m => m.name).join() + S.level;
+  const sig = v.list.map(m => m.name).join() + S.level + (v.inst ? "i" : "q");
   if (box.dataset.sig !== sig) {
     box.dataset.sig = sig; gCache = {}; dmTick = -1;
-    const all = [{ name: S.name, race: S.race, cls: S.cls, role: heroRole(), L: S.level, me: true }, ...S.party], raid = all.length > 5;
-    $("gTitle").innerHTML = raid ? `Raid <small>${esc(S.dg.name)} · ${all.length} players · ${all.filter(m => m.role === "tank").length} tanks, ${all.filter(m => m.role === "heal").length} healers</small><span class="legend"><span><i style="background:#4a7bd8"></i>tank</span><span><i style="background:#3fbf3f"></i>healer</span><span><i style="background:#c8312b"></i>dps</span></span>` : `Group <small>${esc(S.dg.name)}</small>`;
+    box.classList.toggle("nometer", !v.inst);
+    const all = [{ name: S.name, race: S.race, cls: S.cls, role: heroRole(), L: S.level, me: true }, ...v.list], raid = all.length > 5;
+    $("gTitle").innerHTML = raid ? `Raid <small>${esc(S.dg.name)} · ${all.length} players · ${all.filter(m => m.role === "tank").length} tanks, ${all.filter(m => m.role === "heal").length} healers</small><span class="legend"><span><i style="background:#4a7bd8"></i>tank</span><span><i style="background:#3fbf3f"></i>healer</span><span><i style="background:#c8312b"></i>dps</span></span>` : `Group <small>${esc(v.title)}</small>`;
     box.classList.toggle("raid", raid);
     if (raid) {
       const groups = []; for (let g = 0; g * 5 < all.length; g++) groups.push(all.slice(g * 5, g * 5 + 5).map((m, k) => [m, g * 5 + k]));
@@ -451,7 +467,7 @@ function renderGroup(hf, mf) {
     } else
     $("gcards").innerHTML = all.map((m, i) => `<div class="gcard r-${m.role}${m.me ? " me" : ""}">
       <div class="gtop"><span class="gname" style="color:${CLASSES[m.cls].color}">${esc(m.name)}</span><span class="grole">${ROLE_NAME[m.role]}</span></div>
-      <div class="gsub">Level ${m.L} ${esc(m.race)} ${m.cls}${m.me ? " · you" : ""}</div>
+      <div class="gsub">Level ${m.L} ${esc(m.race)} ${m.cls}${m.me ? " · you" : isFriend(m.name) ? " · friend" : ""}</div>
       ${memberBars(i)}</div>`).join("");
   }
   const paint = (i, c, hp, mp, fight, p, cast, L) => {
@@ -466,8 +482,8 @@ function renderGroup(hf, mf) {
   const hc = t && t.casts && FIGHTS.includes(t.k) ? t.casts : [], hci = hc.length ? Math.min(hc.length - 1, Math.floor(taskDone(t) * hc.length)) : -1;
   const dead = '<span class="dead">dead</span>';
   paint(0, S.cls, hf, mf, hc.length > 0, t ? poolProgress(t) : 0, hf <= 0 && hc.length ? dead : castHtml(hc, hci), S.level);
-  renderMeter();
-  S.party.forEach((m, i) => { const n = memberNow(i); paint(i + 1, m.cls, n.hp, n.mp, n.fight, n.p, n.hp <= 0 && n.fight ? dead : castHtml(n.casts, n.ci), m.L); });
+  if (v.inst) renderMeter();
+  v.list.forEach((m, i) => { const n = v.inst ? memberNow(i) : helperNow(m, t && t.helpers ? t : null); paint(i + 1, m.cls, n.hp, n.mp, n.fight, n.p, n.hp <= 0 && n.fight ? dead : castHtml(n.casts, n.ci), m.L); });
 }
 
 let rafId = 0, lastNow = 0, saveTimer = 0;
@@ -489,7 +505,7 @@ function startGame() {
 }
 
 // ---------- journal tabs: achievements, zones, dungeons ----------
-const TABS = [["log", "Chronicle"], ["quests", "Quests"], ["ach", "Achievements"], ["zones", "Zones"], ["dung", "Dungeons"], ["coll", "Collection"]];
+const TABS = [["log", "Chronicle"], ["quests", "Quests"], ["ach", "Achievements"], ["zones", "Zones"], ["dung", "Dungeons"], ["coll", "Collection"], ["guild", "Guild"]];
 let uiTab = "log";
 const fmtDate = t => new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 const shortPlayed = ms => { const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor(m / 60) % 24; return d ? `${d}d ${h}h` : h ? `${h}h ${m % 60}m` : `${m % 60}m`; };
@@ -502,16 +518,17 @@ function renderJournal() {
   $("tab-ach").textContent = ` ${got.length}`; // the totals are in the line under the tabs
   $("tab-zones").textContent = ` ${S.zones.length}`;
   $("tab-dung").textContent = ` ${dl.filter(d => S.dungeons.includes(d.name)).length}`;
+  $("tab-guild").textContent = ` ${S.friends.length}`;
   $("tab-coll").textContent = ` ${Object.keys(S.minipets).length + Object.keys(S.mounts).length}`;
   $("log").hidden = uiTab !== "log"; $("quests").hidden = uiTab !== "quests"; $("journal").hidden = uiTab === "log" || uiTab === "quests";
-  $("elapsed").textContent = uiTab === "log" ? "/played " + fmtTime(S.time) : uiTab === "quests" ? `${S.level >= 60 ? `${S.goals.length} goals · ` : ""}${S.quests.length + (S.dq || []).length} active` : uiTab === "ach" ? `${got.length} of ${shown.length} earned` : uiTab === "zones" ? `${doneZ} zones done` : uiTab === "coll" ? `${Object.keys(S.mounts).length} mounts · ${Object.keys(S.minipets).length} minipets` : `${dl.filter(d => S.dungeons.includes(d.name)).length} of ${dl.length} cleared`;
+  $("elapsed").textContent = uiTab === "log" ? "/played " + fmtTime(S.time) : uiTab === "quests" ? `${S.level >= 60 ? `${S.goals.length} goals · ` : ""}${S.quests.length + (S.dq || []).length} active` : uiTab === "ach" ? `${got.length} of ${shown.length} earned` : uiTab === "zones" ? `${doneZ} zones done` : uiTab === "coll" ? `${Object.keys(S.mounts).length} mounts · ${Object.keys(S.minipets).length} minipets` : uiTab === "guild" ? `${S.friends.length} friends${S.guild ? ` · ${S.guild.roster.length + S.friends.length + 1} in the guild` : ""}` : `${dl.filter(d => S.dungeons.includes(d.name)).length} of ${dl.length} cleared`;
   if (uiTab === "log" || uiTab === "quests") return;
   let h = "";
   if (uiTab === "ach") {
     // earned first (latest on top), then the ones still to get; professions and collections under their own headings
     const order = as => as.filter(a => S.ach[a.id]).sort((a, b) => (S.ach[b.id].p ?? -1) - (S.ach[a.id].p ?? -1)).concat(as.filter(a => !S.ach[a.id]));
     const row = a => { const e = S.ach[a.id]; return `<li class="${e ? "got" : "locked"}"><span class="ico">${e ? "★" : "☆"}</span><div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span>${e ? `<time>${when(e.at, e.L, e.p, e.pre)}</time>` : ""}</div></li>`; };
-    const CATS = [["prof", "Professions"], ["coll", "Collections"]];
+    const CATS = [["prof", "Professions"], ["coll", "Collections"], ["social", "Friends and guild"]];
     h = order(shown.filter(a => !a.cat)).map(row).join("") + CATS.map(([c, title]) => {
       const as = shown.filter(a => a.cat === c);
       return as.length ? `<li class="jhead">${title} <small>${as.filter(a => S.ach[a.id]).length} of ${as.length}</small></li>` + order(as).map(row).join("") : "";
@@ -525,6 +542,8 @@ function renderJournal() {
       + extra.map(e => row(e.z, e, e.z === curZone())).join("");
   } else if (uiTab === "coll") {
     h = renderCollection();
+  } else if (uiTab === "guild") {
+    h = renderSocial();
   } else {
     h = dl.map(d => { const e = S.dstat[d.name], raid = RAIDS.includes(d), done = S.dungeons.includes(d.name) && e;
       const loot = done && e.loot.length ? `<span class="loot">${e.loot.map(x => `<i class="q${x.q}">${esc(x.n)}</i>`).join(", ")}</span>` : "";

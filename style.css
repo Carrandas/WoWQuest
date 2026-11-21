@@ -280,6 +280,13 @@ button:disabled { cursor: not-allowed; }
 .chron .tabs button { font-size: 12.5px; }
 .chron .tabs button small { font-size: 11.5px; }
 .tabs .ti { display: none; width: 22px; height: 22px; }
+/* the chronicle's seven tabs: icon and count, the label only on the open one (the name is in the tooltip) */
+@media (min-width: 721px) {
+  .chron .tabs { gap: 4px 14px; }
+  .chron .tabs button { display: inline-flex; align-items: center; gap: 4px; }
+  .chron .tabs .ti { display: inline-block; width: 16px; height: 16px; }
+  .chron .tabs button:not([aria-selected="true"]) .tl { display: none; }
+}
 .chips { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; }
 .foe .paneh { text-align: right; }
 .chips li { border: 1px solid var(--rim); border-radius: 999px; padding: 1px 9px; font-size: 13px; color: var(--dim); }
@@ -364,6 +371,8 @@ button:disabled { cursor: not-allowed; }
 .gopts button span { color: var(--dim); font-size: 13px; }
 .gopts button small { color: #e07a5f; font-size: 12px; }
 .gopts button:disabled { opacity: .55; cursor: default; }
+.gtag { color: var(--good); font-family: var(--label); font-weight: 700; letter-spacing: .03em; }
+.group.nometer .dmeter { display: none; }
 .modal .acts { display: flex; gap: 10px; justify-content: flex-end; }
 .danger { background: #a3241b; border: 0; color: var(--text); border-radius: 6px; padding: 6px 14px; font-family: var(--label); font-weight: 700; letter-spacing: .05em; }
 
