@@ -285,4 +285,44 @@
   - When gold runs low: skip the luxury (no flask, cheaper enchant), or go farming for a while ("Farming Thorium in
     Winterspring", "Running Stratholme for gold"), so the gold actually matters
   - A small money line on the character tab: gold spent this week on enchants, consumables and repairs
+- [ ] **World raid bosses** (the outdoor bosses as real raid fights, not just a name in the world events line above)
+  - Azuregos in Azshara, Lord Kazzak in the Blasted Lands, the four Emerald Dragons (Ysondre, Lethon, Emeriss,
+    Taerar) at the Great Trees in Duskwood, Ashenvale, Feralas and the Hinterlands
+  - Called out in guild chat when someone spots one ("Azuregos is up!"), a race against the rival guild to tag it first,
+    the other faction showing up to fight over it (a world PvP fight first), then the boss fight with the guild roster
+  - Their own scripts and loot (Azuregos's Mark of Frost and teleport, Kazzak healing on kills, the dragons' sleep and
+    Mark of Nature), and a few achievements
+  - The fun ones as chronicle moments: a dragon pulled into a quest hub, everyone asleep in Darkshire
+- [ ] **The Scourge Invasion** (the run-up to Naxxramas)
+  - Necropolises hang over a few zones (Eastern and Western Plaguelands, Winterspring, Azshara, Tanaris, Burning
+    Steppes); Scourge attacks on towns and quest hubs, cultists and shadowy figures in the capitals
+  - At 60: fighting the invasion between raid nights for Argent Dawn reputation and Necrotic Runes, traded for the
+    Argent Dawn gear; the odd level 20 killed questing too close to a necropolis
+  - Ends when Naxxramas opens, so it goes with the raid timeline
+- [ ] **Special moments around boss kills** (more of what Scripted boss moments started)
+  - Onyxia's head on the city gates and the Rallying Cry of the Dragonslayer for everyone in town (the hero too, when
+    its guild killed her); the same for Nefarian's head; the Warchief's Blessing after Rend in Upper Blackrock Spire
+  - A big chronicle moment for each server first and first kill (screenshots of the guild on the corpse, the guild
+    chat going wild), and more scripted fights for the bosses that had famous moments
+- [ ] **Seasonal holidays, on the in-game calendar** (extra goals while one is on)
+  - Hallow's End (the Headless Horseman's pumpkin, costume wands, candy buckets), Winter Veil (Greatfather Winter, a
+    present on the 25th, snowball fights in Ironforge or Orgrimmar), the Lunar Festival (the Elders around the world,
+    fireworks in Moonglade), Love is in the Air, Children's Week (an orphan following the hero around), Midsummer
+    (the bonfires), Harvest Festival, and the Darkmoon Faire weeks
+  - While one is on, its own goals show up next to the player's (with a time limit): "Honor 10 Elders", "Collect
+    the Hallow's End treats", a holiday minipet or item at the end; a calendar line in the Quests tab
+  - Holiday achievements, and the city visits dressed up for the season
+- [ ] **World chat and guild chat** (a chat panel, or chat lines in the chronicle that can be filtered)
+  - General and Trade chat for the zone (Barrens chat, Chuck Norris jokes, "LF healer for Strat", gold sellers,
+    "Where is Mankrik's wife?"), Looking for Group, the odd world PvP shout ("Southshore under attack!")
+  - Guild chat with the roster's personalities: grats on levels and loot, raid reminders, arguments, the guild leader's
+    message of the day, someone asking for a summon
+- [ ] **Guild drama** (the guild as people, not a roster)
+  - Loot: the druid who rolls on cloth, ninja looters, loot council fights, the raid leader's friends getting
+    promoted and geared first, a DKP fight over a legendary
+  - People: members late for the raid invite, someone leaving in the middle of a raid, the main tank leaving for the
+    rival guild, a guild leader yelling on voice chat after the third wipe, a member quitting the game with a farewell
+    post, the guild splitting up (and the hero picking a side)
+  - Most of it as chronicle and guild chat lines with small real effects (a raid night called off, a slot to fill, a
+    lost upgrade), so it stays fun and doesn't wreck the raid timeline
 - [ ] **Expansion packs** (eventually)
