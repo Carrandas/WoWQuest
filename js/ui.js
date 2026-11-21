@@ -516,7 +516,7 @@ function startGame() {
 }
 
 // ---------- journal tabs: achievements, zones, dungeons ----------
-const TABS = [["log", "Chronicle"], ["quests", "Quests"], ["ach", "Achievements"], ["zones", "Zones"], ["dung", "Dungeons"], ["coll", "Collection"], ["guild", "Guild"], ["pvp", "PvP"]];
+const TABS = [["log", "Chronicle"], ["quests", "Quests"], ["ach", "Achievements"], ["zones", "Zones"], ["dung", "Dungeons"], ["coll", "Collection"], ["guild", "Guild"], ["pvp", "PvP"], ["raidq", "Raid quests"]];
 let uiTab = "log";
 const fmtDate = t => new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 const shortPlayed = ms => { const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor(m / 60) % 24; return d ? `${d}d ${h}h` : h ? `${h}h ${m % 60}m` : `${m % 60}m`; };
@@ -540,7 +540,7 @@ function renderJournal() {
     // earned first (latest on top), then the ones still to get; professions and collections under their own headings
     const order = as => as.filter(a => S.ach[a.id]).sort((a, b) => (S.ach[b.id].p ?? -1) - (S.ach[a.id].p ?? -1)).concat(as.filter(a => !S.ach[a.id]));
     const row = a => { const e = S.ach[a.id]; return `<li class="${e ? "got" : "locked"}"><span class="ico">${e ? "★" : "☆"}</span><div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span>${e ? `<time>${when(e.at, e.L, e.p, e.pre)}</time>` : ""}</div></li>`; };
-    const CATS = [["prof", "Professions"], ["coll", "Collections"], ["social", "Friends and guild"], ["pvp", "PvP"]];
+    const CATS = [["prof", "Professions"], ["coll", "Collections"], ["social", "Friends and guild"], ["pvp", "PvP"], ["raidq", "Raid quests"]];
     h = order(shown.filter(a => !a.cat)).map(row).join("") + CATS.map(([c, title]) => {
       const as = shown.filter(a => a.cat === c);
       return as.length ? `<li class="jhead">${title} <small>${as.filter(a => S.ach[a.id]).length} of ${as.length}</small></li>` + order(as).map(row).join("") : "";

@@ -17,10 +17,11 @@ function goalDefs() {
   // the raids: the next tiers whose way in is open (the previous tier cleared once)
   RAIDS.filter(r => !raidClears(r.name) && (!RAID_INFO[r.name].need || raidClears(RAID_INFO[r.name].need))).forEach(r => {
     const i = RAID_INFO[r.name], gs = Math.round(gearScore()), down = () => r.bosses.filter(b => bk(b)).length;
-    const why = [gs < i.gs && `gear score ${i.gs} (yours: ${gs})`, i.need && raidClears(i.need) < (i.needClears || 1) && `${i.needClears} clears of ${i.need}`, !attuned(r.name) && `the attunement (${S.runs60} of ${i.attune[0]} dungeon clears)`].filter(Boolean);
+    const why = [gs < i.gs && `gear score ${i.gs} (yours: ${gs})`, i.need && raidClears(i.need) < (i.needClears || 1) && `${i.needClears} clears of ${i.need}`, !attuned(r.name) && `the attunement (${ATT_CHAINS[attChain(r.name)].name}, ${attStep(attChain(r.name))} of ${ATT_CHAINS[attChain(r.name)].steps.length} steps)`, !aqOpen(r.name) && "the Gates of Ahn'Qiraj to open"].filter(Boolean);
     out.push({ id: "raid:" + r.name, name: `Clear ${r.name}`, what: `Raid nights go to ${r.name} first: kill every boss in ${r.name} in one lockout. ${why.length ? "Needs " + why.join(" and ") + " first, then " : ""}${r.bosses.length > 4 ? "weeks" : "a few nights"}.`,
       prog: () => [down(), r.bosses.length], txt: () => `${down()} of ${r.bosses.length} bosses killed`, done: () => raidClears(r.name) > 0 });
   });
+  attGoals(out); // the attunement chains, the Scepter of the Shifting Sands
   if (!hasMount("Deathcharger's Reins")) out.push({ id: "baron", name: "Deathcharger's Reins", what: "Run Stratholme again and again for Baron Rivendare's horse. One in a hundred: a week, or months.",
     prog: () => [0, null], txt: () => `${bk("Baron Rivendare")} Baron kills`, done: () => hasMount("Deathcharger's Reins") });
   if (!hasMount("Swift Zulian Tiger") && !hasMount("Swift Razzashi Raptor")) out.push({ id: "zg", name: "A Zul'Gurub mount", what: "Raid Zul'Gurub every reset for Thekal's tiger or Mandokir's raptor. One in a hundred each.",
@@ -32,7 +33,7 @@ function goalDefs() {
     out.push({ id: "rep:" + c, name: `Exalted with ${c}`, what: `Farm Runecloth and hand it in for ${c} twice as often, for the ${RACES[o].mount}. About ${Math.max(1, Math.round(left * GOAL_TURNIN / DAY))} days of play.`,
       prog: () => [Math.min(S.rep[c] || 0, RUNECLOTH_EXALTED), RUNECLOTH_EXALTED], txt: () => `${S.rep[c] || 0} of ${RUNECLOTH_EXALTED} turn-ins`, done: () => (S.rep[c] || 0) >= RUNECLOTH_EXALTED }); });
   // PvP (only the player picks these): a rank to reach (the next one with a reward, the war mount at 11, the top), the Alterac Valley mount
-  const pneed = pvpOpen() ? null : "Needs the raid attunements first (level 60 dungeon clears)", held = S.goals.filter(g => g.id.startsWith("pvp:")).map(g => +g.id.slice(4));
+  const pneed = pvpOpen() ? null : "Needs the Molten Core and Onyxia attunements first", held = S.goals.filter(g => g.id.startsWith("pvp:")).map(g => +g.id.slice(4));
   const ranks = [...new Set([[3, 7, 8, 10, 12, 13].find(r => r > S.pvp.best), 11, 14, ...held])].filter(r => r && (r > S.pvp.best || held.includes(r))).sort((a, b) => a - b);
   const weeks = r => r >= 14 ? "About two months of battlegrounds" : r >= 11 ? "A month or so" : r >= 8 ? "A few weeks" : "A week or two";
   ranks.forEach(r => out.push({ id: "pvp:" + r, name: `PvP rank ${r}: ${rankName(r)}`, what: `Battlegrounds most evenings without a raid, for ${r === 11 ? "the war mount" : r === 14 ? "the highest rank and its weapon" : "the rank's gear"}. Ranks come with the weekly update. ${weeks(r)}.`, need: pneed,
@@ -58,7 +59,7 @@ function addGoal(id, byHero) {
 // the hero's own picks: the next raid, then whatever takes its fancy. Never PvP (that's the player's call) or the gold goals: left alone, the hero
 // saves for the epic mount at the usual pace (weeks); a player who picks it gets there a few days sooner
 function autoGoals() {
-  const all = goalDefs().filter(d => !d.need && !hasGoal(d.id) && !S.goalsDone[d.id] && d.id !== "epic" && d.id !== "gold" && !d.id.startsWith("pvp:") && d.id !== "avmount");
+  const all = goalDefs().filter(d => !d.need && !hasGoal(d.id) && !S.goalsDone[d.id] && d.id !== "epic" && d.id !== "gold" && !d.id.startsWith("pvp:") && !d.id.startsWith("att:") && d.id !== "avmount");
   while (S.goals.length < GOAL_AUTO) {
     const left = all.filter(d => !hasGoal(d.id)); if (!left.length) break;
     const fun = left.filter(x => !x.id.startsWith("raid:"));
@@ -81,7 +82,7 @@ function goalCheck() {
 }
 // a goal's name even when it's no longer on offer (reached, or the mount bought another way)
 const goalName = id => { const d = goalById(id); return d ? d.name : id.replace(/^raid:/, "Clear ").replace(/^rep:/, "Exalted with ").replace(/^pets:(\d+)/, "Collect $1 minipets")
-  .replace(/^epic$/, "Epic mount").replace(/^gold$/, "A fat purse").replace(/^baron$/, "Deathcharger's Reins").replace(/^zg$/, "A Zul'Gurub mount").replace(/^saber$/, "Winterspring Frostsaber").replace(/^pvp:(\d+)/, "PvP rank $1").replace(/^avmount$/, "Alterac Valley mount"); };
+  .replace(/^epic$/, "Epic mount").replace(/^gold$/, "A fat purse").replace(/^baron$/, "Deathcharger's Reins").replace(/^zg$/, "A Zul'Gurub mount").replace(/^saber$/, "Winterspring Frostsaber").replace(/^pvp:(\d+)/, "PvP rank $1").replace(/^avmount$/, "Alterac Valley mount").replace(/^att:(\w+)$/, (m, k) => ATT_CHAINS[k] ? ATT_CHAINS[k].name : m); };
 
 // ---------- what goals change ----------
 // the next endgame zone: Winterspring for the Frostsaber
@@ -92,10 +93,11 @@ function goalFarm(z) {
   if ((hasGoal("epic") || hasGoal("gold")) && Math.random() < GOAL_FARM) return { d: null };
   return null;
 }
-// on a raid night, the raid to run of the open ones (null: pick as usual): the goal's raid
+// on a raid night, the raid to run of the open ones (null: pick as usual): the goal's raid (Blackwing Lair for the Scepter's red shard)
 function goalRaid(open) {
   const rg = goalWith("raid:"), want = rg && open.find(r => "raid:" + r.name === rg.id);
-  return want || (hasGoal("zg") && open.find(r => r.name === "Zul'Gurub")) || null;
+  return want || (hasGoal("zg") && open.find(r => r.name === "Zul'Gurub")) || (hasGoal("att:scepter") && !attDone("scepter") && open.find(r => r.name === "Blackwing Lair"))
+    || open.find(r => RES_KEYS.some(k => hasGoal("att:" + k) && attCur(k) && attCur(k)[0] === "run" && attCur(k)[2] === r.name)) || null;
 }
 // the dungeon to run when it's not a raid night (null: any level 60 dungeon)
 function goalDungeon() {
@@ -114,7 +116,7 @@ function renderGoals() {
     const [a, b] = d.prog();
     return `<li class="goal"><div class="gl"><b>${esc(d.name)}</b><small>${esc(d.txt())}</small>${b ? `<div class="bar"><i style="width:${Math.round(100 * a / b)}%"></i></div>` : ""}</div><button type="button" class="gx" data-gx="${esc(g.id)}" title="Drop this goal" aria-label="Drop ${esc(d.name)}">×</button></li>`;
   }).join("") + (S.goals.length < GOAL_SLOTS ? `<li class="gaddrow"><button type="button" class="ghost" data-gadd="1">+ pick a goal</button>${S.goalAuto ? `<small>${esc(S.name)} picks their own until you do</small>` : ""}</li>` : "")
-    + `<li class="qhead">Quests</li>`;
+    + attRender() + `<li class="qhead">Quests</li>`;
 }
 function goalClick(b) { // clicks in the quests tab: drop a goal, open the picker
   if (b.dataset.gx) { S.goals = S.goals.filter(g => g.id !== b.dataset.gx); S.goalAuto = false; dirty = true; return; }

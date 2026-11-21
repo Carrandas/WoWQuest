@@ -233,12 +233,11 @@ const RAIDS = [
   ["Temple of Ahn'Qiraj", 60, 60, "B", "AQ40", "Anubisath Defender,Qiraji Champion,Obsidian Eradicator,Vekniss Warrior,Qiraji Brainwasher", "The Prophet Skeram,Bug Trio,Battleguard Sartura,Fankriss the Unyielding,Viscidus,Princess Huhuran,Emperor Vek'lor and Emperor Vek'nilash,Ouro,C'Thun", "Hammer of Ji'zhi|c,Ancient Qiraji Ripper|m,Gloves of Enforcement|m,Wand of Qiraji Nobility|c,Ring of Emperor Vek'lor|c,Vek'nilash's Circlet|m,Burrower Bracers|c,Death's Sting|m,Dark Edge of Insanity|m,Cloak of the Devoured|c"],
   ["Naxxramas", 60, 60, "B", "Naxx", "Deathknight Captain,Necro Knight,Plagued Gargoyle,Living Monstrosity,Stoneskin Gargoyle", "Anub'Rekhan,Grand Widow Faerlina,Maexxna,Noth the Plaguebringer,Heigan the Unclean,Loatheb,Instructor Razuvious,Gothik the Harvester,The Four Horsemen,Patchwerk,Grobbulus,Gluth,Thaddius,Sapphiron,Kel'Thuzad", "Wraith Blade|c,Widow's Remorse|m,Hatchet of Sundered Bone|m,Might of Menethil|m,Kingsfall|m,Soulseeker|c,Hammer of the Twisting Nether|c,Cloak of the Necropolis|c,Shroud of Dominion|m,The Hungering Cold|m"],
 ];
-// size, gear score needed, wipe chance per boss, tier dropped, item levels, final boss, and the attunement: level 60
-// dungeon clears it takes (the quest chains: Blackrock Depths for the Core, the long Drakefire Amulet chain for Onyxia).
+// size, gear score needed, wipe chance per boss, tier dropped, item levels, final boss (the attunement quest chains are in raidq.js).
 // needClears: full clears of the previous tier first (weeks of Molten Core before anyone is ready for Blackwing Lair)
 const RAID_INFO = {
-  "Molten Core": { size: 40, gs: 74, lock: 7, need: null, wipe: 0.16, set: 1, ilvl: [66, 72], last: "Ragnaros", attune: [14, "Attunement to the Core"] },
-  "Onyxia's Lair": { size: 40, gs: 74, lock: 5, need: null, wipe: 0.12, set: 2, ilvl: [70, 75], last: "Onyxia", attune: [15, "the Drakefire Amulet"] },
+  "Molten Core": { size: 40, gs: 74, lock: 7, need: null, wipe: 0.16, set: 1, ilvl: [66, 72], last: "Ragnaros" },
+  "Onyxia's Lair": { size: 40, gs: 74, lock: 5, need: null, wipe: 0.12, set: 2, ilvl: [70, 75], last: "Onyxia" },
   "Blackwing Lair": { size: 40, gs: 90, lock: 7, need: "Molten Core", needClears: 3, wipe: 0.2, set: 2, ilvl: [71, 77], last: "Nefarian" },
   "Zul'Gurub": { size: 20, gs: 73, lock: 3, need: null, wipe: 0.1, set: null, ilvl: [65, 71], last: "Hakkar" },
   "Ruins of Ahn'Qiraj": { size: 20, gs: 82, lock: 3, need: "Zul'Gurub", needClears: 2, wipe: 0.1, set: null, ilvl: [67, 72], last: "Ossirian the Unscarred" },

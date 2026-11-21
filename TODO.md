@@ -177,6 +177,11 @@
     The Ten Hours War follows, and only then do Ruins and Temple of Ahn'Qiraj open (they'd start locked)
     - It fits the raid lockouts already there: the gates open on the raid timeline (around when AQ40 is due today),
       then Ruins of Ahn'Qiraj resets every three days like Zul'Gurub and the Temple weekly with the other big raids
+    - **Done** (`raidq.js`): the war effort starts when the hero's raids reach Blackwing Lair (or 30 days after 60) and
+      takes about a week (a hand-in a day from the hero); the Scepter of the Shifting Sands is a goal, and whoever has
+      it first after the effort bangs the gong (the rival guild needs Nefarian too): the hero gets the Black Qiraji
+      Battle Tank and Scarab Lord. The Ten Hours War, then both raids open. Still open: the war effort as real mats
+      out of the bags, the gong-banger's server-wide moment in the chronicle of other heroes
   - Doing things for fun, mostly chronicle flavour: guild chat, duels outside Orgrimmar or Ironforge, world PvP in
     Hillsbrad, a lap around the world, /dance on the Ironforge bank
   - Achievements for the collections (10 / 25 minipets, 5 mounts, Deathcharger, Exalted with 5 factions)
@@ -194,12 +199,16 @@
       Greater Nature Protection Potions
     - Frost: the Argent Dawn sets (Glacial for tailors, Polar and Icy Scale for leatherworkers, Icebane for smiths),
       which need Frozen Runes from Naxxramas and Argent Dawn reputation; Frost Protection Potions
+  - **Done, as goals** (`raidq.js`): fire, nature and frost resistance sets as quest lines (reputation trips, dungeon
+    and raid drops, crafts), picked by the player; the set's resistance cuts the wipe chance on its two bosses by up to
+    a fifth. The baseline is unchanged (heroes without the gear raid as before). Still open: resistance as a real
+    stat from gear, auras and totems, bosses that are a wall without it, crafters making their own pieces
   - Goals for it ("Fire resistance set: 140 of 200"), crafters making their own pieces; the player can pick a
     resistance set as a goal (fire before Ragnaros, nature before Huhuran, frost before Sapphiron), and the hero
     farms the reputation, the quests and the mats for it between raid nights
   - Gear from quests too: the Cenarion Circle and Argent Dawn quest rewards, the Onyxia Scale Cloak against
     Nefarian's Shadow Flame, so each set is a short quest line and not only a shopping list
-  - Rebalance so the endgame timeline holds: missing resistance slows those raids, having it doesn't speed them up
+  - Rebalance so the endgame timeline holds: the timeline is tuned without resistance, the gear only helps
 - [ ] **Legendaries and class quest weapons, done properly** (today: shortcuts)
   - Today: two Bindings of the Windseeker (from any Molten Core boss) make Thunderfury on the spot, the Eye of Sulfuras
     becomes Sulfuras on the spot, casters get Atiesh from 40 Splinters in Naxxramas; any class can get any of them
@@ -291,7 +300,11 @@
   - When gold runs low: skip the luxury (no flask, cheaper enchant), or go farming for a while ("Farming Thorium in
     Winterspring", "Running Stratholme for gold"), so the gold actually matters
   - A small money line on the character tab: gold spent this week on enchants, consumables and repairs
-- [ ] **Raid attunement quest chains, as goals** (today an attunement is just a count of level 60 dungeon clears)
+- [x] **Raid attunement quest chains, as goals** (an attunement used to be a count of level 60 dungeon clears)
+  - **Done** (`raidq.js`): Attunement to the Core, the Drakefire Amulet (Alliance) and the Blood of the Black Dragon
+    Champion (Horde), Blackhand's Command, The Dread Citadel: trips, dungeon steps that can come up empty, the Argent
+    Dawn grind and 60 gold. The hero works on them on its own, faster as a goal; the Raid quests list in the Quests tab.
+    Still open: the guild waiting on members who aren't attuned yet
   - Each raid behind its real chain: Attunement to the Core (Lothos Riftwaker, a Core Fragment from Blackrock Depths)
     for Molten Core; the Drakefire Amulet for Onyxia (Alliance: Marshal Windsor, the Blackrock Spire escape, Unfired
     Plate Gauntlets and the Blood of the Black Dragon Champion; Horde: Rexxar, the Warlord's Command, Emberstrife);

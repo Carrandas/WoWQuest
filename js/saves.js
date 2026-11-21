@@ -19,6 +19,15 @@ function migrate() {
   for (const n in S.lock) if (typeof S.lock[n] === "number") S.lock[n] = { at: S.lock[n], killed: (instanceRow(n) || { bosses: [] }).bosses.length, last: S.lock[n] };
   // attunements came later: heroes already at 60 count as attuned
   if (S.runs60 == null) S.runs60 = S.level >= 60 ? 99 : 0;
+  // the attunements became quest chains: the ones already earned (the old count of level 60 dungeon clears, a raid already
+  // entered) are done; the Gates of Ahn'Qiraj are open for anyone who has been inside
+  if (!S.att) {
+    S.att = {}; S.attN = {};
+    attKeys().forEach(k => { const raid = ATT_CHAINS[k].raid, old = { "Molten Core": 14, "Onyxia's Lair": 15 }[raid];
+      if (S.runs60 >= 15 || (old && S.runs60 >= old) || S.dungeons.includes(raid) || S.lock[raid]) S.att[k] = ATT_CHAINS[k].steps.length; });
+  }
+  if (!S.attN || typeof S.attN !== "object") S.attN = {};
+  if (!S.aq) { S.aq = newAq(); if (AQ_RAIDS.some(n => S.dungeons.includes(n) || S.lock[n])) { S.aq.open = true; S.aq.start = S.aq.end = S.aq.gong = S.time; S.aq.by = "someone"; } }
   if (!S.bossKills) { S.bossKills = {}; RAIDS.filter(r => S.dungeons.includes(r.name)).forEach(r => r.bosses.forEach(b => S.bossKills[b] = 1)); }
   // pets used to be a buff; now they're the real thing (pets.js)
   if (S.pet === undefined) S.pet = null;
@@ -37,6 +46,7 @@ function migrate() {
   if (!S.achProf) { S.achProf = 1; checkAch(true, "prof"); }
   if (!S.achSocial) { S.achSocial = 1; checkAch(true, "social"); }
   if (!S.achPvp) { S.achPvp = 1; checkAch(true, "pvp"); }
+  if (!S.achRaidq) { S.achRaidq = 1; checkAch(true, "raidq"); }
 }
 
 // ---------- save files: the same data as the browser save, as a download ----------

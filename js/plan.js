@@ -173,6 +173,7 @@ function queueCity() {
   if (p && trainCap()) { const c = crafts()[0]; q.push({ k: "craft", d: `Crafting ${CRAFT_AT[c]} (${c} ${Math.max(1, p.sk[c])})`, t: sec(12) }); }
   if (S.repair > 0) q.push({ k: "repair", d: `Repairing gear at the blacksmith`, t: sec(5) });
   const ev = !local && wpCityEvent(q); // Corrupted Blood, Kazzak: train and get out
+  if (!local) aqCity(q); // the Ahn'Qiraj war effort: supplies handed in
   if (!local && !ev) q.push({ k: "shop", d: `Browsing the Auction House in ${where}`, t: sec(18) });
   if (S.level >= 40 && S.mount < 1) q.push({ k: "mount", d: `Visiting the riding trainer`, t: sec(8) });
   if (S.level >= 60 && S.mount < 2) q.push({ k: "mount", d: `Counting gold for an epic mount`, t: sec(6) });
@@ -191,14 +192,13 @@ const raidLocked = n => raidKilled(n) >= instanceRow(n).bosses.length;   // full
 const raidRested = n => !S.lock[n] || !S.lock[n].last || S.time - S.lock[n].last >= DAY; // one raid night a day
 // full clears of a raid so far (each lockout can clear it once)
 const raidClears = n => (S.dstat[n] && S.dstat[n].runs) || 0;
-const attuned = n => !RAID_INFO[n].attune || S.runs60 >= RAID_INFO[n].attune[0];
-const raidOpen = r => { const i = RAID_INFO[r.name]; return gearScore() >= i.gs && (!i.need || raidClears(i.need) >= (i.needClears || 1)) && attuned(r.name) && !raidLocked(r.name) && raidRested(r.name); };
+const raidOpen = r => { const i = RAID_INFO[r.name]; return gearScore() >= i.gs && (!i.need || raidClears(i.need) >= (i.needClears || 1)) && attuned(r.name) && aqOpen(r.name) && !raidLocked(r.name) && raidRested(r.name); };
 function pickDungeon() {
   const ok = d => d.side === "B" || d.side === S.faction[0];
   if (S.level >= 60) {
     const open = RAIDS.filter(raidOpen);
     if (open.length && Math.random() < 0.7) return goalRaid(open) || (Math.random() < 0.7 ? open[open.length - 1] : pick(open));
-    return wpPick() || pvpPick() || goalDungeon() || pick(DUNGEONS.filter(d => d.min >= 52 && ok(d)));
+    return wpPick() || pvpPick() || goalDungeon() || attDungeon() || pick(DUNGEONS.filter(d => d.min >= 52 && ok(d)));
   }
   return DUNGEONS.find(d => ok(d) && !S.dungeons.includes(d.name) && S.level >= d.min && S.level <= d.min + 6);
 }

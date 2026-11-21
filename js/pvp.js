@@ -19,7 +19,7 @@ const RIVAL_PREMADE = 0.12;  // the chance of running into the rival guild's pre
 const HK_HONOR = 10;         // honor per honorable kill
 const AV_EXALTED = 42000;    // Frostwolf Clan / Stormpike Guard reputation for the Alterac Valley mount
 const foeSide = () => S.faction === "Alliance" ? "Horde" : "Alliance";
-const pvpOpen = () => S.level >= 60 && S.runs60 >= Math.max(...Object.values(RAID_INFO).map(i => i.attune ? i.attune[0] : 0));
+const pvpOpen = () => S.level >= 60 && attuned("Molten Core") && attuned("Onyxia's Lair");
 
 // ---------- ranks ----------
 const RANKS = {
@@ -378,7 +378,7 @@ function renderPvp() {
   const p = S.pvp, nx = Math.min(14, p.rank + 1), lo = RANK_RP[p.rank] || 0, hi = RANK_RP[nx], pr = p.rank >= 14 ? 1 : clamp((p.rp - lo) / Math.max(1, hi - lo), 0, 1);
   const proj = Math.round(p.rp * RP_DECAY + weekRP(p.honor)), row = (got, ico, b, s, tm) => `<li class="${got ? "got" : "locked"}"><span class="ico">${ico}</span><div><b>${b}</b><span>${s}</span>${tm ? `<time>${tm}</time>` : ""}</div></li>`;
   let h = `<li class="jhead">Rank <small>${p.best ? `best: ${esc(rankName(p.best))}` : "no rank yet"}</small></li>`;
-  if (!pvpOpen()) h += row(false, "·", "Battlegrounds", S.level < 60 ? "Battlegrounds open at level 60, after the dungeon runs that attune you to the raids." : `After the raid attunements (${S.runs60} of ${Math.max(...Object.values(RAID_INFO).map(i => i.attune ? i.attune[0] : 0))} level 60 dungeon clears).`);
+  if (!pvpOpen()) h += row(false, "·", "Battlegrounds", S.level < 60 ? "Battlegrounds open at level 60, after the quest chains that attune you to the raids." : `After the raid attunements: ${["Molten Core", "Onyxia's Lair"].filter(n => !attuned(n)).map(n => ATT_CHAINS[attChain(n)].name).join(" and ")} (see the Quests tab).`);
   h += `<li class="${p.rank ? "got" : "locked"}"><span class="ico">${p.rank || "·"}</span><div><b>${p.rank ? `Rank ${p.rank}: ${esc(rankName(p.rank))}` : "No rank"}</b><span>${p.rp.toLocaleString()} rank points${p.rank < 14 ? ` · ${esc(rankName(nx))} at ${hi.toLocaleString()}` : ""}</span><div class="bar pbar"><i style="width:${Math.round(pr * 100)}%"></i></div></div></li>`
     + row(p.honor > 0, "⌛", "This week", `${p.honor.toLocaleString()} honor so far. At the weekly update: ${proj.toLocaleString()} rank points (${esc(rankName(rankOf(proj)) || "no rank")}). Points lose a fifth every week.`);
   h += `<li class="jhead">Battlegrounds</li>` + BGS.map(b => { const g = p.games[b.abbr] || { w: 0, l: 0 };

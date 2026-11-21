@@ -189,6 +189,7 @@ const FINISH = {
       const d = g === "Mining" ? `Farming Thorium in ${z}` : g === "Herbalism" ? `Farming Dreamfoil in ${z}` : g ? `Farming Rugged Leather in ${z}` : pick(["Running Stratholme for gold", `Farming Runecloth in ${z}`]);
       S.queue.push({ k: "farm", d, t: sec(240) });
     }
+    if (S.level >= 60) aqWarQueue(S.queue) || attTrip(S.queue); // the Ten Hours War, or an attunement step that is a trip
     const d = pickDungeon(); if (d) (BGS.includes(d) ? queueBG : WP_RAIDS.includes(d) ? queueWP : queueDungeon)(d);
   },
   lfg(t) {
@@ -244,6 +245,7 @@ const FINISH = {
       guildLoot(t.dn, t.boss);
     }
     log(`${t.boss} has been defeated.`, "boss");
+    if (raid) resLine(t.boss); // resistance gear for the bosses that check it
     (S.dq || []).filter(x => !x.done && x.boss === t.boss).forEach(x => { x.done = true; log(`Objective complete: ${x.obj} ("${x.name}").`, "quest"); });
     gainXp(mobXp(S.level + 2) * 5); petAfterFight(t, null); minipetDrops([t.boss]); mountDrops(t.boss, t.dn);
     // a boss drops a few items for the whole group: in a raid the hero only now and then gets one
@@ -278,11 +280,9 @@ const FINISH = {
     if (ri) (S.lock[t.dn] = raidLock(t.dn) || { at: S.time, killed: 0, last: 0 }).last = S.time;
     if (full) { const de = dungeonEntry(t.dn); de.runs++; if (!de.at) { de.at = realNow(); de.L = S.level; de.p = S.time; } }
     if (full && !S.dungeons.includes(t.dn)) S.dungeons.push(t.dn);
-    // level 60 dungeon clears count toward the raid attunements
-    if (full && !ri && S.level >= 60) {
-      S.runs60++;
-      RAIDS.forEach(r => { const a = RAID_INFO[r.name].attune; if (a && S.runs60 === a[0]) log(`Attuned to ${r.name}: ${a[1]} is done.`, "ach"); });
-    }
+    // level 60 dungeon clears: the attunement steps that need them
+    if (full && !ri && S.level >= 60) { S.runs60++; attRun(t.dn); }
+    if (ri && S.dg && S.dg.killed > 0) attRun(t.dn); // raid nights with a kill: resistance steps that want the raid's drops
     S.runs++;
     log(full ? `${t.dn} cleared!` : `Leaving ${t.dn} with ${S.dg.killed} of ${S.dg.total} bosses down. Same time tomorrow.`, "dung");
     const bill = S.dg && S.dg.raid ? S.repair - (S.dg.rep0 || 0) : 0;
@@ -295,12 +295,14 @@ const FINISH = {
   ...PET_FINISH, // tame, summon, petrez, petheal, feed, ritual
   ...PVP_FINISH, // bgq, bgin, bgobj, bgrez, bgend
   ...WP_FINISH, // wpsee, wpgo, wpend, wpcity
+  ...ATT_FINISH, // att, aqhand, aqwar
 };
 function finish(t) {
   const ve = vitalEnd(t); S.hpF = ve[0]; S.mpF = ve[1]; partyFinish(t);
   if (FINISH[t.k]) FINISH[t.k](t);
   petTick(t);
   pvpWeek();
+  attTick();
   goalCheck();
   checkAch();
   dirty = true;

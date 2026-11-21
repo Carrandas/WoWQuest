@@ -129,6 +129,18 @@ ACH.push(...[
   { id: "wpkazzak", name: "Kazzak in Stormwind", desc: "Be there when Lord Kazzak walks into Stormwind.", test: () => S.wpvp.kazzak > 0 },
   { id: "wpplague", name: "Corrupted Blood", desc: "Be in a capital when Hakkar's plague breaks out.", test: () => S.wpvp.plague > 0 },
 ].map(a => ({ ...a, cat: "pvp" })));
+// raid quests: the attunement chains, the Gates of Ahn'Qiraj
+const attOk = n => S.att && attuned(n);
+ACH.push(...[
+  { id: "attmc", name: "Attunement to the Core", desc: "Bring Lothos Riftwaker a Core Fragment: attuned to Molten Core.", test: () => attOk("Molten Core") },
+  { id: "attony", name: "Onyxia's Key", desc: "Finish the Onyxia attunement: the Drakefire Amulet (Alliance) or the Blood of the Black Dragon Champion (Horde).", test: () => attOk("Onyxia's Lair") },
+  { id: "attbwl", name: "Blackhand's Command", desc: "Touch the orb in Upper Blackrock Spire: attuned to Blackwing Lair.", test: () => attOk("Blackwing Lair") },
+  { id: "attnaxx", name: "The Dread Citadel", desc: "Honored with the Argent Dawn and attuned to Naxxramas.", test: () => attOk("Naxxramas") },
+  { id: "aqhand", name: "Commendation Signet", desc: "Hand in supplies for the Ahn'Qiraj War Effort five times.", test: () => !!S.aq && S.aq.hand >= 5 },
+  { id: "aqwar", name: "The Ten Hours War", desc: "Fight at the Scarab Wall when the gates of Ahn'Qiraj open.", test: () => !!S.aq && S.aq.war > 0 },
+  { id: "scepter", name: "The Scepter of the Shifting Sands", desc: "Put the three shards of the Scepter of the Shifting Sands together.", test: () => !!S.att && attDone("scepter") },
+  { id: "scarab", name: "Scarab Lord", desc: "Bang the Scarab Gong yourself and open the gates of Ahn'Qiraj.", test: () => !!S.aq && S.aq.hero },
+].map(a => ({ ...a, cat: "raidq" })));
 // minipets
 const mp = () => S.minipets || {}, mpHas = names => names.every(n => mp()[n]);
 ACH.push(...[
