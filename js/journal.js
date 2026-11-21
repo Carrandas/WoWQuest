@@ -104,6 +104,18 @@ ACH.push(...[
   { id: "guild40", name: "Raiding Guild", desc: "Have 40 members in your guild.", test: () => !!S.guild && S.guild.roster.length + S.friends.length + 1 >= 40 },
   { id: "sfirst", name: "Server First!", desc: "Beat the rival guild to a server first.", test: () => !!S.guild && Object.values(S.guild.firsts).some(x => x.us) },
 ].map(a => ({ ...a, cat: "social" })));
+// PvP
+ACH.push(...[
+  { id: "bgwin", name: "Victory!", desc: "Win a battleground.", test: () => Object.values(S.pvp.games).some(g => g.w > 0) },
+  { id: "bgall", name: "Battlemaster", desc: "Win Warsong Gulch, Arathi Basin and Alterac Valley.", test: () => BGS.every(b => (S.pvp.games[b.abbr] || {}).w > 0) },
+  { id: "flag", name: "Flag Runner", desc: "Capture the enemy flag in Warsong Gulch yourself.", test: () => S.pvp.caps > 0 },
+  { id: "general", name: "Down Goes the General", desc: "Kill the enemy general in Alterac Valley.", test: () => S.pvp.generals > 0 },
+  { id: "hk100", name: "Honorable Kills", desc: "100 honorable kills.", test: () => S.pvp.hk >= 100 },
+  { id: "hk1000", name: "A Thousand Honorable Kills", desc: "1000 honorable kills.", test: () => S.pvp.hk >= 1000 },
+  { id: "rank6", name: "Officer", desc: "Reach PvP rank 6 (Knight or Stone Guard).", test: () => S.pvp.best >= 6 },
+  { id: "rank11", name: "War Mount", desc: "Reach PvP rank 11 (Commander or Lieutenant General).", test: () => S.pvp.best >= 11 },
+  { id: "rank14", name: "The Highest Rank", desc: "Reach PvP rank 14 (Grand Marshal or High Warlord).", test: () => S.pvp.best >= 14 },
+].map(a => ({ ...a, cat: "pvp" })));
 // minipets
 const mp = () => S.minipets || {}, mpHas = names => names.every(n => mp()[n]);
 ACH.push(...[

@@ -188,7 +188,7 @@ const FINISH = {
       const d = g === "Mining" ? `Farming Thorium in ${z}` : g === "Herbalism" ? `Farming Dreamfoil in ${z}` : g ? `Farming Rugged Leather in ${z}` : pick(["Running Stratholme for gold", `Farming Runecloth in ${z}`]);
       S.queue.push({ k: "farm", d, t: sec(240) });
     }
-    const d = pickDungeon(); if (d) queueDungeon(d);
+    const d = pickDungeon(); if (d) (BGS.includes(d) ? queueBG : queueDungeon)(d);
   },
   lfg(t) {
     log(`[${pick(PLAYERS)}]: ${t.chat}`, "chat");
@@ -213,7 +213,7 @@ const FINISH = {
     S.dq = null;
   },
   dtravel(t) { S.loc = "dungeon"; log(`Entering ${t.dn}.`, "dung"); },
-  trash(t) { if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); petAfterFight(t, null); minipetDrops(t.mobs || []); friendChatter(); },
+  trash(t) { if (t.bg) { bgFightEnd(t); petAfterFight(t, null); friendChatter(); return; } if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); petAfterFight(t, null); minipetDrops(t.mobs || []); friendChatter(); },
   boss(t) {
     if (t.foe) t.foe.units.forEach(u => (u.phases || []).forEach(p => { if (p.say) log(p.say, "boss"); }));
     const raid = !!(S.dg && S.dg.raid);
@@ -292,11 +292,13 @@ const FINISH = {
   // nothing to do when these end: the hero just moves on (health and mana are set in finish)
   move() {}, rest() {}, ghost() {}, rez() {}, regroup() {},
   ...PET_FINISH, // tame, summon, petrez, petheal, feed, ritual
+  ...PVP_FINISH, // bgq, bgin, bgobj, bgrez, bgend
 };
 function finish(t) {
   const ve = vitalEnd(t); S.hpF = ve[0]; S.mpF = ve[1]; partyFinish(t);
   if (FINISH[t.k]) FINISH[t.k](t);
   petTick(t);
+  pvpWeek();
   goalCheck();
   checkAch();
   dirty = true;

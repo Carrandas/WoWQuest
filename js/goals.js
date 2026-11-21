@@ -31,6 +31,12 @@ function goalDefs() {
   otherRaces().forEach(o => { const c = RACE_REP[o], left = RUNECLOTH_EXALTED - (S.rep[c] || 0); if (left <= 0) return;
     out.push({ id: "rep:" + c, name: `Exalted with ${c}`, what: `Farm Runecloth and hand it in for ${c} twice as often, for the ${RACES[o].mount}. About ${Math.max(1, Math.round(left * GOAL_TURNIN / DAY))} days of play.`,
       prog: () => [Math.min(S.rep[c] || 0, RUNECLOTH_EXALTED), RUNECLOTH_EXALTED], txt: () => `${S.rep[c] || 0} of ${RUNECLOTH_EXALTED} turn-ins`, done: () => (S.rep[c] || 0) >= RUNECLOTH_EXALTED }); });
+  // PvP: the next rank with a reward, and the Alterac Valley mount
+  const pr = [3, 7, 8, 10, 11, 12, 13, 14].find(r => r > S.pvp.best), pneed = pvpOpen() ? null : "Needs the raid attunements first (level 60 dungeon clears)";
+  if (pr) out.push({ id: "pvp:" + pr, name: `PvP rank ${pr}: ${rankName(pr)}`, what: `Battlegrounds most evenings without a raid, for the rank ${pr} reward (${pr === 11 ? "the war mount" : "gear"}). Ranks come with the weekly update: weeks, more for the high ones.`, need: pneed,
+    prog: () => [Math.min(S.pvp.rp, RANK_RP[pr]), RANK_RP[pr]], txt: () => `${S.pvp.rp.toLocaleString()} of ${RANK_RP[pr].toLocaleString()} rank points`, done: () => S.pvp.best >= pr });
+  if (!hasMount(AV_MOUNT[S.faction])) out.push({ id: "avmount", name: AV_MOUNT[S.faction], what: `Alterac Valley again and again, until exalted with the ${AV_FACTION[S.faction]}. Many weeks.`, need: pneed,
+    prog: () => [Math.min(S.pvp.av, AV_EXALTED), AV_EXALTED], txt: () => `${S.pvp.av.toLocaleString()} of ${AV_EXALTED.toLocaleString()} reputation`, done: () => hasMount(AV_MOUNT[S.faction]) });
   const pets = Object.keys(S.minipets).length, aim = Math.min(MINIPETS.length, Math.max(10, Math.ceil((pets + 1) / 5) * 5));
   if (pets < MINIPETS.length) out.push({ id: "pets:" + aim, name: `Collect ${aim} minipets`, what: "Buy every pet the vendors have, run Lower Blackrock Spire for the Smolderweb and the Worg Pup, hunt whelps in Winterspring. Luck decides.",
     prog: () => [Math.min(Object.keys(S.minipets).length, aim), aim], txt: () => `${Object.keys(S.minipets).length} of ${aim} minipets`, done: () => Object.keys(S.minipets).length >= aim });
@@ -73,7 +79,7 @@ function goalCheck() {
 }
 // a goal's name even when it's no longer on offer (reached, or the mount bought another way)
 const goalName = id => { const d = goalById(id); return d ? d.name : id.replace(/^raid:/, "Clear ").replace(/^rep:/, "Exalted with ").replace(/^pets:(\d+)/, "Collect $1 minipets")
-  .replace(/^epic$/, "Epic mount").replace(/^gold$/, "A fat purse").replace(/^baron$/, "Deathcharger's Reins").replace(/^zg$/, "A Zul'Gurub mount").replace(/^saber$/, "Winterspring Frostsaber"); };
+  .replace(/^epic$/, "Epic mount").replace(/^gold$/, "A fat purse").replace(/^baron$/, "Deathcharger's Reins").replace(/^zg$/, "A Zul'Gurub mount").replace(/^saber$/, "Winterspring Frostsaber").replace(/^pvp:(\d+)/, "PvP rank $1").replace(/^avmount$/, "Alterac Valley mount"); };
 
 // ---------- what goals change ----------
 // the next endgame zone: Winterspring for the Frostsaber

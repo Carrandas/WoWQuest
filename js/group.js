@@ -27,6 +27,13 @@ function randName(taken) {
 const RAID_ROLES = { 5: [1, 1], 20: [3, 5], 40: [5, 12] };
 // how well geared pickup players are for the content: about level-appropriate in dungeons, about what the
 // raid asks for in raids (Molten Core lightly, Naxxramas heavily), give or take 15% per player
+// a stranger for a role: a class and race of the faction (paladins Alliance, shamans Horde), a free name
+function pugMember(role, taken, faction = S.faction) {
+  const c = pick(ROLE_CLASSES[role].filter(k => k !== "Paladin" || faction === "Alliance").filter(k => k !== "Shaman" || faction === "Horde"));
+  const race = pick(Object.keys(ALLOWED).filter(r => RACES[r].f === faction && ALLOWED[r].includes(c)));
+  const name = randName(taken); taken.push(name);
+  return { name, race, cls: c, role, spec: ROLE_SPEC[role][c] };
+}
 const contentGear = () => { const ri = S.dg && RAID_INFO[S.dg.name]; return (ri ? ri.gs / 60 : 1) * (0.85 + Math.random() * 0.3); };
 function makeParty(raid) {
   const size = raid && S.dg && RAID_INFO[S.dg.name] ? RAID_INFO[S.dg.name].size : 5, [nt, nh] = RAID_ROLES[size] || RAID_ROLES[5];
@@ -35,10 +42,7 @@ function makeParty(raid) {
   const taken = takenNames(), used = [];
   const members = roles.map(role => {
     const known = socialMember(role, raid, used); if (known) return { ...known, gear: known.gear ?? contentGear() }; // friends, then the guild (their own gear)
-    const c = pick(ROLE_CLASSES[role].filter(k => k !== "Paladin" || S.faction === "Alliance").filter(k => k !== "Shaman" || S.faction === "Horde"));
-    const race = pick(Object.keys(ALLOWED).filter(r => RACES[r].f === S.faction && ALLOWED[r].includes(c)));
-    const name = randName(taken); taken.push(name);
-    return { name, race, cls: c, role, spec: ROLE_SPEC[role][c], L: raid ? 60 : clamp(S.level + R(5) - 2, 1, 60), hp: 1, mp: 1, gear: contentGear() };
+    return { ...pugMember(role, taken), L: raid ? 60 : clamp(S.level + R(5) - 2, 1, 60), hp: 1, mp: 1, gear: contentGear() };
   });
   // spread tanks, then healers, round-robin over the groups; dps fill the gaps
   const nG = Math.ceil(size / 5), groups = Array.from({ length: nG }, () => []);
@@ -144,6 +148,7 @@ function simFight(t) {
     const order = P.slice().sort((a, b) => "thd".indexOf(a.role[0]) - "thd".indexOf(b.role[0]));
     order.forEach((p, j) => { const at = 0.7 + 0.28 * (j + Math.random() * 0.8) / order.length; p.tl = p.tl.filter(x => x[0] < at); p.tl.push([at, 0]); p.cur = 0; });
   }
+  bgDeath(t, P[0]); // killed in a battleground skirmish
   P.forEach(p => p.end = p.cur);
   return P;
 }
@@ -168,7 +173,7 @@ function pullEvents(P, t) {
   const ev = []; P.forEach((p, i) => p.casts.forEach((s, k) => ev.push({ at: (k + 1) / p.casts.length, i, k })));
   // the enemy's hits: single-target ones on whoever it is attacking, aoe on everyone. Members it never
   // hits this pull (no aoe) keep taking their usual splash damage on their own casts
-  const fe = foeEvents(t), tn = foeTarget(), ti = tn === "you" ? 0 : Math.max(0, P.findIndex(p => p.name === tn));
+  const fe = foeEvents(t), tn = foeTarget(t), ti = tn === "you" ? 0 : Math.max(0, P.findIndex(p => p.name === tn));
   // the one it's attacking takes all of its share from the enemy's hits; everyone else gets a slice from
   // area hits (more area hits, bigger slice) and the rest as the usual splash on their own casts
   const nAoe = fe.filter(e => e.aoe).length;

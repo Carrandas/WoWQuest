@@ -26,6 +26,7 @@ function mountList() {
   MOUNT_DROPS.forEach(([boss, name]) => out.push({ name, epic: true, rare: true, where: `A rare drop from ${boss} (${boss === "Baron Rivendare" ? "Stratholme" : "Zul'Gurub"})` }));
   QIRAJI.forEach(name => out.push({ name, epic: true, where: "Temple of Ahn'Qiraj (only inside it)" }));
   out.push({ name: RED_QIRAJI, epic: true, where: "Temple of Ahn'Qiraj, very rare" });
+  out.push({ name: PVP_MOUNT[S.race], epic: true, where: `PvP rank 11 (${rankName(11)}), with epic riding` }, { name: AV_MOUNT[S.faction], epic: true, where: `Exalted with the ${AV_FACTION[S.faction]} (Alterac Valley)` });
   return out;
 }
 const hasMount = n => !!S.mounts[n];

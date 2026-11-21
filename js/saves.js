@@ -27,6 +27,7 @@ function migrate() {
   if (!S.friends) { S.friends = []; S.duo = null; S.guild = S.guild || null; seedSocial(); }
   if (S.duo === undefined) S.duo = null;
   migrateSocial();
+  if (!S.pvp) S.pvp = newPvp();
   S.goals = S.goals || []; S.goalsDone = S.goalsDone || {}; if (S.goalAuto === undefined) S.goalAuto = true;
   S.minipets = S.minipets || {}; S.oox = S.oox || []; if (S.companion === undefined) S.companion = null;
   S.demons = S.demons || {}; S.petStats = S.petStats || { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 }; S.rareHunt = S.rareHunt || null;
@@ -34,6 +35,7 @@ function migrate() {
   // profession achievements came later: the ones already earned are noted quietly instead of all at once
   if (!S.achProf) { S.achProf = 1; checkAch(true, "prof"); }
   if (!S.achSocial) { S.achSocial = 1; checkAch(true, "social"); }
+  if (!S.achPvp) { S.achPvp = 1; checkAch(true, "pvp"); }
 }
 
 // ---------- save files: the same data as the browser save, as a download ----------

@@ -174,11 +174,11 @@ async function endgame(seeds, days) {
   console.log(`Playing ${jobs.length} heroes to 60, then ${days} days of endgame…`);
   const outs = (await pool(jobs.map(j => j.run))).map(o => { try { return JSON.parse(o.split("\n")[0]); } catch (e) { console.log("bad output: " + o.slice(0, 200)); return null; } });
   const f = v => v == null ? "   -" : String(v).padStart(4);
-  console.log(`hero              ${RAID_SHORT.map(s => s.padStart(5)).join("")}  | gs d2  d7 d14 d30 d60 d90 | gold d7 d30 d60 | epic mount`);
+  console.log(`hero              ${RAID_SHORT.map(s => s.padStart(5)).join("")}  | gs d2  d7 d14 d30 d60 d90 | gold d7 d30 d60 | epic mount | pvp: games won, best rank (rank 11 day)`);
   outs.forEach((r, i) => {
     if (!r) return;
     const h = jobs[i].h, g = k => r.snap[k] || {};
-    console.log(`${(h[1] + " " + h[3]).padEnd(17)} ${RAID_ORDER.map(n => f(r.clears[n] == null ? null : Math.round(r.clears[n])).padStart(5)).join("")}  | ${[2, 7, 14, 30, 60, 90].map(k => f(g(k).gs == null ? null : Math.round(g(k).gs))).join("")} | ${[7, 30, 60].map(k => f(g(k).gold)).join("")} | ${r.epic == null ? "-" : "day " + Math.round(r.epic)}`);
+    console.log(`${(h[1] + " " + h[3]).padEnd(17)} ${RAID_ORDER.map(n => f(r.clears[n] == null ? null : Math.round(r.clears[n])).padStart(5)).join("")}  | ${[2, 7, 14, 30, 60, 90].map(k => f(g(k).gs == null ? null : Math.round(g(k).gs))).join("")} | ${[7, 30, 60].map(k => f(g(k).gold)).join("")} | ${(r.epic == null ? "-" : "day " + Math.round(r.epic)).padEnd(7)} | ${r.pvp ? `${r.pvp.games} games, ${r.pvp.wins} won, rank ${r.pvp.best}${r.pvp.r11 != null ? ` (day ${Math.round(r.pvp.r11)})` : ""}` : "-"}`);
   });
   const med = a => { a = a.filter(x => x != null).sort((x, y) => x - y); return a.length ? a[a.length >> 1] : null; };
   let ok = true;

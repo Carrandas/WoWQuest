@@ -37,6 +37,10 @@ const BOSS_ROT = {
   "C'Thun": ["Eye Beam", "Eye Beam,Dark Glare,Eye Tentacles,Digestive Acid", "Dark Glare"],
   "Patchwerk": ["Hateful Strike", "Auto Attack,Hateful Strike,Auto Attack", "Enrage"],
   "Kel'Thuzad": ["Frostbolt", "Frost Blast,Shadow Fissure,Detonate Mana,Frostbolt", "Chains of Kel'Thuzad"],
+  "Captain Galvangar": ["Mortal Strike", "Auto Attack,Whirlwind,Cleave,Frighten,Mortal Strike", "Enrage"],
+  "Captain Balinda Stonehearth": ["Fireball", "Arcane Explosion,Cone of Cold,Fireball,Summon Water Elemental", "Arcane Explosion"],
+  "Drek'Thar": ["Whirlwind", "Auto Attack,Knockdown,Cleave,Whirlwind,Frenzy", "Enrage"],
+  "Vanndar Stormpike": ["Avatar", "Auto Attack,Storm Bolt,Thunderclap,Avatar", "Thunderclap"],
 };
 // adds that fight next to a boss (they go down first)
 const BOSS_ADDS = {
@@ -71,7 +75,8 @@ const BOSS_SCRIPT = {
   "Patchwerk": [{ at: 0.05, label: "Enraged", pool: ["Hateful Strike", "Hateful Strike", "Auto Attack"], say: "Patchwerk goes berserk as he nears death." }],
   "Majordomo Executus": [{ at: 0.5, spawn: ["Flamewaker Elite", "Flamewaker Healer"], label: "Reinforcements", say: "Majordomo calls more Flamewakers into the fight." }],
 };
-function foePool(name, kind, rank) {
+function foePool(name, kind, rank, who) {
+  if (who && who.cls) return pvpPool(who.cls, who.role); // a player in a battleground
   const b = BOSS_ROT[name]; if (b) return { open: [b[0]], fill: ["Auto Attack"], extra: b[1].split(","), end: b[2] };
   const big = rank === "boss" || rank === "raid boss", nuke = casterNuke(name);
   if (kind === "caster") return { open: [nuke], fill: [nuke], extra: ["Frost Nova", "Curse of Weakness", "Shadow Word: Pain", "Mana Shield", "Renew"].concat(big ? ["Shadow Bolt Volley", "Fear"] : []), end: big ? "Arcane Explosion" : "Heal" };
@@ -85,7 +90,7 @@ function foePool(name, kind, rank) {
 }
 // one action per hero cast while it lives; the closer comes when it's nearly dead
 function foeActions(u, n) {
-  const base = foePool(u.name, u.kind, u.rank), out = new Array(n).fill(null), start = Math.min(n, u.spawn || 0), life = Math.min(n, u.left ? n : Math.max(start + 1, u.b));
+  const base = foePool(u.name, u.kind, u.rank, u), out = new Array(n).fill(null), start = Math.min(n, u.spawn || 0), life = Math.min(n, u.left ? n : Math.max(start + 1, u.b));
   for (let i = start; i < life; i++) {
     if (foeHidden(u, i)) { out[i] = "Submerged"; continue; }
     const ph = foePhase(u, i), p = ph && ph.pool ? { fill: ph.pool, extra: ph.pool, end: base.end } : base;
@@ -99,12 +104,14 @@ const foeHidden = (u, k) => !!(u.hide && u.hide.some(([a, b]) => k >= a && k < b
 const foePhase = (u, k) => (u.phases || []).filter(p => p.k <= k).pop() || null;
 const foeHp = (L, rank) => Math.round((L < 10 ? 40 + L * 18 : L * L * 1.1 + L * 20) * ({ elite: 3, boss: 7, "raid elite": 25, "raid boss": 230 }[rank] || 1));
 // enemy control: the hero loses the cast it was working on
-const CTRL = { Gouge: "Stunned", "Cheap Shot": "Stunned", Bash: "Stunned", "War Stomp": "Stunned", Kick: "Interrupted", "Shield Bash": "Interrupted", "Antimagic Pulse": "Interrupted",
+const CTRL = { Polymorph: "Polymorphed", "Kidney Shot": "Stunned", "Hammer of Justice": "Stunned", Intercept: "Stunned", Blind: "Stunned", "Scatter Shot": "Stunned",
+  "Psychic Scream": "Feared", "Howl of Terror": "Feared", "Intimidating Shout": "Feared", "Death Coil": "Feared", Counterspell: "Interrupted", Pummel: "Interrupted", Silence: "Interrupted", "Earth Shock": "Interrupted",
+  Gouge: "Stunned", "Cheap Shot": "Stunned", Bash: "Stunned", "War Stomp": "Stunned", Kick: "Interrupted", "Shield Bash": "Interrupted", "Antimagic Pulse": "Interrupted",
   Fear: "Feared", Panic: "Feared", "Bellowing Roar": "Feared" };
-const LOST = /^(Stunned|Interrupted|Feared)$/;
+const LOST = /^(Stunned|Interrupted|Feared|Polymorphed)$/;
 const MELEE = /^(Auto Attack|Auto Shot|Shoot)$|Strike|Shot$|Sting|Bite|Claw|Shred|Rake|Maul|Slam|Execute|Eviscerate|Backstab|Rend|Overpower|Sunder|Revenge|Cleave|Whirlwind|Hamstring|Charge|Ambush|Garrote|Gouge|Kick/;
 function controlHero(t, units, N) {
-  const c = t.casts || [], onMe = !S.party || foeTarget() === "you";
+  const c = t.casts || [], onMe = !S.party || foeTarget(t) === "you";
   units.forEach(u => {
     const life = Math.min(u.left ? N : u.b, u.acts.length);
     for (let i = Math.max(1, u.spawn || 0); i < life && i < c.length - 1; i++) {
@@ -117,7 +124,8 @@ function controlHero(t, units, N) {
 }
 // an enemy's health after each hero cast: the hero's hits bring it down (it dies on its last one),
 // its own heals bring it back up a little, which the hero then has to burn through
-const FOE_HEAL = { Heal: 0.15, Renew: 0.07 };
+const FOE_HEAL = { Heal: 0.15, Renew: 0.07, "Flash Heal": 0.1, "Greater Heal": 0.2, "Holy Light": 0.15, "Flash of Light": 0.1, "Healing Wave": 0.15, "Lesser Healing Wave": 0.1, "Chain Heal": 0.1,
+  "Healing Touch": 0.15, Regrowth: 0.1, Rejuvenation: 0.06, Swiftmend: 0.12 };
 function foeCurve(u, w, N) {
   const hp = new Array(N + 1).fill(undefined), heal = i => FOE_HEAL[u.acts[i]] || 0;
   if (u.dw) w = u.dw;
@@ -175,6 +183,7 @@ function heroWeights(t, casts, N) {
 const foeUnit = (name, L, rank) => ({ name, L, rank, kind: foeKind(name) });
 // who the hero fights in a task: the pulled mobs, a dungeon pack, or a boss with its adds (boss last)
 function foeUnits(t, raid) {
+  if (t.foes) return bgUnits(t); // a battleground fight
   const d = dungeonRow(), top = d ? d.max : S.level, units = [];
   if (t.k === "kill") (t.mobs || [t.mob]).forEach(n => units.push(foeUnit(n, t.mobL || S.level, t.elite ? "elite" : "")));
   else if (t.k === "trash") {
@@ -273,14 +282,18 @@ function foeAt(f, u, k) {
   return { hp, alive, present, res, hidden: foeHidden(u, k), phase: foePhase(u, k), act: alive ? u.acts[Math.min(k, u.acts.length - 1)] : null, ci: Math.min(k, u.acts.length - 1) };
 }
 // who the enemy is hitting
-function foeTarget() {
+function foeTarget(t = S.task) {
+  if (t && t.tgt) return t.tgt; // battlegrounds: whoever they went for
   if (!S.dg || !S.party) return "you";
   if (heroRole() === "tank") return "you";
   const tank = S.party.find(m => m.role === "tank"); return tank ? tank.name : "you";
 }
 // ---------- enemy damage: the enemy's actions decide when the damage lands and how big each hit is ----------
 // what an ability does: m = hit size (a normal swing is 1), aoe hits the whole group, dot ticks over the next few actions
+// battleground players: things that do no damage
+const PVP_NOHIT = /^(Polymorph|Blink|Vanish|Ice Block|Divine Shield|Feign Death|Power Word: Shield|Blessing of (Freedom|Kings)|Cleanse|Dispel Magic|Grounding Totem|Seal of Command|Psychic Scream|Howl of Terror|Intimidating Shout|Blind|Scatter Shot|Entangling Roots|Vampiric Embrace|Silence|Counterspell|Flash Heal|Greater Heal|Holy Light|Flash of Light|Healing Wave|Lesser Healing Wave|Chain Heal|Healing Touch|Regrowth|Rejuvenation|Swiftmend)$/;
 function foeHit(a) {
+  if (PVP_NOHIT.test(a)) return { m: 0 };
   if (a === "Deep Breath") return { m: 3.5, aoe: true };
   if (!a || a === "Submerged" || /^(Summon|Call|Raise)/.test(a) || /^(Heal|Renew|Mana Shield|Evasion|Enrage|Frenzy|Battle Shout|Demoralizing Shout|Furious Howl|Level Up|Essence of the Red|Magic Reflection|Damage Shield|Submit|Teleport|Time Lapse|Burning Adrenaline|Blade Flurry|Bellowing Roar|Class Call|Charge|Pounce|Web|Dominate Mind|Cause Insanity|Will of Hakkar|Threatening Gaze|Frozen|Seduced|Spell Locked)$/.test(a)) return { m: 0 };
   if (/Rend|Poison|Pain|Curse|Corruption|Ignite|Living Bomb|Corrupted Blood|Impending Doom|Garrote|Acid|Shadow Fissure|Frost Burn|Corrosive|Rake|Tendon Rip|Immolate/.test(a)) return { m: 1.2, dot: 3 };
@@ -357,6 +370,7 @@ function soloFight(t) {
 }
 // what's next when nothing is being fought
 function foeIdle() {
+  if (S.dg && S.dg.bg) return bgMeter().name;
   if (S.dg) { const d = dungeonRow(), next = d ? d.bosses[S.dg.killed] : null; return next ? `Next boss: ${next}` : "Nothing left to fight"; }
   const q = S.quests.find(x => x.id === S.curQ && !questDone(x));
   return q && q.mob ? `Next: ${q.mob}` : "";

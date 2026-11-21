@@ -371,6 +371,8 @@ button:disabled { cursor: not-allowed; }
 .gopts button span { color: var(--dim); font-size: 13px; }
 .gopts button small { color: #e07a5f; font-size: 12px; }
 .gopts button:disabled { opacity: .55; cursor: default; }
+.ptitle { display: block; font-size: 12px; letter-spacing: .08em; color: var(--dim); }
+.journal .pbar { margin-top: 5px; max-width: 320px; } .journal .pbar > i { background: var(--gold); }
 .gtag { color: var(--good); font-family: var(--label); font-weight: 700; letter-spacing: .03em; }
 .group.nometer .dmeter { display: none; }
 .modal .acts { display: flex; gap: 10px; justify-content: flex-end; }

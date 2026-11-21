@@ -39,7 +39,7 @@ function gameShell() {
   </section>
   <section class="group" id="group" hidden><div class="ghead" data-fold-box="group"><h2 id="gTitle">Group</h2>${foldBtn("group", "group frames")}</div><div class="gcards" id="gcards"></div>
     <div class="dmeter" data-fold-box="meter"><div class="dmh"><span class="lbl">Damage meter</span><small id="dmNote"></small>
-      <div class="seg" id="dmMode"><button type="button" data-m="dmg">Damage</button><button type="button" data-m="heal">Healing</button></div>
+      <div class="seg" id="dmMode"><button type="button" data-m="dmg">Damage</button><button type="button" data-m="heal">Healing</button><button type="button" data-m="score" id="dmScoreB" hidden>Score</button></div>
       <div class="seg" id="dmScope"><button type="button" data-s="fight">This fight</button><button type="button" data-s="run">Whole run</button></div>${foldBtn("meter", "damage meter")}</div>
       <ol class="dmrows" id="dmRows"></ol></div></section>
   <section class="main">
@@ -119,6 +119,7 @@ const TAB_ICONS = {
   log: '<path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7"/><path d="M7 3a2 2 0 0 0-2 2v2h4V5a2 2 0 0 0-2-2z"/><path d="M10 9h6M10 13h6M10 17h4"/>',
   quests: '<path d="M12 4v10"/><circle cx="12" cy="19" r="1.3" fill="currentColor" stroke="none"/>',
   guild: '<path d="M6 3v18"/><path d="M6 4h12l-3 4 3 4H6"/>',
+  pvp: '<path d="M4 4l11 11M15 15l-1.5 1.5M15 15l1.5-1.5"/><path d="M20 4L9 15M9 15l1.5 1.5M9 15l-1.5-1.5"/><path d="M5.5 20.5l3-3M18.5 20.5l-3-3"/>',
   ach: '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4M9 21h6M10 17h4"/>',
   zones: '<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',
   coll: '<circle cx="7" cy="9" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="17" cy="9" r="2"/><path d="M8 18c0-3 1.8-5 4-5s4 2 4 5c0 1.5-1.5 2-4 2s-4-.5-4-2z"/>',
@@ -201,9 +202,9 @@ function renderFoe() {
     foeMain = mi;
     box.classList.toggle("elite", u.rank === "elite" || u.rank === "raid elite"); box.classList.toggle("boss", /boss/.test(u.rank));
     setHtml("eName", esc(u.name));
-    setHtml("eSub", `Level <b>${u.rank === "raid boss" ? "??" : u.L}</b> ${FOE_RANK[u.rank] ? `<b class="rank">${FOE_RANK[u.rank]}</b> ` : ""}${u.kind}`);
+    setHtml("eSub", u.cls ? `Level <b>${u.L}</b> ${esc(u.race)} <b style="color:${CLASSES[u.cls].color}">${u.cls}</b>` : `Level <b>${u.rank === "raid boss" ? "??" : u.L}</b> ${FOE_RANK[u.rank] ? `<b class="rank">${FOE_RANK[u.rank]}</b> ` : ""}${u.kind}`);
     $("eMpL").textContent = u.res.toLowerCase(); $("eMpB").style.background = resCol(u.res);
-    const p = foePool(u.name, u.kind, u.rank), ab = [...new Set([...p.open, ...p.fill, ...p.extra, p.end, ...(u.phases || []).flatMap(x => x.pool || [])])];
+    const p = foePool(u.name, u.kind, u.rank, u), ab = [...new Set([...p.open, ...p.fill, ...p.extra, p.end, ...(u.phases || []).flatMap(x => x.pool || [])])];
     setHtml("eAbil", ab.map(a => `<li>${esc(a)}</li>`).join(""));
   }
   bubble("e" + foeSig + "|" + mi, box.querySelector(".unit"), s.hp, u.max, true);
@@ -262,6 +263,8 @@ function renderMeter(force) {
   document.querySelectorAll("#dmMode button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.m === dmMode)));
   document.querySelectorAll("#dmScope button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s === dmScope)));
   if (!M || !S.party) { setHtml("dmRows", ""); return; }
+  const bg = !!(S.dg && S.dg.bg); if ($("dmScoreB").hidden === bg) $("dmScoreB").hidden = !bg;
+  if (dmMode === "score") { if (bg) return renderScore(); dmMode = "dmg"; }
   const all = [{ name: S.name, cls: S.cls, me: true }, ...S.party.map(x => ({ name: x.name, cls: x.cls })), ...(S.pet ? [{ name: S.pet.name + " (pet)", cls: S.cls }] : [])];
   let vals, secs, what;
   if (dmScope === "fight") {
@@ -303,6 +306,7 @@ function raidGoal() {
 }
 // the quest meter: a dungeon or raid quest inside an instance, otherwise the current zone quest
 function questMeter() {
+  if (S.dg && S.dg.bg) return bgMeter();
   const dq = S.dg && S.dq && S.dq.length ? S.dq.find(x => !x.done) || S.dq[S.dq.length - 1] : null;
   if (dq) return { name: dq.name, val: `${dq.done ? 1 : 0} / 1`, p: dq.done ? 1 : 0 };
   const q = S.quests.find(x => x.id === S.curQ);
@@ -323,7 +327,7 @@ function renderLists() {
 // the character tab: name, stats, money and counts, buffs
 function renderHero() {
   const c = cls();
-  $("hName").textContent = S.name; $("hName").style.color = c.color;
+  setHtml("hName", `${S.pvp.rank ? `<small class="ptitle">${esc(rankName(S.pvp.rank))}</small>` : ""}${esc(S.name)}`); $("hName").style.color = c.color;
   $("tWhere").textContent = where();
   $("hSub").innerHTML = `Level <b>${S.level}</b> ${esc(S.race)} <b style="color:${c.color}">${esc(S.cls)}</b> · ${esc(c.trees[S.spec])}${S.guild ? ` <span class="gtag">&lt;${esc(S.guild.name)}&gt;</span>` : ""}`;
   $("stats").innerHTML = STATS.map(k => `<div class="stat ${k === mainStat() ? "prime" : ""}"><span class="lbl">${k}</span><b>${S.stats[k]}</b></div>`).join("");
@@ -374,7 +378,7 @@ function renderMeterNames() {
   const qm = questMeter();
   $("qN").textContent = qm ? qm.name : "between quests"; $("qN").title = qm ? qm.name : "";
   document.querySelector(".m-quest").classList.toggle("idle", !qm);
-  if (S.dg) { $("zL").textContent = S.dg.raid ? "raid" : "dungeon"; $("zN").textContent = S.dg.name; }
+  if (S.dg) { $("zL").textContent = S.dg.bg ? "battleground" : S.dg.raid ? "raid" : "dungeon"; $("zN").textContent = S.dg.name; }
   else { const li = legInfo(); $("zL").textContent = "zone"; $("zN").textContent = li.name; }
 }
 
@@ -397,7 +401,8 @@ function renderBars() {
   else { $("xpV").textContent = `${S.xp.toLocaleString()} / ${need.toLocaleString()}`; $("xpB").style.width = (S.xp / need * 100) + "%"; }
   const qm = questMeter();
   $("qV").textContent = qm ? qm.val : ""; $("qB").style.width = (qm ? qm.p * 100 : 0) + "%";
-  if (S.dg) { $("zV").textContent = `${S.dg.killed} / ${S.dg.total} bosses`; $("zB").style.width = (S.dg.killed / S.dg.total * 100) + "%"; }
+  if (S.dg && S.dg.bg) { $("zV").textContent = `${S.dg.hk} honorable kills`; $("zB").style.width = Math.min(100, S.dg.hk / 0.6) + "%"; }
+  else if (S.dg) { $("zV").textContent = `${S.dg.killed} / ${S.dg.total} bosses`; $("zB").style.width = (S.dg.killed / S.dg.total * 100) + "%"; }
   else { const li = legInfo(); $("zV").textContent = li.val; $("zB").style.width = (li.p * 100) + "%"; }
   renderGroup(hf, mf); renderFoe(); renderPet();
   if (uiTab === "log") $("elapsed").textContent = "/played " + fmtTime(S.time);
@@ -457,7 +462,7 @@ function renderGroup(hf, mf) {
     box.dataset.sig = sig; gCache = {}; dmTick = -1;
     box.classList.toggle("nometer", !v.inst);
     const all = [{ name: S.name, race: S.race, cls: S.cls, role: heroRole(), L: S.level, me: true }, ...v.list], raid = all.length > 5;
-    $("gTitle").innerHTML = raid ? `Raid <small>${esc(S.dg.name)} · ${all.length} players · ${all.filter(m => m.role === "tank").length} tanks, ${all.filter(m => m.role === "heal").length} healers</small><span class="legend"><span><i style="background:#4a7bd8"></i>tank</span><span><i style="background:#3fbf3f"></i>healer</span><span><i style="background:#c8312b"></i>dps</span></span>` : `Group <small>${esc(v.title)}</small>`;
+    $("gTitle").innerHTML = raid ? `${S.dg.bg ? "Battleground" : "Raid"} <small>${esc(S.dg.name)} · ${all.length} players · ${all.filter(m => m.role === "tank").length} ${(n => S.dg.bg ? (S.dg.name === "Warsong Gulch" ? "flag carrier" : "defender") + (n === 1 ? "" : "s") : n === 1 ? "tank" : "tanks")(all.filter(m => m.role === "tank").length)}, ${all.filter(m => m.role === "heal").length} healers</small><span class="legend"><span><i style="background:#4a7bd8"></i>tank</span><span><i style="background:#3fbf3f"></i>healer</span><span><i style="background:#c8312b"></i>dps</span></span>` : `Group <small>${esc(v.title)}</small>`;
     box.classList.toggle("raid", raid);
     if (raid) {
       const groups = []; for (let g = 0; g * 5 < all.length; g++) groups.push(all.slice(g * 5, g * 5 + 5).map((m, k) => [m, g * 5 + k]));
@@ -505,7 +510,7 @@ function startGame() {
 }
 
 // ---------- journal tabs: achievements, zones, dungeons ----------
-const TABS = [["log", "Chronicle"], ["quests", "Quests"], ["ach", "Achievements"], ["zones", "Zones"], ["dung", "Dungeons"], ["coll", "Collection"], ["guild", "Guild"]];
+const TABS = [["log", "Chronicle"], ["quests", "Quests"], ["ach", "Achievements"], ["zones", "Zones"], ["dung", "Dungeons"], ["coll", "Collection"], ["guild", "Guild"], ["pvp", "PvP"]];
 let uiTab = "log";
 const fmtDate = t => new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 const shortPlayed = ms => { const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor(m / 60) % 24; return d ? `${d}d ${h}h` : h ? `${h}h ${m % 60}m` : `${m % 60}m`; };
@@ -519,16 +524,17 @@ function renderJournal() {
   $("tab-zones").textContent = ` ${S.zones.length}`;
   $("tab-dung").textContent = ` ${dl.filter(d => S.dungeons.includes(d.name)).length}`;
   $("tab-guild").textContent = ` ${S.friends.length}`;
+  $("tab-pvp").textContent = S.pvp.rank ? ` ${S.pvp.rank}` : "";
   $("tab-coll").textContent = ` ${Object.keys(S.minipets).length + Object.keys(S.mounts).length}`;
   $("log").hidden = uiTab !== "log"; $("quests").hidden = uiTab !== "quests"; $("journal").hidden = uiTab === "log" || uiTab === "quests";
-  $("elapsed").textContent = uiTab === "log" ? "/played " + fmtTime(S.time) : uiTab === "quests" ? `${S.level >= 60 ? `${S.goals.length} goals · ` : ""}${S.quests.length + (S.dq || []).length} active` : uiTab === "ach" ? `${got.length} of ${shown.length} earned` : uiTab === "zones" ? `${doneZ} zones done` : uiTab === "coll" ? `${Object.keys(S.mounts).length} mounts · ${Object.keys(S.minipets).length} minipets` : uiTab === "guild" ? `${S.friends.length} friends${S.guild ? ` · ${S.guild.roster.length + S.friends.length + 1} in the guild` : ""}` : `${dl.filter(d => S.dungeons.includes(d.name)).length} of ${dl.length} cleared`;
+  $("elapsed").textContent = uiTab === "log" ? "/played " + fmtTime(S.time) : uiTab === "quests" ? `${S.level >= 60 ? `${S.goals.length} goals · ` : ""}${S.quests.length + (S.dq || []).length} active` : uiTab === "ach" ? `${got.length} of ${shown.length} earned` : uiTab === "zones" ? `${doneZ} zones done` : uiTab === "coll" ? `${Object.keys(S.mounts).length} mounts · ${Object.keys(S.minipets).length} minipets` : uiTab === "guild" ? `${S.friends.length} friends${S.guild ? ` · ${S.guild.roster.length + S.friends.length + 1} in the guild` : ""}` : uiTab === "pvp" ? `${S.pvp.rank ? esc(rankName(S.pvp.rank)) + " · " : ""}${S.pvp.hk.toLocaleString()} honorable kills` : `${dl.filter(d => S.dungeons.includes(d.name)).length} of ${dl.length} cleared`;
   if (uiTab === "log" || uiTab === "quests") return;
   let h = "";
   if (uiTab === "ach") {
     // earned first (latest on top), then the ones still to get; professions and collections under their own headings
     const order = as => as.filter(a => S.ach[a.id]).sort((a, b) => (S.ach[b.id].p ?? -1) - (S.ach[a.id].p ?? -1)).concat(as.filter(a => !S.ach[a.id]));
     const row = a => { const e = S.ach[a.id]; return `<li class="${e ? "got" : "locked"}"><span class="ico">${e ? "★" : "☆"}</span><div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span>${e ? `<time>${when(e.at, e.L, e.p, e.pre)}</time>` : ""}</div></li>`; };
-    const CATS = [["prof", "Professions"], ["coll", "Collections"], ["social", "Friends and guild"]];
+    const CATS = [["prof", "Professions"], ["coll", "Collections"], ["social", "Friends and guild"], ["pvp", "PvP"]];
     h = order(shown.filter(a => !a.cat)).map(row).join("") + CATS.map(([c, title]) => {
       const as = shown.filter(a => a.cat === c);
       return as.length ? `<li class="jhead">${title} <small>${as.filter(a => S.ach[a.id]).length} of ${as.length}</small></li>` + order(as).map(row).join("") : "";
@@ -544,6 +550,8 @@ function renderJournal() {
     h = renderCollection();
   } else if (uiTab === "guild") {
     h = renderSocial();
+  } else if (uiTab === "pvp") {
+    h = renderPvp();
   } else {
     h = dl.map(d => { const e = S.dstat[d.name], raid = RAIDS.includes(d), done = S.dungeons.includes(d.name) && e;
       const loot = done && e.loot.length ? `<span class="loot">${e.loot.map(x => `<i class="q${x.q}">${esc(x.n)}</i>`).join(", ")}</span>` : "";

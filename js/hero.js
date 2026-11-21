@@ -239,7 +239,7 @@ function vitalEnd(t) {
     if (sf) e[0] = sf.end;
   }
   else if (t.k === "trash" || t.k === "boss") { const d = fightDrop(heroRole(), t.k); e = [lo(hp - d[0]), lo(mp - d[1])]; }
-  else if (t.k === "rest" || t.k === "rez" || t.k === "regroup") e = [1, 1];
+  else if (t.k === "rest" || t.k === "rez" || t.k === "regroup" || t.k === "bgrez") e = [1, 1];
   else if (t.k === "ghost") e = [0, 0];
   else if (t.k === "buff" || t.k === "conjure" || t.k === "dbuff") e = [up(hp + 0.05), lo(mp - 0.08)];
   else if (petVitals(t, hp, mp)) e = petVitals(t, hp, mp);
@@ -330,7 +330,7 @@ function newHero(f) {
     buffs: {}, cons: { hp: 0, mp: 0, elix: 0, stone: 0, food: 10, drink: CLASSES[f.cls].mp ? 10 : 0, band: 0, bomb: 0, feast: 0, flask: 0 },
     prof: newProf(pairsFor(f.cls).includes(f.prof) ? f.prof : PAIR_FOR[f.cls], 1), elites: [], feats: [], zones: [], dstat: {}, ach: {},
     parts: {}, legendaries: [], lock: {}, runs: 0, trip: 0, cd: {}, achProf: 1,
-    bossKills: {}, runs60: 0, minipets: {}, companion: null, oox: [], mounts: {}, rep: {}, wintersaber: 0, wsToday: null, goals: [], goalsDone: {}, goalAuto: true, friends: [], duo: null, guild: null, achSocial: 1, pet: null, demons: {}, petStats: { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 }, rareHunt: null,
+    bossKills: {}, runs60: 0, minipets: {}, companion: null, oox: [], mounts: {}, rep: {}, wintersaber: 0, wsToday: null, goals: [], goalsDone: {}, goalAuto: true, friends: [], duo: null, guild: null, achSocial: 1, pvp: newPvp(), achPvp: 1, pet: null, demons: {}, petStats: { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 }, rareHunt: null,
     kills: 0, deaths: 0, qdone: 0, qid: 0, since: 0, curQ: 0, repair: 0, dg: null, time: 0, log: [], logId: 0, task: null, queue: [], speed: 1, savedAt: Date.now() };
   SLOTS.forEach(s => S.equip[s] = null);
   S.equip["Main Hand"] = { name: c.start, ilvl: 2, q: 1, slot: "Main Hand" };
