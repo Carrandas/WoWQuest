@@ -121,8 +121,8 @@ function queueBG(b, left = BG_SESSION[b.abbr] - 1) {
 // (side: whose point of view; home: that side's base in Arathi Basin)
 function bgDuties(abbr, side, n) {
   const other = side === "Alliance" ? "Horde" : "Alliance", home = side === "Alliance" ? "Stables" : "Farm", away = side === "Alliance" ? "Farm" : "Stables";
-  const pool = abbr === "WSG" ? ["Guarding the flag room", "Holding midfield", "Holding midfield", "Escorting the flag carrier", `Hunting the ${other} flag carrier`]
-    : abbr === "AB" ? [`Defending the ${home}`, `Attacking the ${away}`, "Holding the Blacksmith", "Guarding the Gold Mine", "Attacking the Lumber Mill", "Riding between bases"]
+  const pool = abbr === "WSG" ? ["Guarding the flag room", "Holding midfield", "Holding midfield", "Escorting the flag carrier", `Hunting the ${other} flag carrier`, "Ignoring the flags, farming kills"]
+    : abbr === "AB" ? [`Defending the ${home}`, `Attacking the ${away}`, "Holding the Blacksmith", "Guarding the Gold Mine", "Attacking the Lumber Mill", "Riding between bases", "Ignoring the bases, farming kills"]
     : [`Attacking ${AV[other].towers[0]}`, `Attacking ${AV[other].towers[1]}`, `Defending ${AV[side].towers[0]}`, `Defending ${AV[side].towers[1]}`, "Holding Snowfall Graveyard", "Fighting in the Field of Strife", "Taking a mine"];
   return Array.from({ length: n }, () => pick(pool));
 }
@@ -156,6 +156,11 @@ function wsgStory(st) {
   seq.forEach(s => {
     sc[s]++;
     if (s === 0) {
+      // now and then the escort loses its fight: the carrier goes down and the flag goes back to its base
+      if (Math.random() < 0.3) {
+        out.push({ fight: { d: me ? `Running the ${them} flag home` : `Escorting ${fc} with the ${them} flag`, focus: me } });
+        out.push({ d: `Fighting over the dropped flag`, lines: [`${me ? "You drop" : fc + " drops"} the ${them} flag. It's returned to its base.`], t: 12 });
+      }
       out.push({ fight: { d: me ? `Grabbing the ${them} flag` : `Fighting in the ${them} flag room`, focus: me } });
       if (Math.random() < 0.6) out.push({ fight: { d: me ? `Running the ${them} flag home` : `Escorting ${fc} home with the flag`, focus: me } });
       out.push({ d: me ? `Capturing the ${them} flag` : `${fc} brings the ${them} flag home`, lines: [`${me ? "You capture" : fc + " captures"} the ${them} flag! ${scoreTxt(sc, st)}.`], score: [...sc], stat: me ? { caps: 1 } : null });
