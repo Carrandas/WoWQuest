@@ -85,7 +85,16 @@
   - Server firsts: the guild races other named guilds on the realm to the first kills (Onyxia, Ragnaros, Nefarian,
     C'Thun, Kel'Thuzad), with a realm progress board and a "Server first!" chronicle moment (or "<Rival guild> got
     there first"). It was competitive
-  - The guild grows with you: at some level your character founds a guild with a name
+  - Friends before the guild: elite quests and hard pulls while levelling are done with other players who happen to
+    be around ("Grimtusk the Orc warrior helps you with Hogger"). Some of them stick: added as friends, they show up
+    again, and later become the first guildies
+    - On screen: reuse the dungeon party frames (health, mana, casting bar for each helper, and the damage meter),
+      which already exist; simplest. Or just the helper as a second unit frame under the hero
+  - A core group of about 10: the friends and guildies the hero plays with most. They join for questing and grinding,
+    make up the regular dungeon groups (instead of random LFG names), form the heart of the raid, and later queue
+    for battlegrounds together. Each has a class, a spec and a personality, so the same names keep turning up in
+    the chronicle and on the meter
+  - The guild grows with you: at some level your character founds a guild with a name (or the core group joins one)
   - Members join over time, enough for a 5-man dungeon first; dungeon groups are then made from the guild
   - Keep recruiting until there are 40 members at level 60, then raiding starts
   - Guild tab: name, class and spec, level, gear level for each member
