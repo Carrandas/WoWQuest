@@ -86,8 +86,12 @@
     questing along now and then, friends filling the dungeon groups, the guild founded or joined around level 20-30,
     recruiting to about 50, the guild roster filling the raids, personality lines in the chronicle, friends drifting
     away, the server-first race against a rival guild (Onyxia, Ragnaros, Nefarian, C'Thun, Kel'Thuzad), the Guild
-    tab, five achievements. Helpers are company only: kill outcomes are the solo ones. Still to come: each member's
-    own gear and loot (DKP), the guild bank, mid-run swaps and "LFM tank" recruiting, battlegrounds with the core group
+    tab, five achievements. Helpers are company only: kill outcomes are the solo ones.
+  - **Done** (second part): each member's own gear level (dungeon upgrades for everyone, raid loot through DKP bids,
+    driving their bar on the damage meter), the hero's raid loot bought with DKP, DKP standings and recent loot in the
+    Guild tab, the guild bank (dues; a flask when you run out on a raid night), mid-run swaps after a wipe (a guildie
+    steps in, or "LF1M tank for MC, on Baron Geddon", and the pug may join the guild), a guildie quitting after five
+    wipes in a row. Still to come: battlegrounds with the core group (needs PvP), guild achievements
   - Server firsts: the guild races other named guilds on the realm to the first kills (Onyxia, Ragnaros, Nefarian,
     C'Thun, Kel'Thuzad), with a realm progress board and a "Server first!" chronicle moment (or "<Rival guild> got
     there first"). It was competitive

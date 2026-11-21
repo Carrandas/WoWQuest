@@ -26,6 +26,7 @@ function migrate() {
   S.rep = S.rep || {}; S.wintersaber = S.wintersaber || 0; if (S.wsToday === undefined) S.wsToday = null;
   if (!S.friends) { S.friends = []; S.duo = null; S.guild = S.guild || null; seedSocial(); }
   if (S.duo === undefined) S.duo = null;
+  migrateSocial();
   S.goals = S.goals || []; S.goalsDone = S.goalsDone || {}; if (S.goalAuto === undefined) S.goalAuto = true;
   S.minipets = S.minipets || {}; S.oox = S.oox || []; if (S.companion === undefined) S.companion = null;
   S.demons = S.demons || {}; S.petStats = S.petStats || { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 }; S.rareHunt = S.rareHunt || null;

@@ -34,7 +34,7 @@ function makeParty(raid) {
   roles.splice(roles.indexOf(heroRole()), 1);
   const taken = takenNames(), used = [];
   const members = roles.map(role => {
-    const known = socialMember(role, raid, used); if (known) return { ...known, gear: contentGear() }; // friends, then the guild
+    const known = socialMember(role, raid, used); if (known) return { ...known, gear: known.gear ?? contentGear() }; // friends, then the guild (their own gear)
     const c = pick(ROLE_CLASSES[role].filter(k => k !== "Paladin" || S.faction === "Alliance").filter(k => k !== "Shaman" || S.faction === "Horde"));
     const race = pick(Object.keys(ALLOWED).filter(r => RACES[r].f === S.faction && ALLOWED[r].includes(c)));
     const name = randName(taken); taken.push(name);

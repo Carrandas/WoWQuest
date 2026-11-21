@@ -39,7 +39,8 @@ function lootDrop(dn, boss) {
     it = { name, slot: namedSlot(name), ilvl: dropIlvl(), q };
   }
   if (!it) return;
-  log(`${boss} dropped ${it.name}. Rolled Need: ${60 + R(41)}.`, "loot" + it.q);
+  const bid = heroBid(); // guild raids: bought with DKP
+  log(bid != null ? `${boss} dropped ${it.name}. You win it for ${bid} DKP.` : `${boss} dropped ${it.name}. Rolled Need: ${60 + R(41)}.`, "loot" + it.q);
   const de = dungeonEntry(dn); if (!de.loot.some(x => x.n === it.name)) de.loot.unshift({ n: it.name, q: it.q }); if (de.loot.length > 6) de.loot.length = 6;
   gain(it, "Won");
 }
@@ -219,6 +220,7 @@ const FINISH = {
     if (bossWipes(t)) {
       S.deaths++; S.repair += S.level * S.level * (raid ? 25 : 5); loseBuffs(); if (S.pet) S.pet.dead = true;
       log(`Wiped on ${t.boss}. Corpse run…`, "death"); S.hpF = 0; (S.party || []).forEach(m => m.hp = 0);
+      partySwap(t); if (raid) guildWipe(t.boss);
       const ghost = { k: "ghost", d: "Running back through the instance as a ghost", t: sec(60) };
       // three wipes in a raid and it's over for tonight: on to the exit
       if (raid && S.dg && ++S.dg.wipes >= RAID_TRIES) {
@@ -237,6 +239,8 @@ const FINISH = {
       const first = !(S.bossKills[t.boss] > 0), l = raidLock(t.dn) || (S.lock[t.dn] = { at: S.time, killed: 0, last: 0 });
       l.killed = S.dg.killed; S.bossKills[t.boss] = (S.bossKills[t.boss] || 0) + 1;
       if (first) { log(`First kill: ${t.boss}!`, "ach"); serverFirst(t.boss); }
+      if (S.guild) S.guild.wipes = 0;
+      guildLoot(t.dn, t.boss);
     }
     log(`${t.boss} has been defeated.`, "boss");
     (S.dq || []).filter(x => !x.done && x.boss === t.boss).forEach(x => { x.done = true; log(`Objective complete: ${x.obj} ("${x.name}").`, "quest"); });
@@ -263,6 +267,7 @@ const FINISH = {
   elixir() { drinkElixir(false); },
   dbuff(t) {
     const got = []; wantedBuffs().forEach(b => { if (!b.item || S.cons[b.item] > 0) { applyBuff(b); got.push(b.name); } });
+    if (t.raid) guildFlask();
     const ex = drinkElixir(t.raid); if (ex) got.push(ex);
     if (got.length) log(`Buffed up: ${got.join(", ")}.`, "spell");
   },

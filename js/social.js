@@ -27,25 +27,29 @@ const guildName = () => `${pick(GUILD_A)} ${pick(GUILD_B)}`;
 // ---------- players ----------
 // every name in use: the hero, friends, the guild roster
 const takenNames = () => [S.name, ...S.friends.map(f => f.name), ...(S.guild ? S.guild.roster.map(m => m.name) : [])];
+// a new player's gear level: about the hero's while levelling, dungeon blues at 60
+const newGear = () => +((S.level >= 60 ? 1.22 : 1.08) + Math.random() * 0.1).toFixed(3);
 // a new player of a role (any role if none given): class allowed for the faction, a race that can play it
 function newPlayer(role) {
   role = role || pick(["tank", "heal", "dps", "dps", "dps"]);
   const c = pick(ROLE_CLASSES[role].filter(k => k !== "Paladin" || S.faction === "Alliance").filter(k => k !== "Shaman" || S.faction === "Horde"));
   const race = pick(Object.keys(ALLOWED).filter(r => RACES[r].f === S.faction && ALLOWED[r].includes(c)));
-  return { name: randName(takenNames()), race, cls: c, role, spec: ROLE_SPEC[role][c], off: R(5) - 2, pers: pick(Object.keys(PERS)), runs: 0 };
+  return { name: randName(takenNames()), race, cls: c, role, spec: ROLE_SPEC[role][c], off: R(5) - 2, pers: pick(Object.keys(PERS)), runs: 0, gear: newGear(), dkp: 0 };
 }
 const friendL = (f, raid) => raid || S.level >= 60 ? 60 : clamp(S.level + (f.off || 0), 1, 60);
 const isFriend = n => S.friends.some(f => f.name === n);
 // someone from a group adds the hero as a friend (quiet: when seeding old saves)
 function addFriend(p, where, quiet) {
   if (S.friends.length >= CORE_MAX || isFriend(p.name)) return;
-  const f = { name: p.name, race: p.race, cls: p.cls, role: p.role, spec: p.spec, off: p.off ?? R(5) - 2, pers: p.pers || pick(Object.keys(PERS)), runs: 1, met: where ? { z: where, ...stamp() } : null };
+  const old = guildMember(p.name);
+  const f = { name: p.name, race: p.race, cls: p.cls, role: p.role, spec: p.spec, off: p.off ?? R(5) - 2, pers: p.pers || pick(Object.keys(PERS)), runs: 1, met: where ? { z: where, ...stamp() } : null,
+    gear: (old && old.gear) || p.gear || newGear(), dkp: (old && old.dkp) || 0 };
   S.friends.push(f);
   if (S.guild) S.guild.roster = S.guild.roster.filter(m => m.name !== f.name);
   if (!quiet) log(`${f.name} (${f.race} ${f.cls.toLowerCase()}) adds you as a friend: "Good group! Let's do this again."`, "chat");
 }
 // a group member as the frames want it: { name, race, cls, role, spec, L, hp, mp }
-const asMember = (p, raid) => ({ name: p.name, race: p.race, cls: p.cls, role: p.role, spec: p.spec, L: friendL(p, raid), hp: 1, mp: 1, friend: isFriend(p.name) });
+const asMember = (p, raid) => ({ name: p.name, race: p.race, cls: p.cls, role: p.role, spec: p.spec, L: friendL(p, raid), hp: 1, mp: 1, friend: isFriend(p.name), gear: p.gear });
 
 // ---------- questing together ----------
 // an elite quest: one or two players help (a friend if one is around, otherwise whoever is in the zone)
@@ -120,6 +124,7 @@ function friendChatter() {
 function socialDungeonEnd() {
   if (!S.party) return;
   S.party.forEach(m => { const f = S.friends.find(x => x.name === m.name); if (f) f.runs++; });
+  if (!S.dg || !S.dg.raid) guildDungeonGear();
   if (S.party.length <= 4 && Math.random() < 0.4) { const s = S.party.filter(m => !isFriend(m.name)); if (s.length) addFriend(pick(s), S.dg ? S.dg.name : curZone()); }
 }
 
@@ -127,7 +132,7 @@ function socialDungeonEnd() {
 // a city visit: found or join a guild (level 20 with three friends, or 30), grow the roster, and friends drift away now and then
 function socialCity() {
   if (!S.guild && ((S.level >= 20 && S.friends.length >= 3) || S.level >= 30)) foundGuild(false);
-  if (S.guild) growGuild(3);
+  if (S.guild) { growGuild(3); guildBank(); }
   if (S.friends.length > 3 && Math.random() < 0.015) {
     const f = pick(S.friends); S.friends = S.friends.filter(x => x !== f);
     if (S.duo && S.duo.name === f.name) S.duo = null;
@@ -136,7 +141,7 @@ function socialCity() {
 }
 function foundGuild(quiet) {
   const name = guildName(), fr = S.friends.slice(0, 3).map(f => f.name);
-  S.guild = { name, at: stamp(), founder: Math.random() < 0.5 || !fr.length, roster: [], firsts: {}, rival: { name: guildName(), days: {} } };
+  S.guild = { name, at: stamp(), founder: Math.random() < 0.5 || !fr.length, roster: [], firsts: {}, rival: { name: guildName(), days: {} }, dkp: 0, loot: [], wipes: 0, bank: { gold: 0, day: null } };
   if (S.guild.rival.name === name) S.guild.rival.name = "Hidden Banner";
   SERVER_FIRSTS.forEach(([b, d]) => S.guild.rival.days[b] = +(d * (0.7 + Math.random() * 0.65)).toFixed(1));
   growGuild(quiet ? 99 : 6); // a new guild starts with a handful (the charter), old saves get the roster they'd have by now
@@ -165,16 +170,102 @@ function seedSocial() {
   if (S.level >= 12) for (let i = 0, n = Math.min(CORE_MAX, 2 + Math.floor(S.level / 8)); i < n; i++) { addFriend(newPlayer(i === 0 ? "tank" : i === 1 ? "heal" : null), null, true); S.friends[S.friends.length - 1].runs = 5 + R(40); }
   if (!S.guild && S.level >= 20) foundGuild(true);
 }
+// saves from before guild gear and DKP
+function migrateSocial() {
+  S.friends.concat(S.guild ? S.guild.roster : []).forEach(m => { if (m.gear == null) m.gear = newGear(); if (m.dkp == null) m.dkp = 0; });
+  const g = S.guild; if (!g) return;
+  if (g.dkp == null) g.dkp = 0;
+  g.loot = g.loot || []; g.wipes = g.wipes || 0; g.bank = g.bank || { gold: 0, day: null };
+}
+
+// ---------- the guild's own gear, DKP, the bank ----------
+// every member has a gear level (gear score / level, like the hero's) that drives their part of the damage meter.
+// Dungeons give everyone an upgrade now and then (as if they ran one too); raid loot goes to members through DKP
+const guildMember = n => S.friends.find(f => f.name === n) || (S.guild && S.guild.roster.find(m => m.name === n)) || null;
+const memberGear = m => m.gear ?? 1.1;
+const gearUp = (m, amt, cap) => { m.gear = Math.max(memberGear(m), Math.min(cap, memberGear(m) + amt)); };
+const DKP_BOSS = 10;  // DKP for everyone in the raid per boss killed
+// a dungeon finished: friends and guildies have their own runs too (dungeon blues top out at about gear 1.35)
+function guildDungeonGear() {
+  const all = S.friends.concat(S.guild ? S.guild.roster : []), ch = S.level >= 60 ? 0.25 : 0.08;
+  all.forEach(m => { if (Math.random() < ch) gearUp(m, 0.02, S.level >= 60 ? 1.35 : 1.3); });
+}
+// a raid boss down: DKP for everyone there, and the loot the hero didn't get goes to the highest bidder who needs it
+function guildLoot(dn, boss) {
+  const g = S.guild, ri = RAID_INFO[dn], d = instanceRow(dn); if (!g || !ri || !S.party) return;
+  const here = S.party.map(m => guildMember(m.name)).filter(Boolean);
+  here.forEach(m => m.dkp = (m.dkp || 0) + DKP_BOSS); g.dkp = (g.dkp || 0) + DKP_BOSS;
+  const cap = ri.gs / 60 + 0.3; // a raid's loot lifts its raiders a bit past what it asks for
+  for (let i = 0, n = ri.size === 40 ? 3 : 2; i < n; i++) {
+    const want = here.filter(m => memberGear(m) < cap); if (!want.length) break;
+    const bids = Array.from({ length: Math.min(5, want.length) }, () => pick(want)), w = bids.reduce((a, b) => ((b.dkp || 0) > (a.dkp || 0) ? b : a));
+    const bid = Math.min(w.dkp || 0, Math.max(10, Math.round((w.dkp || 0) * (0.3 + Math.random() * 0.4))));
+    w.dkp = (w.dkp || 0) - bid; gearUp(w, 0.04, cap);
+    if (i || (!isFriend(w.name) && Math.random() > 0.4)) continue; // one line per boss at most: always for a friend
+    const items = d.loot.filter(x => !LEGENDARY[x.name]); if (!items.length) continue;
+    const item = pick(items).name;
+    log(bid ? `[Loot] ${w.name} wins ${item} for ${bid} DKP.` : `[Loot] ${w.name} gets ${item}: nobody else needed it.`, "loot4");
+    g.loot.unshift({ who: w.name, item, bid, boss }); if (g.loot.length > 6) g.loot.length = 6;
+  }
+}
+// the hero's own raid loot is bought with DKP too (null outside a guild raid: then it's a Need roll)
+function heroBid() {
+  if (!S.guild || !S.dg || !S.dg.raid) return null;
+  const bid = Math.min(S.guild.dkp || 0, 20 + R(40)); S.guild.dkp = (S.guild.dkp || 0) - bid; return bid;
+}
+// the guild bank: dues from every member, and a flask for the hero on a raid night when the bags are out of them
+function guildBank() {
+  const g = S.guild, day = Math.floor(S.time / DAY), days = Math.max(0, day - (g.bank.day ?? day));
+  g.bank.day = day; g.bank.gold += days * (g.roster.length + S.friends.length) * 500; // 5 silver a member a day
+}
+function guildFlask() {
+  const g = S.guild; if (!g || (S.cons.flask || 0) > 0 || g.bank.gold < FLASK_PRICE) return;
+  g.bank.gold -= FLASK_PRICE; S.cons.flask = 1;
+  log(`Out of flasks: the guild bank hands you a ${flaskName()} for tonight.`, "gold");
+}
+
+// ---------- people coming and going ----------
+const LEAVE = ["has to go (wife aggro)", "has to work early tomorrow", "disconnected and can't get back in", "rage-quits after that wipe", "has to put the kids to bed", "is falling asleep at the keyboard"];
+// after a wipe someone may leave: a guildie takes the spot in a raid, otherwise it's "LF1M" in chat
+function partySwap(t) {
+  if (!S.party || !S.dg || Math.random() > 0.15) return;
+  const raid = S.dg.raid, out = S.party.map((m, i) => [m, i]).filter(([m]) => !isFriend(m.name)); if (!out.length) return;
+  const [m, i] = pick(out), used = [S.name, ...S.party.map(x => x.name)];
+  const gm = raid && S.guild ? S.guild.roster.find(x => x.role === m.role && !used.includes(x.name)) : null;
+  let nm;
+  if (gm) { nm = asMember(gm, true); log(`${m.name} ${pick(LEAVE)}. ${nm.name} from the guild takes the spot.`, "chat"); }
+  else {
+    const p = newPlayer(m.role); nm = { ...asMember(p, raid), gear: contentGear() };
+    log(`${m.name} ${pick(LEAVE)}. "LF1M ${ROLE_NAME[m.role].toLowerCase()} for ${S.dg.name}, on ${t.boss}!" ${nm.name} joins.`, "chat");
+    if (raid && S.guild && Math.random() < 0.4) { S.guild.roster.push({ ...p, gear: contentGear() }); log(`${nm.name} liked the raid and joins <${S.guild.name}>.`, "chat"); }
+  }
+  nm.hp = 1; nm.mp = 1; S.party[i] = nm;
+  if (S.meter) { S.meter.dmg[i + 1] = 0; S.meter.heal[i + 1] = 0; }
+}
+// a raid that keeps wiping loses people: five wipes without a kill and a guildie quits
+function guildWipe(boss) {
+  const g = S.guild; if (!g || ++g.wipes < 5 || !g.roster.length) return;
+  g.wipes = 0;
+  const q = pick(g.roster); g.roster = g.roster.filter(x => x !== q);
+  log(`${q.name} has left the guild after another wipe on ${boss}: "This guild will never kill ${boss}."`, "chat");
+}
 
 // ---------- the guild tab ----------
 function renderSocial() {
   const g = S.guild, fr = S.friends.slice().sort((a, b) => b.runs - a.runs);
-  const row = f => `<li class="got"><span class="ico" style="color:${CLASSES[f.cls].color}">●</span><div><b style="color:${CLASSES[f.cls].color}">${esc(f.name)}${S.duo && S.duo.name === f.name ? ' <small class="comp">questing with you</small>' : ""}</b><span>Level ${friendL(f)} ${esc(f.race)} ${f.cls} · ${ROLE_NAME[f.role].toLowerCase()} · ${esc((PERS[f.pers] || PERS.joker)[0])}</span><time>${f.met ? `met in ${esc(f.met.z)} at level ${f.met.L} · ` : ""}${f.runs} ${f.runs === 1 ? "fight" : "fights"} together</time></div></li>`;
+  const row = f => `<li class="got"><span class="ico" style="color:${CLASSES[f.cls].color}">●</span><div><b style="color:${CLASSES[f.cls].color}">${esc(f.name)}${S.duo && S.duo.name === f.name ? ' <small class="comp">questing with you</small>' : ""}</b><span>Level ${friendL(f)} ${esc(f.race)} ${f.cls} · ${ROLE_NAME[f.role].toLowerCase()} · ${esc((PERS[f.pers] || PERS.joker)[0])}</span><time>${f.met ? `met in ${esc(f.met.z)} at level ${f.met.L} · ` : ""}${f.runs} ${f.runs === 1 ? "fight" : "fights"} together · gear ${Math.round(memberGear(f) * friendL(f))}${S.guild ? ` · ${f.dkp || 0} DKP` : ""}</time></div></li>`;
   let h = `<li class="jhead">Friends <small>${fr.length} of ${CORE_MAX}</small></li>` + (fr.map(row).join("") || `<li class="locked"><span class="ico">·</span><div><b>No friends yet</b><span>Elite quests and dungeons are where you meet people.</span></div></li>`);
   if (!g) return h + `<li class="jhead">Guild</li><li class="locked"><span class="ico">·</span><div><b>No guild yet</b><span>A guild comes along around level 20, once you have a few friends.</span></div></li>`;
   const roles = r => g.roster.filter(m => m.role === r).length + S.friends.filter(f => f.role === r).length;
   h += `<li class="jhead">&lt;${esc(g.name)}&gt; <small>${g.roster.length + S.friends.length + 1} members</small></li>`
     + `<li class="got"><span class="ico">✓</span><div><b>${g.founder ? "Founded" : "Joined"}</b><span>${roles("tank")} tanks, ${roles("heal")} healers, ${roles("dps")} damage dealers</span><time>${g.at.at ? when(g.at.at, g.at.L, g.at.p) : "before the guild tab existed"}</time></div></li>`;
+  const all = S.friends.concat(g.roster), avg = all.reduce((a, m) => a + memberGear(m), 0) / Math.max(1, all.length);
+  const dkp = all.map(m => ({ n: m.name, v: m.dkp || 0 })).concat({ n: S.name, v: g.dkp || 0, me: true }).sort((a, b) => b.v - a.v), mine = dkp.findIndex(x => x.me) + 1;
+  h += `<li class="got"><span class="ico">⚔</span><div><b>Gear</b><span>The guild averages gear ${Math.round(avg * Math.min(60, S.level))} (you: ${Math.round(gearScore())})</span></div></li>`
+    + `<li class="got"><span class="ico">$</span><div><b>Guild bank</b><span>${moneyTxt(g.bank.gold)} from dues. It pays for a flask when you run out on a raid night.</span></div></li>`;
+  if (S.level >= 60) h += `<li class="jhead">DKP <small>you: ${g.dkp || 0}, rank ${mine} of ${dkp.length}</small></li>`
+    + dkp.slice(0, 5).map((x, i) => `<li class="${x.me ? "got" : "locked"}"><span class="ico">${i + 1}</span><div><b>${esc(x.n)}</b><span>${x.v} DKP</span></div></li>`).join("")
+    + (g.loot.length ? `<li class="jhead">Recent loot</li>` + g.loot.map(l => `<li class="got"><span class="ico">✓</span><div><b class="q4">${esc(l.item)}</b><span>${esc(l.who)}, ${l.bid ? l.bid + " DKP" : "free"} · ${esc(l.boss)}</span></div></li>`).join("") : "");
   h += `<li class="jhead">Server firsts <small>racing &lt;${esc(g.rival.name)}&gt;</small></li>` + SERVER_FIRSTS.map(([b]) => { const x = g.firsts[b];
     return `<li class="${x && x.us ? "got" : "locked"}"><span class="ico">${x ? (x.us ? "✓" : "✗") : "·"}</span><div><b>${esc(b)}</b><span>${x ? (x.us ? "Server first!" : `&lt;${esc(g.rival.name)}&gt; got there first`) : "Not killed yet"}</span>${x ? `<time>${when(x.at, x.L, x.p)}</time>` : ""}</div></li>`; }).join("");
   return h;
