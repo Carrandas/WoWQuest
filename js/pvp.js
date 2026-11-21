@@ -6,9 +6,9 @@
 // ---------- the battlegrounds ----------
 // size: players a side; heal / tank: the healers and the flag carriers or defenders in a side; win / loss: bonus honor
 const BGS = [
-  { name: "Warsong Gulch", abbr: "WSG", size: 10, heal: 2, tank: 1, win: 260, loss: 90 },
+  { name: "Warsong Gulch", abbr: "WSG", size: 10, heal: 2, tank: 1, win: 300, loss: 130 },
   { name: "Arathi Basin", abbr: "AB", size: 15, heal: 3, tank: 1, win: 320, loss: 110 },
-  { name: "Alterac Valley", abbr: "AV", size: 40, heal: 8, tank: 3, win: 420, loss: 160 },
+  { name: "Alterac Valley", abbr: "AV", size: 40, heal: 8, tank: 3, win: 600, loss: 340 },
 ];
 const bgRow = n => BGS.find(b => b.name === n);
 const BG_CHANCE = 0.3;       // at 60, once attuned: the chance a non-raid evening goes to battlegrounds instead of a dungeon
@@ -107,6 +107,7 @@ function queueBG(b, left = BG_SESSION[b.abbr] - 1) {
   const E = bgEnemies(b, rival, sideGear()), win = Math.random() < bgWinChance(pre, rival, E);
   S.dg = { name: b.name, bg: true, raid: false, killed: 0, total: 0, rep0: S.repair, wipes: 0, pre, rival, win, score: [0, 0], hk: 0, ed: 0, od: 0, sb: { kb: [], hk: [], d: [] }, final: "", towers: 0, E };
   S.meter = { dn: b.name, dmg: [], heal: [], secs: 0, last: null };
+  S.dg.duty = bgDuties(b.abbr, us, S.party.length); bgDuties(b.abbr, them, E.length).forEach((x, j) => E[j].duty = x);
   q.push({ k: "bgq", d: `In the queue for ${b.name}`, t: sec(60 + R(180)), dn: b.name });
   if (left >= BG_SESSION[b.abbr] - 1) q.push({ k: "dbuff", d: "Buffing up while the gates are still closed", t: sec(8), raid: false });
   q.push({ k: "bgin", d: `Waiting for the gates of ${b.name} to open`, t: sec(50), dn: b.name });
@@ -116,15 +117,28 @@ function queueBG(b, left = BG_SESSION[b.abbr] - 1) {
   S.dg.final = st.final;
   q.push({ k: "bgend", d: `Leaving ${b.name}`, t: sec(10), dn: b.name, left });
 }
+// everyone's job for the game, when not in the hero's fight: guard the flag, hold a base, push a tower...
+// (side: whose point of view; home: that side's base in Arathi Basin)
+function bgDuties(abbr, side, n) {
+  const other = side === "Alliance" ? "Horde" : "Alliance", home = side === "Alliance" ? "Stables" : "Farm", away = side === "Alliance" ? "Farm" : "Stables";
+  const pool = abbr === "WSG" ? ["Guarding the flag room", "Holding midfield", "Holding midfield", "Escorting the flag carrier", `Hunting the ${other} flag carrier`]
+    : abbr === "AB" ? [`Defending the ${home}`, `Attacking the ${away}`, "Holding the Blacksmith", "Guarding the Gold Mine", "Attacking the Lumber Mill", "Riding between bases"]
+    : [`Attacking ${AV[other].towers[0]}`, `Attacking ${AV[other].towers[1]}`, `Defending ${AV[side].towers[0]}`, `Defending ${AV[side].towers[1]}`, "Holding Snowfall Graveyard", "Fighting in the Field of Strife", "Taking a mine"];
+  return Array.from({ length: n }, () => pick(pool));
+}
 // one skirmish: a few enemy players (or the valley's captains and generals), maybe focused on the hero, maybe the hero dies
+// the hero and up to two of ours against one to three of theirs (the rest of both sides are busy with their jobs);
+// the valley's captains and generals take a crowd
 function bgFight(f, st) {
-  const n = f.npc ? 0 : f.n || (st.b.size >= 40 ? 3 + R(3) : 2 + R(2)), pool = st.E.slice(), foes = (f.npc || []).slice();
+  const big = !!f.npc, n = big ? 0 : f.n || pick([1, 1, 2, 2, 2, 3, 3]), pool = st.E.slice(), foes = (f.npc || []).slice();
   for (let i = 0; i < n && pool.length; i++) { const e = pool.splice(R(pool.length), 1)[0]; foes.push({ name: e.name, race: e.race, cls: e.cls, role: e.role }); }
-  const big = !!f.npc, share = groupAoe(foes.length), p = packTrim(heroGroupCasts(big ? 110 : 45, big, foes.length), foes.length, share, sec(big ? 110 : 45));
-  const focus = f.focus ?? Math.random() < 0.3;
+  const share = groupAoe(foes.length), p = packTrim(heroGroupCasts(big ? 110 : 45, big, foes.length), foes.length, share, sec(big ? 110 : 45));
+  const nAl = big ? Math.min(S.party.length, 6 + R(5)) : clamp(foes.length - 2 + R(3), 0, 2);
+  const allies = shuffle(S.party.map((_, i) => i)).slice(0, nAl).sort((a, b) => a - b);
+  const focus = !allies.length || (f.focus ?? Math.random() < 0.4);
   const dieP = clamp(0.1 + (heroRole() === "heal" ? 0.08 : 0) + (armorType() === "Cloth" ? 0.05 : 0) - (gearScore() / 60 - 1.25) * 0.3 + (focus ? 0.15 : 0) + (big ? 0.1 : 0), 0.04, 0.5);
   const die = Math.random() < dieP;
-  return { k: "trash", bg: true, d: f.d, t: p.t, foes, casts: p.casts, aoeShare: share, tgt: focus ? "you" : pick(S.party).name, die, dieAt: +(0.55 + Math.random() * 0.4).toFixed(2) };
+  return { k: "trash", bg: true, d: f.d, t: p.t, foes, casts: p.casts, aoeShare: share, allies, tgt: focus ? "you" : S.party[pick(allies)].name, die, dieAt: +(0.55 + Math.random() * 0.4).toFixed(2) };
 }
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = R(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const scoreTxt = (sc, st) => `${st.us} ${sc[0]}, ${st.them} ${sc[1]}`;
@@ -136,7 +150,8 @@ function wsgStory(st) {
   // our flag carrier: the hero if a tank (or a druid, often), otherwise one of ours
   const role = heroRole(), me = Math.random() < (role === "tank" ? 0.7 : S.cls === "Druid" ? 0.5 : 0.1);
   const fcs = S.party.filter(m => m.role === "tank" || m.cls === "Druid"), fc = me ? S.name : (pick(fcs.length ? fcs : S.party)).name;
-  const efc = (E.find(e => e.cls === "Druid" || e.cls === "Warrior") || E[E.length - 1]).name;
+  const ef = E.find(e => e.cls === "Druid" || e.cls === "Warrior") || E[E.length - 1], efc = ef.name;
+  const fi = S.party.findIndex(m => m.name === fc); if (fi >= 0) S.dg.duty[fi] = "Carrying the flag"; ef.duty = "Carrying the flag";
   out.push({ fight: { d: "Fighting in the middle of the gulch" } });
   seq.forEach(s => {
     sc[s]++;
@@ -183,7 +198,7 @@ const AV = {
 };
 function avStory(st) {
   const { us, them, win } = st, T = AV[them], O = AV[us], out = [];
-  out.push({ fight: { d: "Fighting in the Field of Strife", n: 5 } });
+  out.push({ fight: { d: "Fighting in the Field of Strife", n: 3 } });
   out.push({ d: "Taking Snowfall Graveyard", lines: [`The ${us} takes Snowfall Graveyard!`] });
   out.push({ fight: { d: `Fighting at ${T.gy}` } });
   out.push({ d: `Taking ${T.gy}`, lines: [`The ${us} takes ${T.gy}!`] });
@@ -203,7 +218,7 @@ function avStory(st) {
     out.push({ d: `${T.general} falls`, lines: [`${T.general} is dead! The ${us} wins Alterac Valley.`], stat: { generals: 1 }, t: 10 });
     st.final = `${T.general} slain, ${100 + R(250)} reinforcements left`;
   } else {
-    out.push({ fight: { d: `Defending ${O.general} in ${us === "Alliance" ? "Dun Baldar" : "Frostwolf Keep"}`, n: 5 } });
+    out.push({ fight: { d: `Defending ${O.general} in ${us === "Alliance" ? "Dun Baldar" : "Frostwolf Keep"}`, n: 3 } });
     out.push({ d: `${O.general} falls`, lines: [`The ${them} kills ${O.general}. Alterac Valley is lost.`], t: 10 });
     st.final = `${O.general} slain`;
   }
@@ -237,12 +252,14 @@ function pvpPool(c, role) {
 // a finished skirmish: killing blows and honorable kills for the scoreboard, and the hero's death (no repair bill)
 function bgFightEnd(t) {
   const d = S.dg; if (!d || !d.bg) return;
-  const players = t.foes.filter(f => f.cls).length, all = [{ role: heroRole(), gear: gearScore() / 60 }, ...S.party], n = all.length, sb = d.sb;
+  // the ones in the fight (scoreboard index: 0 is the hero, i + 1 is party member i) share the killing blows and get the honorable kills
+  const players = t.foes.filter(f => f.cls).length, sb = d.sb, ids = [0, ...(t.allies || S.party.map((_, i) => i)).map(i => i + 1)];
+  const all = ids.map(j => j ? S.party[j - 1] : { role: heroRole(), gear: gearScore() / 60 });
   const W = { dps: 1, tank: 0.5, heal: 0.15 }, wsum = all.reduce((a, m) => a + W[m.role] * (m.gear || 1), 0);
-  t.foes.forEach(() => { let r = Math.random() * wsum, i = 0; for (; i < n - 1; i++) { r -= W[all[i].role] * (all[i].gear || 1); if (r <= 0) break; } sb.kb[i] = (sb.kb[i] || 0) + 1; if (!i) S.pvp.kb++; });
-  for (let i = 0; i < n; i++) sb.hk[i] = (sb.hk[i] || 0) + players;
+  t.foes.forEach(() => { let r = Math.random() * wsum, i = 0; for (; i < all.length - 1; i++) { r -= W[all[i].role] * (all[i].gear || 1); if (r <= 0) break; } sb.kb[ids[i]] = (sb.kb[ids[i]] || 0) + 1; if (!i) S.pvp.kb++; });
+  ids.forEach(j => sb.hk[j] = (sb.hk[j] || 0) + players);
   d.hk += players; d.ed += t.foes.length; S.pvp.hk += players;
-  const ours = R(3); for (let j = 0; j < ours; j++) { const i = 1 + R(n - 1); sb.d[i] = (sb.d[i] || 0) + 1; } d.od += ours;
+  if (ids.length > 1 && Math.random() < 0.3) { const j = ids[1 + R(ids.length - 1)]; sb.d[j] = (sb.d[j] || 0) + 1; d.od++; }
   if (t.die) {
     sb.d[0] = (sb.d[0] || 0) + 1; d.od++; S.pvp.deaths++;
     const k = pick(t.foes);
@@ -272,6 +289,10 @@ const PVP_FINISH = {
   bgobj(t) {
     (t.lines || []).forEach(l => log(l, "dung"));
     if (S.dg && t.score) S.dg.score = t.score;
+    // meanwhile, everywhere else: a few kills and deaths among the ones on their jobs
+    if (S.dg && S.dg.sb) { const sb = S.dg.sb, n = S.party.length, k = 1 + R(Math.max(2, Math.round(n / 4)));
+      for (let x = 0; x < k; x++) { const j = 1 + R(n); sb.kb[j] = (sb.kb[j] || 0) + 1; sb.hk[j] = (sb.hk[j] || 0) + 1 + R(2); if (Math.random() < 0.5) { const o = 1 + R(n); sb.d[o] = (sb.d[o] || 0) + 1; S.dg.od++; } }
+      S.dg.ed += k; }
     if (t.stat) for (const k in t.stat) { S.pvp[k] = (S.pvp[k] || 0) + t.stat[k]; if (S.dg) S.dg[k] = (S.dg[k] || 0) + t.stat[k]; }
   },
   bgrez() {},
@@ -330,9 +351,10 @@ function bgMeter() {
 // the other side's frames: whoever is in the current fight shows its health and what it's doing, the rest stand ready
 function enemyNow(e, f, k) {
   const u = f && f.units.find(x => x.name === e.name);
-  if (!u) return { hp: 1, res: 100, cast: "&nbsp;" };
+  const duty = `<span class="duty">${esc(e.duty || "")}</span>`;
+  if (!u) return { hp: 1, res: 100, cast: duty };
   const s = foeAt(f, u, k);
-  return { hp: s.present ? s.hp : 1, res: s.res, cast: !s.present ? "&nbsp;" : s.alive ? `<span class="cur">${esc(s.act || "")}</span>` : '<span class="dead">dead</span>' };
+  return { hp: s.present ? s.hp : 1, res: s.res, cast: !s.present ? duty : s.alive ? `<span class="cur">${esc(s.act || "")}</span>` : '<span class="dead">dead</span>' };
 }
 // the scoreboard (instead of the damage meter): killing blows, honorable kills and deaths for each of your side
 function renderScore() {

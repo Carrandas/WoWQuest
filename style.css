@@ -378,6 +378,7 @@ button:disabled { cursor: not-allowed; }
 .team.us .tmh { color: var(--good); } .team.them .tmh { color: #f08a80; }
 .tmh small { font-family: var(--body); font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--dim); margin-left: 4px; }
 .team.us .rcell { background: #13281a; } .team.them .rcell { background: #2c1414; }
+.duty { color: var(--dim); font-style: italic; }
 .ptitle { display: block; font-size: 12px; letter-spacing: .08em; color: var(--dim); }
 .journal .pbar { margin-top: 5px; max-width: 320px; } .journal .pbar > i { background: var(--gold); }
 .gtag { color: var(--good); font-family: var(--label); font-weight: 700; letter-spacing: .03em; }

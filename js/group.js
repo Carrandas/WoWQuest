@@ -156,7 +156,7 @@ function simFight(t) {
 function pullMembers(t) {
   const raid = S.dg && S.dg.raid, base = t.k === "boss" ? (raid ? 260 : 110) : (raid ? 70 : 40);
   return [{ name: S.name, role: heroRole(), hp: S.hpF ?? 1, mp: S.mpF ?? 1, mx: hpMax(), healEv: [], casts: (t.casts || []).map(s => s.replace(/ on .+$/, "")) },
-    ...S.party.map(m => ({ name: m.name, role: m.role, hp: m.hp, mp: m.mp, mx: memberMax(m.cls, m.L), healEv: [], casts: rollRot(GROUP_ROT[m.role][m.cls], knowsAt(m.cls, m.L, m.spec), castCount(base, m.L)) }))];
+    ...S.party.map((m, pi) => ({ pi, m })).filter(x => !t.allies || t.allies.includes(x.pi)).map(({ pi, m }) => ({ pi, name: m.name, role: m.role, hp: m.hp, mp: m.mp, mx: memberMax(m.cls, m.L), healEv: [], casts: rollRot(GROUP_ROT[m.role][m.cls], knowsAt(m.cls, m.L, m.spec), castCount(base, m.L)) }))];
 }
 // each member's mana at the end, and the damage they take per cast of their own
 function pullCosts(P, t) {
@@ -220,7 +220,8 @@ function partyFight(t) {
   if (t.k === "trash" || t.k === "boss") {
     const P = simFight(t);
     if (P[0].role === "heal") t.casts = P[0].casts;
-    f = { hero: P[0], m: P.slice(1) };
+    // battlegrounds: whoever isn't in the fight is off doing their job (and gets a breather)
+    f = { hero: P[0], m: S.party.map((m, i) => P.find(p => p.pi === i) || { idle: true, casts: [], tl: null, hp: m.hp, mp: m.mp, end: Math.min(1, m.hp + 0.2), mpEnd: Math.min(1, m.mp + 0.15) }) };
   } else {
     const up = x => Math.min(1, x);
     f = { hero: null, m: S.party.map(m => {

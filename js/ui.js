@@ -232,7 +232,7 @@ function meterFight(t) {
   // your gear against theirs: both measured as gear for the level, so being over- or undergeared shows
   const P = [pf.hero, ...pf.m], all = [{ role: heroRole(), L: S.level, gear: clamp(gearScore() / Math.max(1, S.level), 0.5, 2) * talMod("d") }, ...S.party.map(x => ({ role: x.role, L: x.L, gear: x.gear ?? (x.gear = contentGear()) }))];
   if ((t.cds || []).some(c => c.type === "burst")) all[0].gear *= 1.2;
-  const w = all.map(a => (DM_ROLE[a.role] || 0.5) * a.gear * (a.L / Math.max(1, S.level)) * (0.85 + Math.random() * 0.3)), ws = w.reduce((a, b) => a + b, 0) || 1;
+  const w = all.map((a, i) => i && pf.m[i - 1].idle ? 0 : (DM_ROLE[a.role] || 0.5) * a.gear * (a.L / Math.max(1, S.level)) * (0.85 + Math.random() * 0.3)), ws = w.reduce((a, b) => a + b, 0) || 1;
   if (S.pet) { const ps = petShare(); w.push(w[0] * ps); w[0] *= 1 - ps; } // the pet's damage is its share of the hero's
   m = { share: w.map(x => x / ws), heal: P.map(p => p.healEv || []) };
   DMF.set(t, m); return m;
@@ -490,7 +490,7 @@ function renderGroup(hf, mf) {
   const dead = '<span class="dead">dead</span>';
   paint(0, S.cls, hf, mf, hc.length > 0, t ? poolProgress(t) : 0, hf <= 0 && hc.length ? dead : castHtml(hc, hci), S.level);
   if (v.inst) renderMeter();
-  v.list.forEach((m, i) => { const n = v.inst ? memberNow(i) : helperNow(m, t && t.helpers ? t : null); paint(i + 1, m.cls, n.hp, n.mp, n.fight, n.p, n.hp <= 0 && n.fight ? dead : castHtml(n.casts, n.ci), m.L); });
+  v.list.forEach((m, i) => { const n = v.inst ? memberNow(i) : helperNow(m, t && t.helpers ? t : null); paint(i + 1, m.cls, n.hp, n.mp, n.fight, n.p, n.hp <= 0 && n.fight ? dead : E && !n.fight && S.dg.duty ? `<span class="duty">${esc(S.dg.duty[i] || "")}</span>` : castHtml(n.casts, n.ci), m.L); });
   if (E) { const f = t && t.bg ? foeOf(t) : null, k = f ? Math.floor(taskDone(t) * f.w.length) : 0;
     E.forEach((e, j) => { const n = enemyNow(e, f, k), key = Math.round(n.hp * 1000) + "|" + n.res + "|" + n.cast; if (gCache["x" + j] === key) return; gCache["x" + j] = key;
       $("xh" + j).style.width = (n.hp * 100).toFixed(1) + "%"; $("xh" + j).style.background = hpCol(n.hp); $("xhv" + j).textContent = Math.round(n.hp * 100) + "%";
