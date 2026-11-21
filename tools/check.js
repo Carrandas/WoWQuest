@@ -34,7 +34,7 @@ function sim(save, scen, seed, env = {}) {
     (err, out, errOut) => res(err ? "ERROR " + (errOut || err.message) : out)));
 }
 // runs jobs a few at a time
-async function pool(jobs, n = Math.max(2, os.cpus().length - 1)) {
+async function pool(jobs, n = +process.env.JOBS || Math.max(2, os.cpus().length - 1)) {
   const out = new Array(jobs.length); let next = 0;
   await Promise.all(Array.from({ length: n }, async () => { while (next < jobs.length) { const i = next++; out[i] = await jobs[i](); } }));
   return out;
