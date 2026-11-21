@@ -434,9 +434,14 @@ function renderProfs() {
   $("crafts").innerHTML = p.recent.map(x => `<li><span class="l">${esc(x.n)}</span><span class="rank">level ${x.L}</span></li>`).join("") || `<li><span class="empty">nothing made yet</span></li>`;
 }
 // a group member's health, resource and cast lines (filled in by renderGroup's paint)
-const memberBars = i => `<div class="gbar"><i id="gh${i}"></i><span id="ghv${i}"></span></div>
-        <div class="gbar thin"><i id="gm${i}"></i><span id="gmv${i}"></span></div>
-        <div class="gcast" id="gc${i}"></div>`;
+const memberBars = (i, p = "g") => `<div class="gbar"><i id="${p}h${i}"></i><span id="${p}hv${i}"></span></div>
+        <div class="gbar thin"><i id="${p}m${i}"></i><span id="${p}mv${i}"></span></div>
+        <div class="gcast" id="${p}c${i}"></div>`;
+// raid frames in groups of five; p: the id prefix (g: your side, x: the other side in a battleground)
+const raidGroups = (all, p = "g") => { const groups = []; for (let g = 0; g * 5 < all.length; g++) groups.push(all.slice(g * 5, g * 5 + 5).map((m, k) => [m, g * 5 + k]));
+  return `<div class="rgroups" style="--ng:${groups.length}">${groups.map((g, gi) => `<div class="rgroup"><div class="rgh">Group ${gi + 1}</div>${g.map(([m, i]) => `<div class="rcell r-${m.role}${m.me ? " me" : ""}" title="${esc(m.name)}: level ${m.L || 60} ${esc(m.race)} ${m.cls} (${ROLE_NAME[m.role]})">
+        <div class="rname" style="color:${CLASSES[m.cls].color}">${esc(m.name)}</div>
+        ${memberBars(i, p)}</div>`).join("")}</div>`).join("")}</div>`; };
 // party / raid frames: the hero plus the companions
 let gCache = {};
 // who to draw: the dungeon or raid group, the helpers on an elite quest, or a friend questing along
@@ -457,19 +462,16 @@ function renderGroup(hf, mf) {
   const v = groupView(), show = !!v, box = $("group");
   if (box.hidden === show) box.hidden = !show;
   if (!show) return;
-  const sig = v.list.map(m => m.name).join() + S.level + (v.inst ? "i" : "q");
+  const E = S.dg && S.dg.bg && S.dg.E, sig = v.list.map(m => m.name).join() + S.level + (v.inst ? "i" : "q") + (E ? "e" + E.length : "");
   if (box.dataset.sig !== sig) {
     box.dataset.sig = sig; gCache = {}; dmTick = -1;
     box.classList.toggle("nometer", !v.inst);
     const all = [{ name: S.name, race: S.race, cls: S.cls, role: heroRole(), L: S.level, me: true }, ...v.list], raid = all.length > 5;
     $("gTitle").innerHTML = raid ? `${S.dg.bg ? "Battleground" : "Raid"} <small>${esc(S.dg.name)} · ${all.length} players · ${all.filter(m => m.role === "tank").length} ${(n => S.dg.bg ? (S.dg.name === "Warsong Gulch" ? "flag carrier" : "defender") + (n === 1 ? "" : "s") : n === 1 ? "tank" : "tanks")(all.filter(m => m.role === "tank").length)}, ${all.filter(m => m.role === "heal").length} healers</small><span class="legend"><span><i style="background:#4a7bd8"></i>tank</span><span><i style="background:#3fbf3f"></i>healer</span><span><i style="background:#c8312b"></i>dps</span></span>` : `Group <small>${esc(v.title)}</small>`;
     box.classList.toggle("raid", raid);
-    if (raid) {
-      const groups = []; for (let g = 0; g * 5 < all.length; g++) groups.push(all.slice(g * 5, g * 5 + 5).map((m, k) => [m, g * 5 + k]));
-      $("gcards").innerHTML = `<div class="rgroups" style="--ng:${groups.length}">${groups.map((g, gi) => `<div class="rgroup"><div class="rgh">Group ${gi + 1}</div>${g.map(([m, i]) => `<div class="rcell r-${m.role}${m.me ? " me" : ""}" title="${esc(m.name)}: level ${m.L} ${esc(m.race)} ${m.cls} (${ROLE_NAME[m.role]})">
-        <div class="rname" style="color:${CLASSES[m.cls].color}">${esc(m.name)}</div>
-        ${memberBars(i)}</div>`).join("")}</div>`).join("")}</div>`;
-    } else
+    if (E) $("gcards").innerHTML = `<div class="team us"><div class="tmh">${S.faction} <small>your side</small></div>${raidGroups(all)}</div><div class="team them"><div class="tmh">${foeSide()} <small>${S.dg.rival && S.guild ? `&lt;${esc(S.guild.rival.name)}&gt; premade` : "the other side"}</small></div>${raidGroups(E, "x")}</div>`;
+    else if (raid) $("gcards").innerHTML = raidGroups(all);
+    else
     $("gcards").innerHTML = all.map((m, i) => `<div class="gcard r-${m.role}${m.me ? " me" : ""}">
       <div class="gtop"><span class="gname" style="color:${CLASSES[m.cls].color}">${esc(m.name)}</span><span class="grole">${ROLE_NAME[m.role]}</span></div>
       <div class="gsub">Level ${m.L} ${esc(m.race)} ${m.cls}${m.me ? " · you" : isFriend(m.name) ? " · friend" : ""}</div>
@@ -489,6 +491,10 @@ function renderGroup(hf, mf) {
   paint(0, S.cls, hf, mf, hc.length > 0, t ? poolProgress(t) : 0, hf <= 0 && hc.length ? dead : castHtml(hc, hci), S.level);
   if (v.inst) renderMeter();
   v.list.forEach((m, i) => { const n = v.inst ? memberNow(i) : helperNow(m, t && t.helpers ? t : null); paint(i + 1, m.cls, n.hp, n.mp, n.fight, n.p, n.hp <= 0 && n.fight ? dead : castHtml(n.casts, n.ci), m.L); });
+  if (E) { const f = t && t.bg ? foeOf(t) : null, k = f ? Math.floor(taskDone(t) * f.w.length) : 0;
+    E.forEach((e, j) => { const n = enemyNow(e, f, k), key = Math.round(n.hp * 1000) + "|" + n.res + "|" + n.cast; if (gCache["x" + j] === key) return; gCache["x" + j] = key;
+      $("xh" + j).style.width = (n.hp * 100).toFixed(1) + "%"; $("xh" + j).style.background = hpCol(n.hp); $("xhv" + j).textContent = Math.round(n.hp * 100) + "%";
+      $("xm" + j).style.width = n.res + "%"; $("xm" + j).style.background = resCol(CLASSES[e.cls].res); $("xc" + j).innerHTML = n.cast; }); }
 }
 
 let rafId = 0, lastNow = 0, saveTimer = 0;

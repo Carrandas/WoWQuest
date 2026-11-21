@@ -31,10 +31,12 @@ function goalDefs() {
   otherRaces().forEach(o => { const c = RACE_REP[o], left = RUNECLOTH_EXALTED - (S.rep[c] || 0); if (left <= 0) return;
     out.push({ id: "rep:" + c, name: `Exalted with ${c}`, what: `Farm Runecloth and hand it in for ${c} twice as often, for the ${RACES[o].mount}. About ${Math.max(1, Math.round(left * GOAL_TURNIN / DAY))} days of play.`,
       prog: () => [Math.min(S.rep[c] || 0, RUNECLOTH_EXALTED), RUNECLOTH_EXALTED], txt: () => `${S.rep[c] || 0} of ${RUNECLOTH_EXALTED} turn-ins`, done: () => (S.rep[c] || 0) >= RUNECLOTH_EXALTED }); });
-  // PvP: the next rank with a reward, and the Alterac Valley mount
-  const pr = [3, 7, 8, 10, 11, 12, 13, 14].find(r => r > S.pvp.best), pneed = pvpOpen() ? null : "Needs the raid attunements first (level 60 dungeon clears)";
-  if (pr) out.push({ id: "pvp:" + pr, name: `PvP rank ${pr}: ${rankName(pr)}`, what: `Battlegrounds most evenings without a raid, for the rank ${pr} reward (${pr === 11 ? "the war mount" : "gear"}). Ranks come with the weekly update: weeks, more for the high ones.`, need: pneed,
-    prog: () => [Math.min(S.pvp.rp, RANK_RP[pr]), RANK_RP[pr]], txt: () => `${S.pvp.rp.toLocaleString()} of ${RANK_RP[pr].toLocaleString()} rank points`, done: () => S.pvp.best >= pr });
+  // PvP (only the player picks these): a rank to reach (the next one with a reward, the war mount at 11, the top), the Alterac Valley mount
+  const pneed = pvpOpen() ? null : "Needs the raid attunements first (level 60 dungeon clears)", held = S.goals.filter(g => g.id.startsWith("pvp:")).map(g => +g.id.slice(4));
+  const ranks = [...new Set([[3, 7, 8, 10, 12, 13].find(r => r > S.pvp.best), 11, 14, ...held])].filter(r => r && (r > S.pvp.best || held.includes(r))).sort((a, b) => a - b);
+  const weeks = r => r >= 14 ? "About two months of battlegrounds" : r >= 11 ? "A month or so" : r >= 8 ? "A few weeks" : "A week or two";
+  ranks.forEach(r => out.push({ id: "pvp:" + r, name: `PvP rank ${r}: ${rankName(r)}`, what: `Battlegrounds most evenings without a raid, for ${r === 11 ? "the war mount" : r === 14 ? "the highest rank and its weapon" : "the rank's gear"}. Ranks come with the weekly update. ${weeks(r)}.`, need: pneed,
+    prog: () => [Math.min(S.pvp.rp, RANK_RP[r]), RANK_RP[r]], txt: () => `${S.pvp.rp.toLocaleString()} of ${RANK_RP[r].toLocaleString()} rank points`, done: () => S.pvp.best >= r }));
   if (!hasMount(AV_MOUNT[S.faction])) out.push({ id: "avmount", name: AV_MOUNT[S.faction], what: `Alterac Valley again and again, until exalted with the ${AV_FACTION[S.faction]}. Many weeks.`, need: pneed,
     prog: () => [Math.min(S.pvp.av, AV_EXALTED), AV_EXALTED], txt: () => `${S.pvp.av.toLocaleString()} of ${AV_EXALTED.toLocaleString()} reputation`, done: () => hasMount(AV_MOUNT[S.faction]) });
   const pets = Object.keys(S.minipets).length, aim = Math.min(MINIPETS.length, Math.max(10, Math.ceil((pets + 1) / 5) * 5));
@@ -53,10 +55,10 @@ function addGoal(id, byHero) {
   S.goals.push({ id, at: S.time });
   log(byHero ? `${S.name} sets a new goal: ${d.name}.` : `New goal: ${d.name}.`, "quest");
 }
-// the hero's own picks: the next raid, then whatever takes its fancy. Never the gold goals: left alone, the hero
+// the hero's own picks: the next raid, then whatever takes its fancy. Never PvP (that's the player's call) or the gold goals: left alone, the hero
 // saves for the epic mount at the usual pace (weeks); a player who picks it gets there a few days sooner
 function autoGoals() {
-  const all = goalDefs().filter(d => !d.need && !hasGoal(d.id) && !S.goalsDone[d.id] && d.id !== "epic" && d.id !== "gold");
+  const all = goalDefs().filter(d => !d.need && !hasGoal(d.id) && !S.goalsDone[d.id] && d.id !== "epic" && d.id !== "gold" && !d.id.startsWith("pvp:") && d.id !== "avmount");
   while (S.goals.length < GOAL_AUTO) {
     const left = all.filter(d => !hasGoal(d.id)); if (!left.length) break;
     const fun = left.filter(x => !x.id.startsWith("raid:"));

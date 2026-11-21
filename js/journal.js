@@ -110,10 +110,15 @@ ACH.push(...[
   { id: "bgall", name: "Battlemaster", desc: "Win Warsong Gulch, Arathi Basin and Alterac Valley.", test: () => BGS.every(b => (S.pvp.games[b.abbr] || {}).w > 0) },
   { id: "flag", name: "Flag Runner", desc: "Capture the enemy flag in Warsong Gulch yourself.", test: () => S.pvp.caps > 0 },
   { id: "general", name: "Down Goes the General", desc: "Kill the enemy general in Alterac Valley.", test: () => S.pvp.generals > 0 },
+  { id: "flawless", name: "Three to Nothing", desc: "Win Warsong Gulch 3–0.", test: () => S.pvp.flawless > 0 },
+  { id: "wins100", name: "Battle-Hardened", desc: "Win 100 battlegrounds.", test: () => Object.values(S.pvp.games).reduce((a, g) => a + g.w, 0) >= 100 },
+  { id: "kb100", name: "Killing Blow", desc: "Land 100 killing blows.", test: () => S.pvp.kb >= 100 },
+  { id: "avex", name: "Exalted in the Valley", desc: "Exalted with the Stormpike Guard or the Frostwolf Clan (the Alterac Valley mount).", test: () => S.pvp.av >= AV_EXALTED },
   { id: "hk100", name: "Honorable Kills", desc: "100 honorable kills.", test: () => S.pvp.hk >= 100 },
   { id: "hk1000", name: "A Thousand Honorable Kills", desc: "1000 honorable kills.", test: () => S.pvp.hk >= 1000 },
   { id: "rank6", name: "Officer", desc: "Reach PvP rank 6 (Knight or Stone Guard).", test: () => S.pvp.best >= 6 },
   { id: "rank11", name: "War Mount", desc: "Reach PvP rank 11 (Commander or Lieutenant General).", test: () => S.pvp.best >= 11 },
+  { id: "rank10", name: "Officer of the Line", desc: "Reach PvP rank 10 (Lieutenant Commander or Champion).", test: () => S.pvp.best >= 10 },
   { id: "rank14", name: "The Highest Rank", desc: "Reach PvP rank 14 (Grand Marshal or High Warlord).", test: () => S.pvp.best >= 14 },
 ].map(a => ({ ...a, cat: "pvp" })));
 // minipets

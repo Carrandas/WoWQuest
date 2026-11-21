@@ -91,7 +91,7 @@
     driving their bar on the damage meter), the hero's raid loot bought with DKP, DKP standings and recent loot in the
     Guild tab, the guild bank (dues; a flask when you run out on a raid night), mid-run swaps after a wipe (a guildie
     steps in, or "LF1M tank for MC, on Baron Geddon", and the pug may join the guild), a guildie quitting after five
-    wipes in a row. Still to come: battlegrounds with the core group (needs PvP), guild achievements
+    wipes in a row, guild premades for the battlegrounds. Still to come: guild achievements
   - Server firsts: the guild races other named guilds on the realm to the first kills (Onyxia, Ragnaros, Nefarian,
     C'Thun, Kel'Thuzad), with a realm progress board and a "Server first!" chronicle moment (or "<Rival guild> got
     there first"). It was competitive
@@ -139,7 +139,7 @@
       other race, collect N minipets. Each one steers the days (farming, Stratholme, Winterspring, Runecloth). Still to
       come once those systems exist: Timbermaw and Argent Dawn reputation, the pre-raid set, Master Angler
   - Collections, and a collections tab with a mount bar and a minipet bar (the empty slots say where each comes from):
-    - **Done** (except the PvP mounts): mounts in the Collection tab, ridden by rarity
+    - **Done**: mounts in the Collection tab (the PvP mounts too), ridden by rarity
     - Mounts: Deathcharger's Reins (Baron Rivendare, Stratholme), Swift Razzashi Raptor and Swift Zulian Tiger (Zul'Gurub),
       Winterspring Frostsaber (Wintersaber Trainers, Alliance), the other races' mounts at exalted with their city,
       the AQ40 Qiraji battle tanks, the PvP mounts (Frostwolf Howler, Stormpike Battle Charger) once PvP is in
@@ -225,6 +225,13 @@
   - Flavour and fun, no gear: world PvP never gave any. Easier to add after the PvP item below (player-like enemies,
     honor kills), so it comes after that one
 - [ ] **PvP: battlegrounds and honor ranks** (at 60, maybe a bracket now and then while levelling)
+  - **Done**: Warsong Gulch, Arathi Basin and Alterac Valley at 60 after the raid attunements, a few games on an evening
+    without a raid (more with a PvP goal); enemy players of the other faction with their own rotations and crowd control,
+    the valley's captains and generals; guild premades (and the rival guild's); graveyard deaths; the scoreboard; honor,
+    the weekly update with decay, ranks 1-14 with titles, rank gear (3, 7, 8, 10, 12, 13, 14), the rank 11 war mount
+    with epic riding, the Alterac Valley mount at exalted; PvP goals picked by the player (rank 14 in about two months),
+    both teams in the group frames (yours green, theirs red), the PvP tab, fourteen achievements. Still to come:
+    brackets while levelling, Warsong Gulch / Arathi Basin reputation rewards, marks of honor, tabards, a PvP pet
   - Battlegrounds, played out like a dungeon run (queue, "X joined Warsong Gulch", a string of fights, win or loss):
     - Warsong Gulch (10 vs 10): capture the flag, first to 3 caps ("Dalwyn picked up the Horde flag!", "2–1 Alliance")
     - Arathi Basin (15 vs 15): five bases, a resource race to 2000, bases changing hands

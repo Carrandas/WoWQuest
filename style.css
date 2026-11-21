@@ -371,6 +371,13 @@ button:disabled { cursor: not-allowed; }
 .gopts button span { color: var(--dim); font-size: 13px; }
 .gopts button small { color: #e07a5f; font-size: 12px; }
 .gopts button:disabled { opacity: .55; cursor: default; }
+.team { border-radius: 6px; padding: 6px 8px 8px; }
+.team + .team { margin-top: 10px; }
+.team.us { background: #10261566; border: 1px solid #2f6f2a88; } .team.them { background: #2a0f0f66; border: 1px solid #8f2f2888; }
+.tmh { font-family: var(--label); font-weight: 700; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 4px; }
+.team.us .tmh { color: var(--good); } .team.them .tmh { color: #f08a80; }
+.tmh small { font-family: var(--body); font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--dim); margin-left: 4px; }
+.team.us .rcell { background: #13281a; } .team.them .rcell { background: #2c1414; }
 .ptitle { display: block; font-size: 12px; letter-spacing: .08em; color: var(--dim); }
 .journal .pbar { margin-top: 5px; max-width: 320px; } .journal .pbar > i { background: var(--gold); }
 .gtag { color: var(--good); font-family: var(--label); font-weight: 700; letter-spacing: .03em; }
