@@ -44,6 +44,7 @@ function planField(q, h) {
     q.push({ k: "move", d: elite ? `Looking for a group to kill ${quest.mob}` : `Heading out to find ${plural(quest.mob)} for "${quest.name}"`, t: sec((elite ? 40 : 20) * mountF()) });
     return;
   }
+  if (wpRoll(q)) return; // world PvP: a player of the other faction instead
   q.push(killTask(quest));
 }
 // at the quest hub: sell, turn in, then pick up new quests or go train
@@ -171,7 +172,8 @@ function queueCity() {
   const p = S.prof;
   if (p && trainCap()) { const c = crafts()[0]; q.push({ k: "craft", d: `Crafting ${CRAFT_AT[c]} (${c} ${Math.max(1, p.sk[c])})`, t: sec(12) }); }
   if (S.repair > 0) q.push({ k: "repair", d: `Repairing gear at the blacksmith`, t: sec(5) });
-  if (!local) q.push({ k: "shop", d: `Browsing the Auction House in ${where}`, t: sec(18) });
+  const ev = !local && wpCityEvent(q); // Corrupted Blood, Kazzak: train and get out
+  if (!local && !ev) q.push({ k: "shop", d: `Browsing the Auction House in ${where}`, t: sec(18) });
   if (S.level >= 40 && S.mount < 1) q.push({ k: "mount", d: `Visiting the riding trainer`, t: sec(8) });
   if (S.level >= 60 && S.mount < 2) q.push({ k: "mount", d: `Counting gold for an epic mount`, t: sec(6) });
   q.push({ k: "choose", d: `Studying the map for the next adventure`, t: sec(6) });
@@ -196,7 +198,7 @@ function pickDungeon() {
   if (S.level >= 60) {
     const open = RAIDS.filter(raidOpen);
     if (open.length && Math.random() < 0.7) return goalRaid(open) || (Math.random() < 0.7 ? open[open.length - 1] : pick(open));
-    return pvpPick() || goalDungeon() || pick(DUNGEONS.filter(d => d.min >= 52 && ok(d)));
+    return wpPick() || pvpPick() || goalDungeon() || pick(DUNGEONS.filter(d => d.min >= 52 && ok(d)));
   }
   return DUNGEONS.find(d => ok(d) && !S.dungeons.includes(d.name) && S.level >= d.min && S.level <= d.min + 6);
 }

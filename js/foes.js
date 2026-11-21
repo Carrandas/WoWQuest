@@ -366,7 +366,9 @@ function soloFight(t) {
     if (potion && !drank && cur < hm * 0.25) { drank = true; cur = Math.min(hm, cur + Math.round(hm * 0.4)); tl.push([e.at, cur / hm]); }
   }
   if (killer) { fo.stop = killer.k; t.killer = { src: killer.who, a: killer.act }; }
-  return (t.sf = { tl, end: cur / hm, drank, low: low / hm, ...(pet ? { pet: { tl: pet.tl, end: pet.cur / pet.max, died: pet.died } } : {}) });
+  const sf = { tl, end: cur / hm, drank, low: low / hm, ...(pet ? { pet: { tl: pet.tl, end: pet.cur / pet.max, died: pet.died } } : {}) };
+  if (t.wp) wpOutcome(t, fo, sf); // world PvP: the result was rolled at the start
+  return (t.sf = sf);
 }
 // what's next when nothing is being fought
 function foeIdle() {

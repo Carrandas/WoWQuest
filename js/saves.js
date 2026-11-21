@@ -28,6 +28,7 @@ function migrate() {
   if (S.duo === undefined) S.duo = null;
   migrateSocial();
   if (!S.pvp) S.pvp = newPvp();
+  S.wpvp = { ...newWpvp(), ...(S.wpvp || {}) };
   S.goals = S.goals || []; S.goalsDone = S.goalsDone || {}; if (S.goalAuto === undefined) S.goalAuto = true;
   S.minipets = S.minipets || {}; S.oox = S.oox || []; if (S.companion === undefined) S.companion = null;
   S.demons = S.demons || {}; S.petStats = S.petStats || { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 }; S.rareHunt = S.rareHunt || null;

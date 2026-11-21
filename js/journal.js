@@ -120,6 +120,14 @@ ACH.push(...[
   { id: "rank11", name: "War Mount", desc: "Reach PvP rank 11 (Commander or Lieutenant General).", test: () => S.pvp.best >= 11 },
   { id: "rank10", name: "Officer of the Line", desc: "Reach PvP rank 10 (Lieutenant Commander or Champion).", test: () => S.pvp.best >= 10 },
   { id: "rank14", name: "The Highest Rank", desc: "Reach PvP rank 14 (Grand Marshal or High Warlord).", test: () => S.pvp.best >= 14 },
+  { id: "wpgank", name: "Watch Your Back", desc: "Get ganked by a much higher level player of the other faction.", test: () => S.wpvp.ganked > 0 },
+  { id: "wpcamp", name: "Corpse Camped", desc: "Get killed at your own corpse by the same ganker.", test: () => S.wpvp.camped > 0 },
+  { id: "wpwin", name: "Fair Fight", desc: "Win a world PvP fight in a contested zone.", test: () => S.wpvp.won > 0 },
+  { id: "wpwin25", name: "Terror of the Countryside", desc: "Win 25 world PvP fights.", test: () => S.wpvp.won >= 25 },
+  { id: "wptown", name: "Town Raid", desc: "Kill the leader of an enemy town (Tarren Mill, the Crossroads, Southshore or Astranaar).", test: () => S.wpvp.towns > 0 },
+  { id: "wpcap", name: "Storming the Capital", desc: "Kill Thrall in Orgrimmar or Highlord Bolvar Fordragon in Stormwind.", test: () => S.wpvp.capital > 0 },
+  { id: "wpkazzak", name: "Kazzak in Stormwind", desc: "Be there when Lord Kazzak walks into Stormwind.", test: () => S.wpvp.kazzak > 0 },
+  { id: "wpplague", name: "Corrupted Blood", desc: "Be in a capital when Hakkar's plague breaks out.", test: () => S.wpvp.plague > 0 },
 ].map(a => ({ ...a, cat: "pvp" })));
 // minipets
 const mp = () => S.minipets || {}, mpHas = names => names.every(n => mp()[n]);

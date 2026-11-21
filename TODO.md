@@ -209,7 +209,15 @@
     - Quel'Serrar (tanks): the Foror's Compendium from Dire Maul, tempered in Onyxia's breath
     - Shaman and druid quests, and the warlock and paladin epic mount quests as proper chains (mounts already in)
   - Goals for each ("Thunderfury: 2 of 2 Bindings, 3 of 10 Elementium"), with the long chain as the grind
-- [ ] **World PvP, the 2005 way**
+- [x] **World PvP, the 2005 way**
+  - **Done**: in the contested zones from level 20 (Hillsbrad, Stranglethorn, Ashenvale, Arathi, the Barrens...), now
+    and then a player of the other faction instead of a mob: a sighting, a fair fight (one or two players around your
+    level) or a gank by a level 55-60 (sometimes camped at the corpse); no honor or repair bill while levelling. At 60, a
+    world PvP night now and then on an evening without a raid (more with a guild): raids on Tarren Mill, the Crossroads,
+    Southshore, Astranaar, the capital (Thrall, Bolvar), and Lord Kazzak dragged into Stormwind, played like a
+    battleground (guards, defenders, the leader). Corrupted Blood in a capital and Kazzak in Stormwind as city-visit
+    events (no auction house that day). The World PvP part of the PvP tab, eight achievements. Still to come: the
+    Emerald Dragons pulled into a quest hub, a flight path camper on arrival, guild members joining a fight while levelling
   - Ganks and skirmishes while levelling: the Crossroads in the Barrens (the Alliance riding through), Hillsbrad and
     Tarren Mill against Southshore, Stranglethorn Vale, a level 60 camping the flight path. Mostly chronicle moments,
     sometimes a fight with another player (a player-like unit with a class and gear) and a corpse run

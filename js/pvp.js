@@ -233,7 +233,7 @@ function avStory(st) {
 // ---------- the fights ----------
 // enemy units in a battleground fight: players with a class (and their own rotation), or the valley's captains and generals
 const PVP_KIND = { Warrior: "fighter", Paladin: "fighter", Hunter: "fighter", Rogue: "thief", Priest: "caster", Shaman: "caster", Mage: "caster", Warlock: "caster", Druid: "caster" };
-const bgUnits = t => t.foes.map(f => ({ name: f.name, L: f.L || 60, rank: f.rank || "player", kind: f.cls ? PVP_KIND[f.cls] : f.kind || foeKind(f.name), cls: f.cls, race: f.race, role: f.role }));
+const bgUnits = t => t.foes.map(f => ({ name: f.name, L: f.L || 60, rank: f.rank || "player", kind: f.cls ? PVP_KIND[f.cls] : f.kind || foeKind(f.name), cls: f.cls, race: f.race, role: f.role, ...(f.left ? { left: f.left } : {}) }));
 // what each class does to the hero (healers heal): stuns, sheep, fears and kicks come off the usual control list
 const PVP_ROT = {
   Warrior: ["Charge", "Mortal Strike,Auto Attack", "Hamstring,Overpower,Intercept,Pummel,Whirlwind,Intimidating Shout", "Execute"],
@@ -298,7 +298,8 @@ const PVP_FINISH = {
     if (S.dg && S.dg.sb) { const sb = S.dg.sb, n = S.party.length, k = 1 + R(Math.max(2, Math.round(n / 4)));
       for (let x = 0; x < k; x++) { const j = 1 + R(n); sb.kb[j] = (sb.kb[j] || 0) + 1; sb.hk[j] = (sb.hk[j] || 0) + 1 + R(2); if (Math.random() < 0.5) { const o = 1 + R(n); sb.d[o] = (sb.d[o] || 0) + 1; S.dg.od++; } }
       S.dg.ed += k; }
-    if (t.stat) for (const k in t.stat) { S.pvp[k] = (S.pvp[k] || 0) + t.stat[k]; if (S.dg) S.dg[k] = (S.dg[k] || 0) + t.stat[k]; }
+    const tally = S.dg && S.dg.wp ? S.wpvp : S.pvp; // world PvP raids keep their own counts
+    if (t.stat) for (const k in t.stat) { tally[k] = (tally[k] || 0) + t.stat[k]; if (S.dg) S.dg[k] = (S.dg[k] || 0) + t.stat[k]; }
   },
   bgrez() {},
   bgend(t) {
@@ -348,7 +349,8 @@ function rankRewards(r) {
 // ---------- on screen ----------
 // the quest meter in a battleground: flags, bases or towers
 function bgMeter() {
-  const d = S.dg, b = bgRow(d.name), [a, c] = d.score;
+  const d = S.dg; if (d.wp) return wpMeter(d);
+  const b = bgRow(d.name), [a, c] = d.score;
   if (b.abbr === "WSG") return { name: `Flags: ${S.faction} ${a}, ${foeSide()} ${c}`, val: `${a} / 3`, p: a / 3 };
   if (b.abbr === "AB") return { name: `Bases: ${S.faction} ${a}, ${foeSide()} ${c}`, val: `${a} / 5`, p: a / 5 };
   return { name: `Alterac Valley: ${d.ed} enemies down`, val: `${d.hk} HK`, p: Math.min(1, d.ed / 60) };
@@ -382,6 +384,7 @@ function renderPvp() {
   h += `<li class="jhead">Battlegrounds</li>` + BGS.map(b => { const g = p.games[b.abbr] || { w: 0, l: 0 };
     const extra = b.abbr === "WSG" ? `${p.caps} flags captured by you` : b.abbr === "AB" ? `${p.bases} bases taken` : `${p.towers} towers burned, ${p.generals} generals killed · ${p.av.toLocaleString()} of ${AV_EXALTED.toLocaleString()} ${AV_FACTION[S.faction]} reputation`;
     return row(g.w + g.l > 0, g.w ? "✓" : "·", esc(b.name), `${g.w} won, ${g.l} lost · ${extra}`); }).join("");
+  h += wpTab(row);
   h += `<li class="jhead">Totals</li>` + row(p.hk > 0, "⚔", `${p.hk.toLocaleString()} honorable kills`, `${p.kb.toLocaleString()} killing blow${p.kb === 1 ? "" : "s"}, ${p.deaths} death${p.deaths === 1 ? "" : "s"}, ${p.total.toLocaleString()} honor in all`);
   h += `<li class="jhead">Rewards</li>` + Object.keys(RANK_GEAR).map(Number).concat(11).sort((a, b) => a - b).map(r => {
     const got = p.best >= r, what = r === 11 ? `${PVP_MOUNT[S.race]} and epic riding` : rankItem(r).map(x => x.name).join(", ");

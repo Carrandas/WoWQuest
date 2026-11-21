@@ -80,6 +80,7 @@ const FINISH = {
   hub() { S.loc = "hub"; },
   kill(t) {
     S.since = (S.since || 0) + 1;
+    if (t.wp) return wpEnd(t); // world PvP: a player, not a mob
     const sf = soloFight(t), who = n => t.elite ? n : article(n), by = t.killer ? `${who(t.killer.src)}'s ${t.killer.a}` : who(t.mob);
     if (sf.drank && S.cons.hp > 0) S.cons.hp--;
     petAfterFight(t, sf);
@@ -188,7 +189,7 @@ const FINISH = {
       const d = g === "Mining" ? `Farming Thorium in ${z}` : g === "Herbalism" ? `Farming Dreamfoil in ${z}` : g ? `Farming Rugged Leather in ${z}` : pick(["Running Stratholme for gold", `Farming Runecloth in ${z}`]);
       S.queue.push({ k: "farm", d, t: sec(240) });
     }
-    const d = pickDungeon(); if (d) (BGS.includes(d) ? queueBG : queueDungeon)(d);
+    const d = pickDungeon(); if (d) (BGS.includes(d) ? queueBG : WP_RAIDS.includes(d) ? queueWP : queueDungeon)(d);
   },
   lfg(t) {
     log(`[${pick(PLAYERS)}]: ${t.chat}`, "chat");
@@ -293,6 +294,7 @@ const FINISH = {
   move() {}, rest() {}, ghost() {}, rez() {}, regroup() {},
   ...PET_FINISH, // tame, summon, petrez, petheal, feed, ritual
   ...PVP_FINISH, // bgq, bgin, bgobj, bgrez, bgend
+  ...WP_FINISH, // wpsee, wpgo, wpend, wpcity
 };
 function finish(t) {
   const ve = vitalEnd(t); S.hpF = ve[0]; S.mpF = ve[1]; partyFinish(t);

@@ -378,7 +378,7 @@ function renderMeterNames() {
   const qm = questMeter();
   $("qN").textContent = qm ? qm.name : "between quests"; $("qN").title = qm ? qm.name : "";
   document.querySelector(".m-quest").classList.toggle("idle", !qm);
-  if (S.dg) { $("zL").textContent = S.dg.bg ? "battleground" : S.dg.raid ? "raid" : "dungeon"; $("zN").textContent = S.dg.name; }
+  if (S.dg) { $("zL").textContent = S.dg.wp ? "world PvP" : S.dg.bg ? "battleground" : S.dg.raid ? "raid" : "dungeon"; $("zN").textContent = S.dg.name; }
   else { const li = legInfo(); $("zL").textContent = "zone"; $("zN").textContent = li.name; }
 }
 
@@ -467,7 +467,7 @@ function renderGroup(hf, mf) {
     box.dataset.sig = sig; gCache = {}; dmTick = -1;
     box.classList.toggle("nometer", !v.inst);
     const all = [{ name: S.name, race: S.race, cls: S.cls, role: heroRole(), L: S.level, me: true }, ...v.list], raid = all.length > 5;
-    $("gTitle").innerHTML = raid ? `${S.dg.bg ? "Battleground" : "Raid"} <small>${esc(S.dg.name)} · ${all.length} players · ${all.filter(m => m.role === "tank").length} ${(n => S.dg.bg ? (S.dg.name === "Warsong Gulch" ? "flag carrier" : "defender") + (n === 1 ? "" : "s") : n === 1 ? "tank" : "tanks")(all.filter(m => m.role === "tank").length)}, ${all.filter(m => m.role === "heal").length} healers</small><span class="legend"><span><i style="background:#4a7bd8"></i>tank</span><span><i style="background:#3fbf3f"></i>healer</span><span><i style="background:#c8312b"></i>dps</span></span>` : `Group <small>${esc(v.title)}</small>`;
+    $("gTitle").innerHTML = raid ? `${S.dg.wp ? "World PvP" : S.dg.bg ? "Battleground" : "Raid"} <small>${esc(S.dg.name)} · ${all.length} players · ${all.filter(m => m.role === "tank").length} ${(n => S.dg.bg && !S.dg.wp ? (S.dg.name === "Warsong Gulch" ? "flag carrier" : "defender") + (n === 1 ? "" : "s") : n === 1 ? "tank" : "tanks")(all.filter(m => m.role === "tank").length)}, ${all.filter(m => m.role === "heal").length} healers</small><span class="legend"><span><i style="background:#4a7bd8"></i>tank</span><span><i style="background:#3fbf3f"></i>healer</span><span><i style="background:#c8312b"></i>dps</span></span>` : `Group <small>${esc(v.title)}</small>`;
     box.classList.toggle("raid", raid);
     if (E) $("gcards").innerHTML = `<div class="team us"><div class="tmh">${S.faction} <small>your side</small></div>${raidGroups(all)}</div><div class="team them"><div class="tmh">${foeSide()} <small>${S.dg.rival && S.guild ? `&lt;${esc(S.guild.rival.name)}&gt; premade` : "the other side"}</small></div>${raidGroups(E, "x")}</div>`;
     else if (raid) $("gcards").innerHTML = raidGroups(all);
