@@ -35,9 +35,6 @@ Open items first, then what has shipped (with what's still missing from each).
   - Raid numbers run low (about 125 dps/hps per player); raise raid boss health and heal sizes
 - [ ] **Area spells on boss adds** (bosses still go down one target at a time)
 - [ ] **More to do at 60** (what's left of "Life at 60" below)
-  - Fishing as the third secondary skill: fishing trips, Nat Pagle's quests, the odd rare catch (Old Ironjaw, Old
-    Crafty); the Stranglethorn Fishing Extravaganza on Sundays (first to 40 Speckled Tastyfish wins the Arcanite
-    Fishing Pole or the Glimmering Mithril Insignia), and the Master Angler goal
   - Reputation grinds with a reward each: Timbermaw Hold, Hydraxian Waterlords (dousing the runes in Molten Core),
     Zandalar Tribe (Zul'Gurub enchants), Argent Dawn and Thorium Brotherhood beyond the quest chains
   - Farming runs as their own activity: Black Lotus routes, Thorium and Dark Iron, Righteous Orbs and Essence of
@@ -82,6 +79,11 @@ Open items first, then what has shipped (with what's still missing from each).
 
 ## Done
 
+- [x] **Fishing** (fishing.js): the third secondary skill, with its own cap (trainer to 150, Old Man Heming's Expert
+  Fishing book to 225, Nat Pagle's four fish for Artisan); off a city pier now and then while levelling, fishing trips at
+  60 (waters by skill, the catch sold, Waterlogged Crates), Old Ironjaw in Ironforge and Old Crafty in Orgrimmar, the
+  Stranglethorn Fishing Extravaganza on Sunday afternoons (the Arcanite Fishing Pole); three goals and three achievements
+  - Still missing: the fish feeding Cooking, Mr. Pinchy, the seasonal fish
 - [x] **The Scourge Invasion** (scourge.js): from the Ahn'Qiraj war effort to the first night in Naxxramas; necropolises
   over three of six zones (Plaguelands, Winterspring, Azshara, Tanaris, Burning Steppes) that move on when their shards
   are broken, attacks on towns, cultists and Shadowy Figures in the capitals, low levels dying under a necropolis; at 60

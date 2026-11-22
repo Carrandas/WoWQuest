@@ -428,7 +428,7 @@ function renderProfs() {
     ["sold on the AH", p.ah ? money(p.ah) : 0],
   ].filter(([k, v]) => v || k === "crafted");
   $("pTotals").innerHTML = totals.map(([k, v]) => `<li><span class="k">${k}</span><span class="v">${v}</span></li>`).join("");
-  $("profs").innerHTML = [p.a, p.b, ...SECONDARY].map((n, i) => `<li class="prow${i > 1 ? " sec2" : ""}"><span class="l">${esc(n)}</span><span class="rank">${p.cap ? tierName(p.cap) : "untrained"}</span><span class="v">${p.sk[n]} / ${p.cap || 0}</span><div class="gbar thin"><i style="width:${(p.sk[n] / 300 * 100).toFixed(1)}%"></i><b style="left:${(p.cap / 300 * 100).toFixed(1)}%"></b></div></li>`).join("");
+  $("profs").innerHTML = [p.a, p.b, ...SECONDARY].map((n, i) => `<li class="prow${i > 1 ? " sec2" : ""}"><span class="l">${esc(n)}</span><span class="rank">${p.cap ? tierName(p.cap) : "untrained"}</span><span class="v">${p.sk[n]} / ${p.cap || 0}</span><div class="gbar thin"><i style="width:${(p.sk[n] / 300 * 100).toFixed(1)}%"></i><b style="left:${(p.cap / 300 * 100).toFixed(1)}%"></b></div></li>`).join("") + fishRow();
   const mats = Object.entries(p.mats).filter(x => x[1] > 0);
   $("mats").innerHTML = mats.map(([k, n]) => `<li><span class="l">${esc(k)}</span><span class="rank">×${n}</span></li>`).join("") || `<li><span class="empty">nothing gathered yet</span></li>`;
   $("crafts").innerHTML = p.recent.map(x => `<li><span class="l">${esc(x.n)}</span><span class="rank">level ${x.L}</span></li>`).join("") || `<li><span class="empty">nothing made yet</span></li>`;
