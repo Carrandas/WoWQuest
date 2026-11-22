@@ -147,6 +147,8 @@ ACH.push(...[
   { id: "wbaz", name: "Azuregos", desc: "Kill Azuregos in Azshara.", test: () => wbK("Azuregos") },
   { id: "wbkz", name: "Lord Kazzak", desc: "Kill Lord Kazzak in the Blasted Lands.", test: () => wbK("Lord Kazzak") },
   { id: "wbdr", name: "Dragons of Nightmare", desc: "Kill one of the Emerald Dragons at the Great Trees.", test: () => WB_DRAGONS.some(wbK) },
+  { id: "facex", name: "Exalted", desc: "Reach exalted with Timbermaw Hold, the Hydraxian Waterlords, the Zandalar Tribe, the Argent Dawn or the Thorium Brotherhood.", test: () => !!S.fac && Object.keys(FACTIONS).some(f => facRank(f) >= 4) },
+  { id: "facex3", name: "Ambassador of the Old World", desc: "Reach exalted with three of the five reputation factions at 60.", test: () => !!S.fac && Object.keys(FACTIONS).filter(f => facRank(f) >= 4).length >= 3 },
   { id: "fish300", name: "Artisan Fisherman", desc: "Reach 300 fishing.", test: () => !!S.fish && S.fish.sk >= 300 },
   { id: "fishleg", name: "The Legend of the City", desc: "Catch Old Ironjaw in Ironforge, or Old Crafty in Orgrimmar.", test: () => !!S.fish && S.fish.legend },
   { id: "angler", name: "Master Angler", desc: "Win the Stranglethorn Fishing Extravaganza.", test: () => !!S.fish && S.fish.fx.wins > 0 },

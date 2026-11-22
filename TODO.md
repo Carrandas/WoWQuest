@@ -35,8 +35,6 @@ Open items first, then what has shipped (with what's still missing from each).
   - Raid numbers run low (about 125 dps/hps per player); raise raid boss health and heal sizes
 - [ ] **Area spells on boss adds** (bosses still go down one target at a time)
 - [ ] **More to do at 60** (what's left of "Life at 60" below)
-  - Reputation grinds with a reward each: Timbermaw Hold, Hydraxian Waterlords (dousing the runes in Molten Core),
-    Zandalar Tribe (Zul'Gurub enchants), Argent Dawn and Thorium Brotherhood beyond the quest chains
   - Farming runs as their own activity: Black Lotus routes, Thorium and Dark Iron, Righteous Orbs and Essence of
     Undeath for the top crafts, daily cooldowns (Arcanite transmute, Mooncloth)
   - Pre-raid best-in-slot hunting: the dungeon set from Upper Blackrock Spire, Stratholme and Scholomance, then the
@@ -79,6 +77,15 @@ Open items first, then what has shipped (with what's still missing from each).
 
 ## Done
 
+- [x] **Reputation grinds** (factions.js): one reputation scale (`S.fac`, friendly to exalted) for Timbermaw Hold, the
+  Hydraxian Waterlords (Molten Core only; past honored only Golemagg and Ragnaros; the runes doused with Aqual
+  Quintessence; Ocean's Breeze or Tidal Loop at revered), the Zandalar Tribe (Zul'Gurub; the idol enchants at honored,
+  the Zandalar Signet for the shoulders at exalted), the Argent Dawn (Stratholme, Scholomance, Naxxramas and the
+  Scourge Invasion; the Dawn recipes) and the Thorium Brotherhood (Blackrock Depths, Molten Core cores; the fire
+  resistance recipes); grind trips with a goal (exalted in about four weeks), the recipes for the hero's craft, Defender
+  of the Timbermaw, a Reputation list in the Quests tab, two achievements
+  - Still missing: the recipes only as chronicle lines (nothing crafted from them), the Zandalar class sets, the
+    Thorium Brotherhood steps of the fire resistance chain still count on their own
 - [x] **Fishing** (fishing.js): the third secondary skill, with its own cap (trainer to 150, Old Man Heming's Expert
   Fishing book to 225, Nat Pagle's four fish for Artisan); off a city pier now and then while levelling, fishing trips at
   60 (waters by skill, the catch sold, Waterlogged Crates), Old Ironjaw in Ironforge and Old Crafty in Orgrimmar, the

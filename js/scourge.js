@@ -12,10 +12,9 @@ const SI_MOBS = ["Skeletal Shocktrooper", "Ghoul Berserker", "Spectral Soldier",
 const SI_RARES = ["Lumbering Horror", "Spirit of the Damned", "Bone Witch"];
 const SI_LATE = 50;          // days after 60 the invasion starts at the latest
 const SI_PREF = 0.15, SI_GOAL_PREF = 0.6; // with the goal        // a free evening without the goal goes to the invasion this often
-// Argent Dawn reputation (points, like the game): the steps and their names
-const AD_RANKS = [[0, "Neutral"], [3000, "Friendly"], [9000, "Honored"], [21000, "Revered"], [42000, "Exalted"]];
-const adRank = () => AD_RANKS.reduce((a, r, i) => S.si.rep >= r[0] ? i : a, 0);
-const adName = () => AD_RANKS[adRank()][1];
+// Argent Dawn reputation: in S.fac with the other factions (factions.js); S.si.rep is the old count, kept for old saves
+const adRank = () => facRank("Argent Dawn");
+const adName = () => facRankName("Argent Dawn");
 // the Blessed sets, one per armor type: [piece, slot, runes, rank needed]
 const SI_SET = {
   Plate: ["Blessed Battlegear of Undead Slaying", [["Blessed Breastplate of Undead Slaying", "Chest", 55, 3], ["Blessed Bracers of Undead Slaying", "Wrist", 25, 2], ["Blessed Gauntlets of Undead Slaying", "Hands", 40, 2]]],
@@ -85,16 +84,14 @@ function siKill(t) {
   const s = S.si; s.kills++;
   const runes = t.doom ? 3 + R(3) : Math.random() < 0.45 ? 1 : 0;
   s.runes += runes; s.prog[t.si] = (s.prog[t.si] || 0) + (t.doom ? 12 : 5);
-  s.rep += t.doom ? 200 : 40;
+  facGain("Argent Dawn", t.doom ? 200 : 40);
   if (t.mob === "Shadow of Doom") s.doom++;
   if (runes) log(`${runes} Necrotic Rune${runes > 1 ? "s" : ""}.`, "loot3");
 }
 // the trip's end: reputation for the runes, the necropolis maybe destroyed, the attunement step, the set
 function siEnd(t) {
   const s = S.si; s.trips++;
-  const r0 = adRank();
-  s.rep += 150 + R(100);
-  if (adRank() > r0) log(`${adName()} with the Argent Dawn!`, "ach");
+  facGain("Argent Dawn", 150 + R(100));
   const z = t.zone;
   if ((s.prog[z] || 0) >= 100 && s.zones.includes(z)) {
     s.freed++; delete s.prog[z];
@@ -130,5 +127,5 @@ function siGoals(out) {
 }
 function siRender() {
   const s = S.si; if (S.level < 60 || !siOn()) return "";
-  return `<li class="qhead">The Scourge Invasion</li><li class="goal"><div class="gl"><b>Necropolises over ${esc(s.zones.join(", "))}</b><small>${s.trips} trip${s.trips === 1 ? "" : "s"}, ${s.kills} Scourge slain, ${s.freed} necropolis${s.freed === 1 ? "" : "es"} silenced · ${s.runes} Necrotic Runes · ${adName()} with the Argent Dawn (${s.rep.toLocaleString()}) · ${siPieces()} of 3 Blessed pieces</small></div></li>`;
+  return `<li class="qhead">The Scourge Invasion</li><li class="goal"><div class="gl"><b>Necropolises over ${esc(s.zones.join(", "))}</b><small>${s.trips} trip${s.trips === 1 ? "" : "s"}, ${s.kills} Scourge slain, ${s.freed} necropolis${s.freed === 1 ? "" : "es"} silenced · ${s.runes} Necrotic Runes · ${adName()} with the Argent Dawn (${facPts("Argent Dawn").toLocaleString()}) · ${siPieces()} of 3 Blessed pieces</small></div></li>`;
 }

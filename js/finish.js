@@ -172,7 +172,7 @@ const FINISH = {
       S.queue.push({ k: "farm", d, t: sec(240) });
     }
     if (S.level >= 60) aqWarQueue(S.queue) || attTrip(S.queue); // the Ten Hours War, or an attunement step that is a trip
-    const d = pickDungeon(); if (d) (d.si ? queueSI : d.fish ? queueFish : BGS.includes(d) ? queueBG : WP_RAIDS.includes(d) ? queueWP : WB_ROWS.includes(d) ? queueWB : queueDungeon)(d);
+    const d = pickDungeon(); if (d) (d.si ? queueSI : d.fish ? queueFish : d.fac ? queueFac : BGS.includes(d) ? queueBG : WP_RAIDS.includes(d) ? queueWP : WB_ROWS.includes(d) ? queueWB : queueDungeon)(d);
   },
   lfg(t) {
     log(`[${pick(PLAYERS)}]: ${t.chat}`, "chat");
@@ -229,6 +229,7 @@ const FINISH = {
     }
     log(`${t.boss} has been defeated.`, "boss");
     wbBossKill(t.boss); // a head for the city gates
+    facBoss(t.dn, t.boss); // reputation from raid bosses
     if (raid) resLine(t.boss); // resistance gear for the bosses that check it
     (S.dq || []).filter(x => !x.done && x.boss === t.boss).forEach(x => { x.done = true; log(`Objective complete: ${x.obj} ("${x.name}").`, "quest"); });
     gainXp(mobXp(S.level + 2) * 5); petAfterFight(t, null); minipetDrops([t.boss]); mountDrops(t.boss, t.dn);
@@ -265,7 +266,7 @@ const FINISH = {
     if (full) { const de = dungeonEntry(t.dn); de.runs++; if (!de.at) { de.at = realNow(); de.L = S.level; de.p = S.time; } }
     if (full && !S.dungeons.includes(t.dn)) S.dungeons.push(t.dn);
     // level 60 dungeon clears: the attunement steps that need them
-    if (full && !ri && S.level >= 60) { S.runs60++; attRun(t.dn); }
+    if (full && !ri && S.level >= 60) { S.runs60++; attRun(t.dn); facRun(t.dn); }
     if (ri && S.dg && S.dg.killed > 0) attRun(t.dn); // raid nights with a kill: resistance steps that want the raid's drops
     S.runs++;
     log(full ? `${t.dn} cleared!` : `Leaving ${t.dn} with ${S.dg.killed} of ${S.dg.total} bosses down. Same time tomorrow.`, "dung");
@@ -280,7 +281,7 @@ const FINISH = {
   ...PVP_FINISH, // bgq, bgin, bgobj, bgrez, bgend
   ...WP_FINISH, // wpsee, wpgo, wpend, wpcity
   ...ATT_FINISH, // att, aqhand, aqwar
-  ...WB_FINISH, ...CQ_FINISH, ...SI_FINISH, ...FISH_FINISH, // wbsee, wbgo, wbobj, wbhead; cq; siend; fish, fishend, fishstep, fxstart, fxend
+  ...WB_FINISH, ...CQ_FINISH, ...SI_FINISH, ...FISH_FINISH, ...FAC_FINISH, // facturn; wbsee, wbgo, wbobj, wbhead; cq; siend; fish, fishend, fishstep, fxstart, fxend
 };
 function finish(t) {
   const ve = vitalEnd(t); S.hpF = ve[0]; S.mpF = ve[1]; partyFinish(t);

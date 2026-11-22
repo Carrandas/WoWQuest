@@ -177,6 +177,7 @@ function cqFightEnd(t) {
   if (t.cqid) cqStep(t);
   else if (t.ch && attStep(t.ch) === t.st) attCount(t.ch, attCur(t.ch)[3]);
   else if (t.si) siKill(t); // the Scourge Invasion (scourge.js)
+  else if (t.fac) facGain(t.fac, 30); // a reputation grind (factions.js)
 }
 function cqStep(t) {
   const c = cqDef(t.cqid); if (!c || (S.cq[c.id] || 0) !== t.st) return;
