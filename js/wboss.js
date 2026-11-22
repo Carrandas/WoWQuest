@@ -11,6 +11,8 @@ const WB = [
   { key: "az", names: ["Azuregos"], spots: [["Azshara", "the ruins of Eldarath"]], back: [4, 8] },
   { key: "kz", names: ["Lord Kazzak"], spots: [["Blasted Lands", "the Tainted Scar"]], back: [4, 8] },
   { key: "dr", names: ["Ysondre", "Lethon", "Emeriss", "Taerar"], spots: [["Duskwood", "Twilight Grove"], ["Ashenvale", "Bough Shadow"], ["Feralas", "Dream Bough"], ["The Hinterlands", "Seradane"]], back: [5, 10] },
+  // summoned, not spawned: Highlord Demitrian calls him down for the hero's Thunderfury (legend.js), and he waits
+  { key: "th", names: ["Prince Thunderaan"], spots: [["Silithus", "Highlord Demitrian's camp"]], back: [0, 0], summon: () => thunderaanCalled() },
 ];
 const WB_DRAGONS = WB[2].names;
 const WB_TOWN = { Duskwood: "Darkshire", Ashenvale: "Astranaar", Feralas: "Feathermoon Stronghold", "The Hinterlands": "Aerie Peak" };
@@ -27,6 +29,13 @@ function wbTick() {
   const w = S.wb;
   WB.forEach(b => {
     const up = w.up[b.key];
+    if (b.summon) {
+      if (!up && S.level >= 60 && b.summon()) {
+        w.up[b.key] = { who: b.names[0], zone: b.spots[0][0], spot: b.spots[0][1], at: S.time, until: S.time + 5 * DAY };
+        log(`Highlord Demitrian takes the Enchanted Elementium Bars, and the sky over Silithus splits: Prince Thunderaan, the Windseeker, is free. "Who dares summon me?" ${S.guild ? `[Guild] Thunderaan is up for ${S.name}'s Thunderfury! Everyone to Silithus.` : "A raid has to be found."}`, "ach");
+      } else if (up && S.time >= up.until) delete w.up[b.key];
+      return;
+    }
     if (!up) {
       if (w.next[b.key] == null) { w.next[b.key] = S.time + (1 + Math.random() * b.back[1]) * DAY; return; }
       if (S.time < w.next[b.key]) return;
@@ -39,6 +48,7 @@ function wbTick() {
 // gone: killed by the hero's raid, or by someone else
 function wbGone(b, up, by) {
   const w = S.wb; delete w.up[b.key];
+  if (b.summon) return;
   w.next[b.key] = S.time + (b.back[0] + Math.random() * (b.back[1] - b.back[0])) * DAY;
   if (by || S.level < 60 || Math.random() < 0.5) return;
   const rival = S.guild && Math.random() < 0.5 ? `<${S.guild.rival.name}>` : pick([`A ${foeSide()} raid`, `Some ${S.faction} guild`, "A pug raid"]);
@@ -74,8 +84,8 @@ function queueWB(row) {
   S.meter = { dn: row.name, dmg: [], heal: [], secs: 0, last: null };
   q.push({ k: "wbgo", d: g ? `Waiting for <${g.name}> to gather for ${row.name}` : `Joining a pug raid: "LFM ${row.name}, ${up.zone}, need everyone"`, t: sec(90 + R(60)), dn: row.name });
   q.push({ k: "wbobj", d: `Flying to ${up.zone}`, t: sec(150), lines: [`The raid gets to ${up.spot} in ${up.zone}.`] });
-  // the race for the tag: the rival guild (or whoever is closer) may get there first
-  if (Math.random() < (g ? 0.25 : 0.4)) {
+  // the race for the tag: the rival guild (or whoever is closer) may get there first (not for a boss summoned for the hero)
+  if (!wbOf(row.name).summon && Math.random() < (g ? 0.25 : 0.4)) {
     const who = g ? `<${g.rival.name}>` : `A ${pick([us, them])} guild`;
     q.push({ k: "wbobj", d: `Watching ${who.replace(/[<>]/g, "")} fight ${row.name}`, t: sec(60), lose: "tag", lines: [`${who} got there first and tagged ${row.name}. Nothing to do but watch them kill it. ${pick(["/spit", "Next time.", "Somebody in raid chat swears a lot.", "The raid leader blames the summoners."])}`] });
   } else {
@@ -113,7 +123,7 @@ function wbEnd(t) {
   const d = S.dg, b = wbOf(t.dn), up = b && S.wb.up[b.key], w = S.wb;
   if (d && d.killed > 0) {
     w.kills[t.dn] = (w.kills[t.dn] || 0) + 1;
-    log(w.kills[t.dn] === 1 ? `${t.dn} is dead! ${t.dn === "Lord Kazzak" ? "The Blasted Lands are quiet for once." : t.dn === "Azuregos" ? "The blue dragon's hoard is ours." : "The Emerald Dream loses one of its guardians, for a while."} ${S.guild ? `<${S.guild.name}> poses for a screenshot on the corpse.` : ""}` : `${t.dn} down again.`, "ach");
+    log(w.kills[t.dn] === 1 ? `${t.dn} is dead! ${t.dn === "Lord Kazzak" ? "The Blasted Lands are quiet for once." : t.dn === "Azuregos" ? "The blue dragon's hoard is ours." : t.dn === "Prince Thunderaan" ? "The Windseeker is beaten, and the Dormant Wind Kissed Blade lies in the sand." : "The Emerald Dream loses one of its guardians, for a while."} ${S.guild ? `<${S.guild.name}> poses for a screenshot on the corpse.` : ""}` : `${t.dn} down again.`, "ach");
   } else if (d && d.lose === "tag") w.tagLost++;
   else if (d && d.lose === "pvp") w.pvpLost++;
   if (up) wbGone(b, up, "us");

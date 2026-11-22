@@ -269,7 +269,7 @@ function cqChainDone(k) {
     mountOwn();
   }
   if (c.bag) { if (bagUpgrade(c.bag)) giveBag(c.bag, "Quest reward:"); else log(`Quest reward: ${c.bag.name}, but the bags are better already.`, "loot4"); }
-  if (c.item) [].concat(typeof c.item === "function" ? c.item() : c.item).forEach(it => gain({ ...it }, "Quest reward:"));
+  if (c.item) [].concat(typeof c.item === "function" ? c.item() : c.item).forEach(it => { gain({ ...it }, c.legend ? "LEGENDARY!" : "Quest reward:"); if (c.legend) legendDone(it); });
 }
 // old saves: the quests below the hero's level count as done (the spells are known already), and a paladin or warlock
 // who already knows the epic mount spell has done the chain
