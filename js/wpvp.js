@@ -1,7 +1,7 @@
 // World PvP, the 2005 way: ganks and fair fights in the contested zones while levelling (a player of the other faction
 // with a class and a level, a corpse run, now and then a camper), raids on the other faction's towns and capital at 60
 // (played out like a battleground: guards, defenders, the town's leader), Lord Kazzak dragged into Stormwind, and
-// Hakkar's Corrupted Blood loose in a capital. Flavour and fun: no gear, no honor while levelling.
+// Hakkar's Corrupted Blood loose in a capital. Honor for the rankings at any level (the rank rewards wait for 60), no gear.
 "use strict";
 
 // ---------- while levelling ----------
@@ -66,14 +66,17 @@ function wpOutcome(t, fo, sf) {
     sf.tl = sf.tl.map(([a, v]) => [a, Math.max(v, 0.06)]); sf.end = Math.max(sf.end, 0.06);
   }
 }
-// a finished world PvP fight (instead of a normal kill): no quest progress, no loot; dying to a player costs a repair bill
+// a finished world PvP fight (instead of a normal kill): no quest progress, no loot; a win is an honorable kill for each
+// player beaten (honor for the rankings, at any level), dying to a player costs a repair bill
 function wpEnd(t) {
   const sf = soloFight(t), w = S.wpvp, f = t.foes[0];
   if (sf.drank && S.cons.hp > 0) S.cons.hp--;
   petAfterFight(t, sf);
   if (!t.die) {
     w.won++; S.repair += Math.round(S.level * 0.6);
-    log(t.foes.length > 1 ? `Beat ${wpWho(f)} and ${t.foes[1].name} two against one!` : pick([`Won the fight against ${wpWho(f)}.`, `${wpWho(f)} goes down. /bow.`, `Beat ${wpWho(f)}. They'll be back.`]), "boss");
+    const p = S.pvp, n = t.foes.length, honor = n * HK_HONOR;
+    p.hk += n; p.kb++; p.honor += honor; p.total += honor;
+    log((n > 1 ? `Beat ${wpWho(f)} and ${t.foes[1].name} two against one!` : pick([`Won the fight against ${wpWho(f)}.`, `${wpWho(f)} goes down. /bow.`, `Beat ${wpWho(f)}. They'll be back.`])) + ` +${honor} honor.`, "boss");
     return;
   }
   w.lost++; loseBuffs(); S.repair += Math.round(S.level * S.level * PVP_DEATH_WEAR); if (S.pet) S.pet.dead = true; S.hpF = 0;

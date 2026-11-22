@@ -350,8 +350,8 @@ function pvpWeek() {
     const add = weekRP(h), was = p.rank;
     p.rp = Math.round(p.rp * RP_DECAY + add); p.rank = rankOf(p.rp);
     if (h || p.rank !== was) log(`Weekly honor update: ${h.toLocaleString()} honor, ${add ? "+" + add.toLocaleString() : "no"} rank points. ${p.rank > was ? `Promoted to ${rankName(p.rank)} (rank ${p.rank})!` : p.rank < was ? `Down to ${rankName(p.rank) || "no rank"}.` : p.rank ? `Still ${rankName(p.rank)}.` : ""}`, p.rank > was ? "ach" : "");
-    for (let r = p.best + 1; r <= p.rank; r++) rankRewards(r);
-    p.best = Math.max(p.best, p.rank);
+    // the rank's rewards (gear, the war mount) at 60: a rank earned while levelling pays out at the first update at 60
+    if (S.level >= 60) { for (let r = p.best + 1; r <= p.rank; r++) rankRewards(r); p.best = Math.max(p.best, p.rank); }
   }
 }
 // the officers' quartermaster: rank gear, and the war mount at 11 (epic riding comes with it)
