@@ -40,16 +40,6 @@ Open items first, then what has shipped (with what's still missing from each).
   - At 60: fighting the invasion between raid nights for Argent Dawn reputation and Necrotic Runes, traded for the
     Argent Dawn gear (and a step of the Naxxramas attunement); the odd level 20 killed questing too close to a necropolis
   - Ends when Naxxramas opens, so it goes with the raid timeline
-- [ ] **Legendaries and class quest weapons, done properly** (today: shortcuts)
-  - Today: two Bindings of the Windseeker (from any Molten Core boss) make Thunderfury on the spot, the Eye of Sulfuras
-    becomes Sulfuras on the spot, casters get Atiesh from 40 Splinters in Naxxramas; any class can get any of them
-  - Thunderfury: the left and right Bindings from Garr and Baron Geddon only, then Highlord Demitrian in Silithus,
-    10 Elementium Bars (Elementium Ore from Blackwing Lair, a smith to smelt it, lots of gold), and Prince Thunderaan
-    as a raid fight. Swords, fist weapons and tanks only (no priests with Thunderfury)
-  - Sulfuras: the Eye of Sulfuras plus the Sulfuron Hammer, which needs a blacksmith (the hero, or paying one)
-  - Atiesh: the Anachronos quest and the four class versions (mage, warlock, priest, druid)
-  - Class quest weapons: Benediction, Rhok'delar and Lok'delar, the hunter's quiver, Quel'Serrar are in (classq.js)
-  - Goals for each ("Thunderfury: 2 of 2 Bindings, 3 of 10 Elementium"), with the long chain as the grind
 - [ ] **More to do at 60** (what's left of "Life at 60" below)
   - Fishing as the third secondary skill: fishing trips, Nat Pagle's quests, the odd rare catch (Old Ironjaw, Old
     Crafty); the Stranglethorn Fishing Extravaganza on Sundays (first to 40 Speckled Tastyfish wins the Arcanite
@@ -98,6 +88,13 @@ Open items first, then what has shipped (with what's still missing from each).
 
 ## Done
 
+- [x] **Legendaries, done properly** (legend.js): goals for Thunderfury (the Bindings from Garr and Baron Geddon,
+  Highlord Demitrian, Elementium Ingots from Blackwing Lair, the Enchanted Elementium Bars, Prince Thunderaan summoned
+  as a world boss), Sulfuras (the Eye from Ragnaros, Sulfuron Ingots from Golemagg, the Plans from Lokhtos, the
+  Sulfuron Hammer: cheaper for a blacksmith) and Atiesh (forty Splinters, Anachronos, C'Thun and Kel'Thuzad, the demon
+  in Stratholme; the mage, warlock, priest and druid versions). Only for the classes that used them, no healers with the
+  weapons; the parts only drop with the goal set. Two to four months each
+  - Still missing: the guild deciding who gets the parts (today the hero always does, at a chance), Atiesh's aura for the raid
 - [x] **Class quests** (classq.js): spells held back until their quest is done, on a city visit with a named fight
   (Bear Form and Moonglade, Aquatic Form, the warlock's Voidwalker, Succubus, Felhunter and Felsteed, the four shaman
   totem quests, Tame Beast, Defensive and Berserker Stance, Instant Poison, Redemption, the Warhorse), the Whirlwind Axe

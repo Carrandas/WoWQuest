@@ -38,6 +38,7 @@ const BOSS_ROT = {
   "Patchwerk": ["Hateful Strike", "Auto Attack,Hateful Strike,Auto Attack", "Enrage"],
   "The Four Horsemen": ["Mark of Korth'azz", "Meteor,Void Zone,Righteous Fire,Holy Wrath,Mark of Blaumeux,Mark of Mograine,Mark of Zeliek", "Shield Wall"],
   "Azuregos": ["Frost Breath", "Mark of Frost,Arcane Vacuum,Manastorm,Cleave,Frost Breath,Chill,Auto Attack", "Reflection"],
+  "Prince Thunderaan": ["Tendrils of Air", "Tendrils of Air,Tears of the Wind Seeker,Auto Attack,Tendrils of Air", "Tears of the Wind Seeker"],
   "Lord Kazzak": ["Shadow Bolt Volley", "Mark of Kazzak,Twisted Reflection,Cleave,Thunderclap,Capture Soul,Shadow Bolt Volley", "Shadow Bolt Volley"],
   "Ysondre": ["Noxious Breath", "Lightning Wave,Tail Sweep,Mark of Nature,Noxious Breath,Auto Attack", "Lightning Wave"],
   "Lethon": ["Noxious Breath", "Shadow Bolt Whirl,Tail Sweep,Mark of Nature,Noxious Breath,Auto Attack", "Draw Spirit"],

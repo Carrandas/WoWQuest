@@ -246,13 +246,16 @@ const RAID_INFO = {
   // the world bosses (wboss.js): out in the open, no lockout (once killed, gone for a few days), no attunement
   "Azuregos": { size: 40, gs: 84, lock: 1, need: null, wipe: 0.14, set: null, ilvl: [70, 75], last: "Azuregos", world: true },
   "Lord Kazzak": { size: 40, gs: 86, lock: 1, need: null, wipe: 0.15, set: null, ilvl: [71, 76], last: "Lord Kazzak", world: true },
+  "Prince Thunderaan": { size: 40, gs: 88, lock: 1, need: null, wipe: 0.18, set: null, ilvl: [74, 79], last: "Prince Thunderaan", world: true }, // summoned for Thunderfury (legend.js)
   ...Object.fromEntries(["Ysondre", "Lethon", "Emeriss", "Taerar"].map(n => [n, { size: 40, gs: 92, lock: 1, need: null, wipe: 0.17, set: null, ilvl: [72, 77], last: n, world: true }])),
 };
 const SET_ILVL = [60, 66, 76, 78, 86];
 const SET_SLOTS = [["Head", "Shoulder", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet"], null, null, ["Head", "Shoulder", "Chest", "Legs", "Feet"], null];
+// the legendary parts in the loot tables: never a plain drop, they come with their goal's chain (legend.js)
 const LEGENDARY = {
   "Bindings of the Windseeker": { name: "Thunderfury, Blessed Blade of the Windseeker", parts: 2 },
   "Eye of Sulfuras": { name: "Sulfuras, Hand of Ragnaros", parts: 1 },
+  "Dormant Wind Kissed Blade": { name: "Thunderfury, Blessed Blade of the Windseeker", parts: 1 },
 };
 // each dungeon and raid becomes { name, min, max, side (A, H or B for both), abbr, trash: [...], bosses: [...], loot: [{ name, tag }] }
 for (const list of [DUNGEONS, RAIDS]) list.forEach(([name, min, max, side, abbr, trash, bosses, loot], i) =>
@@ -262,6 +265,7 @@ const WB_DRAGON_LOOT = "Nightmare Blade|m,Hammer of Bestial Fury|c,Polished Iron
 const WB_ROWS = [
   ["Azuregos", "Azuregos", "Typhoon|m,Fang of the Mystics|c,Unmelting Ice Girdle,Leggings of Arcane Supremacy|c,Drape of Benediction|c,Crystal Adorned Crown|c,Puissant Cape|m"],
   ["Lord Kazzak", "Kazzak", "Empyrean Demolisher|m,Fel Infused Leggings|c,Doomhide Gauntlets|m,Ring of Entropy|c,Flayed Doomguard Belt|m"],
+  ["Prince Thunderaan", "Thunderaan", "Dormant Wind Kissed Blade|m"],
   ["Ysondre", "Ysondre", WB_DRAGON_LOOT], ["Lethon", "Lethon", WB_DRAGON_LOOT], ["Emeriss", "Emeriss", WB_DRAGON_LOOT], ["Taerar", "Taerar", WB_DRAGON_LOOT],
 ].map(([name, abbr, loot]) => ({ name, min: 60, max: 60, side: "B", abbr, trash: [], bosses: [name], loot: loot.split(",").map(x => { const [n, tag] = x.split("|"); return { name: n, tag }; }) }));
 // ---------- dungeon quests, picked up before the first run: name|boss that completes it|objective|faction ----------

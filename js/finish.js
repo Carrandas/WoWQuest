@@ -31,10 +31,9 @@ function lootDrop(dn, boss) {
   // a generic piece for the weakest slot, so every slot can reach blue (dungeons) or purple (raids)
   else if (r > 0.8) it = makeItem(weakestSlot(), dropIlvl(), ri ? 4 : 3);
   else if (pool.length) {
-    let name = pick(pool).name;
-    const alt = pool.filter(x => !LEGENDARY[x.name]);
-    if (LEGENDARY[name] && alt.length && Math.random() < 0.5) name = pick(alt).name;
-    if (LEGENDARY[name]) return legendaryPart(name, boss);
+    const plain = pool.filter(x => !LEGENDARY[x.name]); // the legendary parts come with their goal (legend.js)
+    if (!plain.length) return;
+    const name = pick(plain).name;
     const q = ri && ri.size === 20 ? (Math.random() < 0.5 ? 3 : 4) : ri ? 4 : 3;
     it = { name, slot: namedSlot(name), ilvl: dropIlvl(), q };
   }
@@ -45,25 +44,6 @@ function lootDrop(dn, boss) {
   gain(it, "Won");
 }
 
-// legendary pieces: two Bindings make Thunderfury, the Eye of Sulfuras becomes Sulfuras
-function legendaryPart(part, boss) {
-  const L = LEGENDARY[part];
-  log(`${boss} dropped ${part}! The raid hands it to you.`, "loot5");
-  S.parts[part] = (S.parts[part] || 0) + 1;
-  if (S.parts[part] < L.parts) { log(`That's ${S.parts[part]} of ${L.parts}. One more and something legendary can be made.`, "loot4"); return; }
-  if (S.legendaries.includes(L.name)) return;
-  S.parts[part] = 0; S.legendaries.push(L.name);
-  gain({ name: L.name, slot: "Main Hand", ilvl: 80, q: 5 }, "LEGENDARY! Forged");
-}
-// casters may find Atiesh in Naxxramas
-const ATIESH = "Atiesh, Greatstaff of the Guardian";
-function atiesh() {
-  if (!isCaster() || S.legendaries.includes(ATIESH)) return;
-  S.parts.splinter = (S.parts.splinter || 0) + 2 + R(4);
-  if (S.parts.splinter < 40) { log(`Collected Splinters of Atiesh: ${S.parts.splinter} of 40.`, "loot4"); return; }
-  S.legendaries.push(ATIESH);
-  gain({ name: ATIESH, slot: "Main Hand", ilvl: 90, q: 5 }, "LEGENDARY! Assembled");
-}
 
 // ---------- finishing tasks ----------
 // what each kind of task does when it's done: every task kind (t.k) that plan() queues needs an entry
@@ -254,7 +234,6 @@ const FINISH = {
     gainXp(mobXp(S.level + 2) * 5); petAfterFight(t, null); minipetDrops([t.boss]); mountDrops(t.boss, t.dn);
     // a boss drops a few items for the whole group: in a raid the hero only now and then gets one
     if (Math.random() < (raid ? RAID_INFO[t.dn].size === 20 ? 0.2 : 0.12 : 0.4)) lootDrop(t.dn, t.boss);
-    if (t.dn === "Naxxramas" && Math.random() < 0.1) atiesh();
   },
   buff(t) { applyBuff(t.b); },
   gather(t) { finishGather(t); },

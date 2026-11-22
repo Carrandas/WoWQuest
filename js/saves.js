@@ -29,6 +29,7 @@ function migrate() {
   }
   if (!S.attN || typeof S.attN !== "object") S.attN = {};
   cqMigrate(); // class quests came later
+  legendMigrate(); // and the legendaries as quest chains
   if (!S.wb) S.wb = newWb();
   if (!S.aq) { S.aq = newAq(); if (AQ_RAIDS.some(n => S.dungeons.includes(n) || S.lock[n])) { S.aq.open = true; S.aq.start = S.aq.end = S.aq.gong = S.time; S.aq.by = "someone"; } }
   if (!S.bossKills) { S.bossKills = {}; RAIDS.filter(r => S.dungeons.includes(r.name)).forEach(r => r.bosses.forEach(b => S.bossKills[b] = 1)); }

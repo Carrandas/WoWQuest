@@ -9,8 +9,9 @@
 //   run:  a level 60 dungeon cleared (arg: the dungeon, or two joined by "/"; n: the chance a clear does it (the drop isn't
 //         there, the group skips the boss), or with "x": that many clears)
 //   boss: a raid boss killed (arg: the boss)
-//   boss: with n a number: only kills from now on count, each with that chance (a drop); arg may name several, joined by "/"
-//   gold: paid (arg: copper)
+//   boss: with n a number: only kills from now on count, each with that chance (a drop); arg may name several, joined by "/";
+//         a fifth "xN": that many drops, and a sixth [lo, hi]: how many a drop gives (the Sulfuron Ingots, the Splinters)
+//   gold: paid (arg: copper, or a function for a price that depends on the hero: a blacksmith pays less)
 //   fight: a named fight alone (arg: the foe, n: its level), played out like a class quest's (classq.js)
 const ATT_CHAINS = {
   mc: { raid: "Molten Core", name: "Attunement to the Core", steps: [
@@ -108,17 +109,18 @@ const attDone = k => attStep(k) >= ATT_CHAINS[k].steps.length;
 const attCur = k => attDone(k) ? null : ATT_CHAINS[k].steps[attStep(k)];
 // the chains this hero works on: the raid ones (its own faction's); the Scepter and the resistance sets only as goals
 // (class quest chains, classq.js: only the hero's class)
-const attMine = k => (!ATT_CHAINS[k].side || ATT_CHAINS[k].side === S.faction[0]) && (!ATT_CHAINS[k].cls || [].concat(ATT_CHAINS[k].cls).includes(S.cls)) && (!ATT_CHAINS[k].tank || heroRole() === "tank");
+const attMine = k => (!ATT_CHAINS[k].side || ATT_CHAINS[k].side === S.faction[0]) && (!ATT_CHAINS[k].cls || [].concat(ATT_CHAINS[k].cls).includes(S.cls)) && (!ATT_CHAINS[k].tank || heroRole() === "tank") && (!ATT_CHAINS[k].noHeal || heroRole() !== "heal");
 const attKeys = () => Object.keys(ATT_CHAINS).filter(k => !ATT_CHAINS[k].goal && attMine(k));
 const attGoalKeys = () => Object.keys(ATT_CHAINS).filter(k => ATT_CHAINS[k].goal && attMine(k));
-const attStepTxt = k => { if (attDone(k)) return "done"; const s = attCur(k), c = typeof s[3] === "string" ? ` (${S.attN[k] || 0} of ${s[3].slice(1)})` : ""; return `step ${attStep(k) + 1} of ${ATT_CHAINS[k].steps.length}: ${s[1]}${c}`; };
+const attStepTxt = k => { if (attDone(k)) return "done"; const s = attCur(k), x = typeof s[3] === "string" ? s[3] : s[0] === "boss" && s[4], c = x ? ` (${(s[0] === "boss" ? S.attGot[k] : S.attN[k]) || 0} of ${x.slice(1)})` : s[0] === "gold" ? ` (${moneyTxt(attGold(s))})` : ""; return `step ${attStep(k) + 1} of ${ATT_CHAINS[k].steps.length}: ${s[1]}${c}`; };
+const attGold = s => typeof s[2] === "function" ? s[2]() : s[2];
 const attWorking = k => S.level >= 60 && !attDone(k) && (!ATT_CHAINS[k].goal || hasGoal("att:" + k));
 // gold kept back for the chains' gold steps that are up next (spendable() leaves it alone, like the mount savings)
-const attReserve = () => S.level < 60 ? 0 : attKeys().concat(attGoalKeys()).filter(attWorking).reduce((a, k) => { const s = attCur(k); return a + (s[0] === "gold" ? s[2] : 0); }, 0);
+const attReserve = () => S.level < 60 ? 0 : attKeys().concat(attGoalKeys()).filter(attWorking).reduce((a, k) => { const s = attCur(k); return a + (s[0] === "gold" ? attGold(s) : 0); }, 0);
 
 function attAdvance(k) {
   const c = ATT_CHAINS[k], s = c.steps[attStep(k)];
-  S.att[k] = attStep(k) + 1; delete S.attN[k];
+  S.att[k] = attStep(k) + 1; delete S.attN[k]; delete S.attGot[k];
   if (attDone(k)) {
     if (k === "scepter") return scepterDone();
     if (c.cls) return cqChainDone(k);
@@ -150,7 +152,7 @@ function attTick() {
     const s = attCur(k);
     if (s[0] === "boss" && typeof s[3] === "number") attDrop(k, s);
     else if (s[0] === "boss" && S.bossKills[s[2]] > 0) attAdvance(k);
-    else if (s[0] === "gold" && S.money >= s[2]) { spend("gear", s[2]); attAdvance(k); } // a raid key comes before the epic mount
+    else if (s[0] === "gold" && S.money >= attGold(s)) { spend("gear", attGold(s)); attAdvance(k); } // a raid key comes before the epic mount
   });
   aqTick();
 }
@@ -159,7 +161,14 @@ function attDrop(k, s) {
   const kills = s[2].split("/").reduce((a, b) => a + (S.bossKills[b] || 0), 0);
   if (S.attN[k] == null) { S.attN[k] = kills; return; }
   if (kills <= S.attN[k]) return;
-  S.attN[k] = kills;
+  const n = kills - S.attN[k]; S.attN[k] = kills;
+  if (s[4]) { // drops to collect: each new kill a roll, each drop one or a few
+    let got = 0; for (let i = 0; i < n; i++) if (Math.random() < s[3]) got += s[5] ? s[5][0] + R(s[5][1] - s[5][0] + 1) : 1;
+    if (!got) return;
+    const have = S.attGot[k] = (S.attGot[k] || 0) + got, need = +s[4].slice(1);
+    if (have >= need) attAdvance(k); else log(`${ATT_CHAINS[k].name}: ${s[1].replace(/:.*$/, "")}, ${have} of ${need}.`, "loot4");
+    return;
+  }
   if (Math.random() < s[3]) attAdvance(k);
   else log(`${ATT_CHAINS[k].name}: ${s[1].replace(/:.*$/, "")}, not this time.`, "quest");
 }
