@@ -108,7 +108,7 @@ const attDone = k => attStep(k) >= ATT_CHAINS[k].steps.length;
 const attCur = k => attDone(k) ? null : ATT_CHAINS[k].steps[attStep(k)];
 // the chains this hero works on: the raid ones (its own faction's); the Scepter and the resistance sets only as goals
 // (class quest chains, classq.js: only the hero's class)
-const attMine = k => (!ATT_CHAINS[k].side || ATT_CHAINS[k].side === S.faction[0]) && (!ATT_CHAINS[k].cls || ATT_CHAINS[k].cls === S.cls);
+const attMine = k => (!ATT_CHAINS[k].side || ATT_CHAINS[k].side === S.faction[0]) && (!ATT_CHAINS[k].cls || [].concat(ATT_CHAINS[k].cls).includes(S.cls));
 const attKeys = () => Object.keys(ATT_CHAINS).filter(k => !ATT_CHAINS[k].goal && attMine(k));
 const attGoalKeys = () => Object.keys(ATT_CHAINS).filter(k => ATT_CHAINS[k].goal && attMine(k));
 const attStepTxt = k => { if (attDone(k)) return "done"; const s = attCur(k), c = typeof s[3] === "string" ? ` (${S.attN[k] || 0} of ${s[3].slice(1)})` : ""; return `step ${attStep(k) + 1} of ${ATT_CHAINS[k].steps.length}: ${s[1]}${c}`; };

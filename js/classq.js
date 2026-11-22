@@ -4,7 +4,7 @@
 // fight (`cqFight`: the result rolled up front, like world PvP; a death means a corpse run and another go). Some only
 // give an item (Verigan's Fist, the Whirlwind Axe). At 60 the long ones run as chains in raidq.js (ATT_CHAINS with
 // `cls`): the Charger and the Dreadsteed (worked on like an attunement, with a gold step for the materials, instead of
-// the 1000 gold epic mount), Rhok'delar and Benediction (goals).
+// the 1000 gold epic mount), Rhok'delar and Lok'delar, Benediction, Quel'Serrar (goals).
 "use strict";
 
 // text: a string, [Alliance, Horde], or a function
@@ -186,25 +186,37 @@ Object.assign(ATT_CHAINS, {
       ["run", "The ritual in Dire Maul: hold the circle, then beat the Dreadsteed of Xoroth", "Dire Maul", 0.6],
       ["go", "The Dreadsteed's spirit, bound: Mor'zul teaches Summon Dreadsteed", 30],
     ] },
-  rhok: { cls: "Hunter", goal: true, name: "Rhok'delar", item: { name: "Rhok'delar, Longbow of the Ancient Keepers", slot: "Ranged", ilvl: 75, q: 4 },
-    what: "An Ancient Petrified Leaf from Majordomo Executus's cache, Hastat the Ancient's tests, and four demons hiding as friendly faces across Kalimdor, each fought alone. The reward: Rhok'delar, Longbow of the Ancient Keepers. Weeks.",
+  rhok: { cls: "Hunter", goal: true, name: "Rhok'delar", item: [{ name: "Rhok'delar, Longbow of the Ancient Keepers", slot: "Ranged", ilvl: 75, q: 4 }, { name: "Lok'delar, Stave of the Ancient Keepers", slot: "Main Hand", ilvl: 75, q: 4 }],
+    what: "An Ancient Petrified Leaf from Majordomo Executus's cache, Vartrus the Ancient in Felwood, four demons hiding as friendly faces across the world, each fought alone (a real test for the pet), and a Mature Black Dragon Sinew from Onyxia. The reward: Rhok'delar, Longbow of the Ancient Keepers, and Lok'delar, Stave of the Ancient Keepers. Weeks.",
     steps: [
-      ["boss", "An Ancient Petrified Leaf from the Cache of the Firelord: kill Majordomo Executus until it drops", "Majordomo Executus", 0.3],
-      ["go", "Mystery of the Leaf: Hastat the Ancient in Felwood", 70],
-      ["run", "Ancient Sinew from the Ancient Core Hounds in Molten Core", "Molten Core", "x1"],
-      ["fight", "Artorius the Amiable: one of Hastat's four demons, hiding in plain sight", "Artorius the Doombringer", 62],
-      ["fight", "Simone the Seductress: the second of Hastat's demons", "Simone the Seductress", 62],
-      ["fight", "Klinfran the Crazed: the third", "Klinfran the Crazed", 62],
-      ["fight", "Solenor the Slayer: the last of the four", "Solenor the Slayer", 62],
-      ["go", "Hastat strings the bow with the Ancient Sinew", 30],
+      ["boss", "An Ancient Petrified Leaf from the Cache of the Firelord: kill Majordomo Executus until it's in there", "Majordomo Executus", 0.35],
+      ["go", "The Ancient Leaf: Vartrus the Ancient in Felwood knows what it is", 70],
+      ["fight", "Artorius the Amiable: a friendly face in Winterspring, until he's Artorius the Doombringer", "Artorius the Doombringer", 62],
+      ["fight", "Klinfran the Crazed: in the west of the Burning Steppes", "Klinfran the Crazed", 62],
+      ["fight", "Simone the Seductress: in the west of Un'Goro Crater", "Simone the Seductress", 62],
+      ["fight", "Solenor the Slayer: in Silithus", "Solenor the Slayer", 62],
+      ["go", "Stave of the Ancients: the four heads to Vartrus, for the Ancient Rune Etched Stave", 50],
+      ["boss", "Mature Black Dragon Sinew: from Onyxia, to string the stave", "Onyxia", 0.25],
+      ["go", "Vartrus strings the bow: Rhok'delar. Talk to him again: Lok'delar", 30],
     ] },
-  bene: { cls: "Priest", goal: true, name: "The Eye of Divinity", item: () => S.spec === 2 ? { name: "Anathema", slot: "Main Hand", ilvl: 75, q: 4 } : { name: "Benediction", slot: "Main Hand", ilvl: 75, q: 4 },
-    what: "The Eye of Divinity from Majordomo Executus's cache, the Eye of Shadow from Lord Kazzak or Azuregos, joined into Benediction (Anathema, its shadow, for a shadow priest). Weeks, and a world boss.",
+  bene: { cls: "Priest", goal: true, name: "The Balance of Light and Shadow", item: () => S.spec === 2 ? { name: "Anathema", slot: "Main Hand", ilvl: 75, q: 4 } : { name: "Benediction", slot: "Main Hand", ilvl: 75, q: 4 },
+    what: "The Eye of Divinity from Majordomo Executus's cache shows the way to Eris Havenfire, whose test in the Eastern Plaguelands gives the Splinter of Nordrassil; with the Eye of Shadow (Lord Kazzak, or the elite demons of the Blasted Lands and Winterspring) it becomes Benediction, or Anathema for a shadow priest. Weeks.",
     steps: [
-      ["boss", "The Eye of Divinity, in the Cache of the Firelord: kill Majordomo Executus until it drops", "Majordomo Executus", 0.3],
-      ["go", "The Eye of Divinity wakes: its light wants a shadow to balance it", 60],
-      ["boss", "The Eye of Shadow: from Lord Kazzak or Azuregos", "Lord Kazzak/Azuregos", 0.5],
-      ["go", "The two Eyes joined: Benediction, and in its shadow Anathema", 40],
+      ["boss", "The Eye of Divinity, in the Cache of the Firelord: kill Majordomo Executus until it's in there", "Majordomo Executus", 0.35],
+      ["go", "With the Eye of Divinity worn, Eris Havenfire appears in the Eastern Plaguelands", 50],
+      ["fight", "The Balance of Light and Shadow: heal fifty fleeing peasants through the Scourge archers, and don't let fifteen die", "Scourge Archer", 61],
+      ["go", "Eris Havenfire's reward: the Splinter of Nordrassil", 20],
+      ["go", "The Eye of Shadow: hunting the elite demons of the Blasted Lands and Winterspring, a rare drop", 200, "x12"],
+      ["go", "The Splinter and the two Eyes joined: Benediction, and in its shadow Anathema", 30],
+    ] },
+  quel: { cls: ["Warrior", "Paladin"], goal: true, name: "The Forging of Quel'Serrar", item: { name: "Quel'Serrar", slot: "Main Hand", ilvl: 71, q: 4 },
+    what: "A tank's sword: Foror's Compendium of Dragon Slaying from Dire Maul, Lorekeeper Lydros's Unfired Ancient Blade, laid where Onyxia's flame breath will hit it, and back to Lydros. Weeks.",
+    steps: [
+      ["run", "Foror's Compendium of Dragon Slaying: a rare find, from a Dire Maul boss or a dusty tome", "Dire Maul", 0.12],
+      ["run", "Lorekeeper Lydros in the Athenaeum of Dire Maul: The Forging of Quel'Serrar", "Dire Maul", "x1"],
+      ["gold", "Lydros's materials for the Unfired Ancient Blade (100 gold)", 1000000],
+      ["boss", "Onyxia's Lair: lay the Unfired Ancient Blade where her flame breath hits it in the last phase, and pick it up glowing", "Onyxia", 0.5],
+      ["go", "The heated blade back to Lydros: Quel'Serrar", 60],
     ] },
 });
 // a class chain done: the mount spell, or the item
@@ -216,7 +228,7 @@ function cqChainDone(k) {
     if (sp && !(c.mount in S.spells)) { S.spells[c.mount] = 1; classMountSpell(c.mount); log(`Learned ${c.mount}. No 1000 gold needed: the ${c.mount.replace("Summon ", "")} is ${S.name}'s.`, "loot4"); }
     mountOwn();
   }
-  if (c.item) gain({ ...(typeof c.item === "function" ? c.item() : c.item) }, "Quest reward:");
+  if (c.item) [].concat(typeof c.item === "function" ? c.item() : c.item).forEach(it => gain({ ...it }, "Quest reward:"));
 }
 // old saves: the quests below the hero's level count as done (the spells are known already), and a paladin or warlock
 // who already knows the epic mount spell has done the chain
