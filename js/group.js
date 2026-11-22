@@ -135,37 +135,63 @@ function wipeChance(t) {
   }
   const d = instanceRow(t.dn); return 0.06 * (d ? clamp(1 + (d.max - 2 - S.level) * 0.12, 0.4, 2) : 1);
 }
-// what the group brings into the pull: the hero's cooldowns ready (a lot in a five-man, a little in a raid of 40), the
-// healers' mana, the hero's healing talents. Rolled into the chance when the pull starts (the bars and the chronicle
-// follow the roll; nothing here is played out afterwards)
-// the base wipe chances go up by this much (dungeons, raids), so the average pull wipes about as often as before
-const PREP_BASE = [0.95, 0.92];
-function wipePrep(t) {
-  const raid = !!(S.dg && S.dg.raid), w = 5 / (raid && RAID_INFO[t.dn] ? RAID_INFO[t.dn].size : 5), role = heroRole();
-  let f = PREP_BASE[raid ? 1 : 0];
-  (t.cds || []).forEach(c => { f *= 1 - w * (0.1); });
-  const mana = (S.party || []).filter(m => m.role === "heal").map(m => m.mp).concat(role === "heal" && !raid ? [S.mpF ?? 1] : []); // in a raid the hero is one healer of many
-  const mp = mana.length ? mana.reduce((a, b) => a + b, 0) / mana.length : 1;
-  f *= 1 + 0.8 * Math.max(0, 0.8 - mp); // healers who come in low run dry before the end
-  if (role === "heal") f *= Math.pow(1 / talMod("l"), w / 2);
-  return { f, mp };
+// the boss fight that decides the pull (fightsim.js): the wipe chance the gear, the boss and the raid's preparation give
+// (wipeChance) sets how hard the boss hits (the pressure: a reference group wipes about that often), then the fight
+// itself decides, with this group: its healers and their mana, its tanks, the hero's cooldowns and healing talents,
+// a druid's Rebirth, a warlock's soulstone. Played once as the pull starts and stored on the task: t.wipe, t.left,
+// t.why, t.dead ([{ name, at, cause }], at = how far through the pull)
+const PREP_BASE = [0.8, 1.1];
+// in a five-man the hero is a fifth of the group: a hero healer carries more of it than a hero dps, so the pressure
+// evens that out on average (the fight still decides each pull)
+const FIVE_ROLE = { dps: 0.92, heal: 1.045, tank: 1 }; // the chance going in, scaled (dungeons, raids) so the average pull wipes about as often as before
+// the wipe rate against the pressure, fitted offline on snapshots of real groups from the game: [wipe rate, pressure]
+const FIGHT_PRESSURE = {
+  five: [[0,0.4], [0.001,0.45], [0.004,0.5], [0.02,0.55], [0.044,0.6], [0.104,0.65], [0.179,0.7], [0.277,0.75], [0.375,0.8], [0.48,0.85], [0.582,0.9], [0.66,0.95], [0.75,1], [0.814,1.05], [0.861,1.1], [0.906,1.15], [0.936,1.2], [0.953,1.25], [0.974,1.3], [0.982,1.35], [0.988,1.4], [0.993,1.45], [0.996,1.5]],
+  raid: [[0.002,1], [0.009,1.1], [0.022,1.2], [0.044,1.3], [0.083,1.4], [0.144,1.5], [0.205,1.6], [0.278,1.7], [0.383,1.8], [0.41,1.9], [0.519,2], [0.595,2.1], [0.683,2.2], [0.741,2.3], [0.773,2.4], [0.818,2.5], [0.874,2.6], [0.899,2.7], [0.911,2.8], [0.948,2.9], [0.96,3], [0.967,3.1], [0.986,3.2]],
+};
+function pressureFor(p, raid) {
+  const T = FIGHT_PRESSURE[raid ? "raid" : "five"];
+  if (p <= T[0][0]) return T[0][1];
+  for (let i = 1; i < T.length; i++) if (p <= T[i][0]) { const [p0, P0] = T[i - 1], [p1, P1] = T[i]; return P0 + (P1 - P0) * (p - p0) / Math.max(1e-6, p1 - p0); }
+  return T[T.length - 1][1];
 }
-// the roll, once, at the start of the pull: wiped or not, at how much of the boss's health, and what went wrong
+// the group as the fight sees it: everyone's gear against the group's average, health, mana, the hero's cooldowns
+function fightMembers(t) {
+  const cds = t.cds || [], role = heroRole();
+  const M = [{ name: S.name, role, cls: S.cls, hp: S.hpF ?? 1, mp: S.mpF ?? 1, gear: gearFor(), hero: true, healTal: talMod("l"),
+    cds: { shield: cds.some(c => c.type === "shield"), heal: cds.some(c => c.type === "heal"), burst: cds.some(c => c.type === "burst") } },
+    ...(S.party || []).map(m => ({ name: m.name, role: m.role, cls: m.cls, hp: m.hp ?? 1, mp: m.mp ?? 1, gear: m.gear ?? 1 }))];
+  const avg = M.reduce((a, m) => a + m.gear, 0) / M.length || 1;
+  M.forEach(m => m.gear = clamp(1 + 0.5 * (m.gear / avg - 1), 0.8, 1.25)); // half the difference: gear counts, luck and mana count too
+  return M;
+}
+// the boss's moves for the chronicle: what kills the tank, what hits everyone, what picks someone out
+const AOE_MOVE = /Breath|Volley|Nova|Eruption|Inferno|Rain|Wave|Blast|Pulse|Explosion|Bomb|Shock|Flame|Fire|Fear|Roar|Quake|Storm|Cloud|Poison|Plague|Frost|Ice/;
+function fightMoves(t) {
+  const rot = BOSS_ROT[t.boss], all = rot ? [rot[0], rot[2], ...rot[1].split(",")].filter(m => m && m !== "Auto Attack") : [];
+  const aoe = all.filter(m => AOE_MOVE.test(m)), single = all.filter(m => !AOE_MOVE.test(m));
+  return { tank: single.length ? single : ["a crushing blow", "a cleave", "a mortal strike", "a knockdown and a beating"], aoe: aoe.length ? aoe : ["a blast that hit everyone", "a stomp", "a whirlwind", "a wave of fire"], spike: all.length ? all : ["a hit out of nowhere", "a charge", "a curse", "a stray add"] };
+}
 function bossWipes(t) {
   if (t.k !== "boss") return false;
   if (t.wipe != null) return t.wipe;
-  const prep = wipePrep(t);
-  t.wipe = Math.random() < Math.min(0.9, wipeChance(t) * prep.f);
-  if (t.wipe) { t.left = +(0.08 + Math.random() * 0.4).toFixed(2); t.why = wipeWhy(t, prep); }
+  const raid = !!(S.dg && S.dg.raid), p = Math.min(0.95, wipeChance(t) * PREP_BASE[raid ? 1 : 0]);
+  const r = fightCore(fightMembers(t), { pressure: pressureFor(p, raid) * (raid ? 1 : FIVE_ROLE[heroRole()] || 1), aoe: 0.3, moves: fightMoves(t) });
+  t.wipe = r.wipe;
+  t.dead = r.dead.map(d => ({ name: d.name, at: +(0.05 + 0.9 * d.tick / r.ticks).toFixed(3), cause: d.cause || "the boss" }));
+  if (r.wipe) { t.left = +r.left.toFixed(2); t.why = fightWhy(t, r, raid); }
   return t.wipe;
 }
-function wipeWhy(t, prep) {
-  if (prep.mp < 0.45 && Math.random() < 0.7) return "the healers ran out of mana";
-  if (!(S.bossKills[t.boss] > 0) && Math.random() < 0.4) return `nobody knew the fight yet`;
-  const rot = BOSS_ROT[t.boss], moves = rot ? [rot[0], rot[2], ...rot[1].split(",")].filter(m => m && m !== "Auto Attack") : [];
-  const tank = heroRole() === "tank" ? S.name : ((S.party || []).find(m => m.role === "tank") || { name: "the tank" }).name;
-  if (!moves.length) return pick([`${tank} went down and ${t.boss} ran through the healers`, `the adds got loose`, `${t.boss} enraged`, `somebody pulled aggro`, `a fear sent half the group into the next room`, `the off-tank was out of position`]);
-  return pick([`${tank} died to ${pick(moves)}`, `half the group died to ${pick(moves)}`, `${pick(moves)} at the worst moment`]);
+// what went wrong, from the fight itself
+function fightWhy(t, r, raid) {
+  if (r.why === "enrage") return `the fight ran too long and ${t.boss} enraged`;
+  if (r.why === "oom") return "the healers ran out of mana";
+  const tank = r.dead.find(d => d.role === "tank");
+  if (r.why === "tanks" && tank) { const c = tank.cause || "a crushing blow", g = raid ? "raid" : "group";
+    return pick([`${tank.name} died to ${c} and ${t.boss} ran through the ${g}`, `${tank.name} went down to ${c}, and without a tank it was over`, `lost ${tank.name} to ${c} at the worst moment`]); }
+  const n = {}; r.dead.forEach(d => { if (d.cause) n[d.cause] = (n[d.cause] || 0) + 1; });
+  const top = Object.keys(n).sort((a, b) => n[b] - n[a])[0];
+  return `half the ${raid ? "raid" : "group"} died${top ? ` to ${top}` : ""}`;
 }
 // play a pull out as a timeline: everyone takes a hit on each of their own casts, and every
 // finished heal lands on whoever is hurt most right then (a tank, if it's close)
@@ -174,8 +200,15 @@ function simFight(t) {
   const P = pullMembers(t);
   pullCosts(P, t);
   playPull(P, t, pullEvents(P, t));
-  // a wipe: late in the fight the group goes down, tank first, then the healers, then everyone else
-  if (bossWipes(t)) {
+  // the deaths the fight decided (bossWipes): each one at its moment; on a wipe the rest go down after the last of them
+  if (t.dead) {
+    const die = (p, at) => { p.tl = p.tl.filter(x => x[0] < at); p.tl.push([at, 0]); p.cur = 0; };
+    t.dead.forEach(d => { const p = P.find(q => q.name === d.name); if (p) die(p, d.at); });
+    if (t.wipe) {
+      const w0 = Math.max(0.6, ...t.dead.map(d => d.at)), rest = P.filter(p => !t.dead.some(d => d.name === p.name)).sort((a, b) => "thd".indexOf(a.role[0]) - "thd".indexOf(b.role[0]));
+      rest.forEach((p, j) => die(p, Math.min(0.99, w0 + (0.99 - w0) * (j + 0.5) / rest.length)));
+    }
+  } else if (bossWipes(t)) { // a pull from before the fight was simulated
     const order = P.slice().sort((a, b) => "thd".indexOf(a.role[0]) - "thd".indexOf(b.role[0]));
     order.forEach((p, j) => { const at = 0.7 + 0.28 * (j + Math.random() * 0.8) / order.length; p.tl = p.tl.filter(x => x[0] < at); p.tl.push([at, 0]); p.cur = 0; });
   }
@@ -284,3 +317,13 @@ function partyFinish(t) {
 }
 // rage builds through a pull, energy dips and ticks back
 const pool2 = (res, fight, p) => res === "Rage" ? (fight ? Math.round(15 + 70 * p) : 0) : (fight ? Math.round(100 - 65 * Math.abs(Math.sin(p * Math.PI * 3))) : 100);
+// a won pull with deaths: who fell (rezzed after the kill); the hero's own death costs a repair bill, not a death count
+function fightDeaths(t) {
+  const d = (t.dead || []).filter(x => x.name); if (!d.length) return "";
+  const me = d.find(x => x.name === S.name);
+  if (me) { S.hpF = 0.3; S.repair += S.level * S.level * 3; }
+  (S.party || []).forEach(m => { if (d.some(x => x.name === m.name)) m.hp = 0.3; });
+  const raid = !!(S.dg && S.dg.raid);
+  if (me) return ` ${S.name} died to ${me.cause} before the end and gets a rez after the kill.${d.length > 1 ? ` ${d.length - 1} more died along the way.` : ""}`;
+  return raid && d.length > 2 ? ` ${d.length} died along the way.` : ` ${d.map(x => `${x.name} died to ${x.cause}`).join(", ")}, rezzed after the kill.`;
+}

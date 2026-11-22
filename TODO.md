@@ -4,35 +4,6 @@ Open items first, then what has shipped (with what's still missing from each).
 
 ## Open
 
-- [ ] **Wipes from the fight itself** (raid and dungeon wipes are still a roll, based on gear)
-  - Today: group fights never kill anyone (health floors at 5%); boss deaths only come from a roll at the pull
-    (`bossWipes` / `wipeChance`), so cooldowns, talents and healing don't decide the outcome
-  - Done, the quick step (`wipePrep` in group.js): the roll happens as the pull starts, with what the group brings
-    in: each hero cooldown ready (10% in a five-man, an eighth of that in a raid of 40), the healers' mana (low mana,
-    more wipes), the hero's healing talents; the base chances are scaled so the average wipe rate stayed where it was.
-    The chronicle names what went wrong ("Wiped on Garr at 23%: the healers ran out of mana", a boss's move from
-    `BOSS_ROT`), and the boss frame shows the same percentage
-  - The real plan:
-    1. Let health reach zero in `simFight`: drop the 5% floor, a member at 0 is dead, stops casting
-       (shown as "dead" already) and stops taking hits; enemy hits that would land on them move to the next target
-    2. Threat and targets: when the tank dies, the boss turns to the next tank, or to a random member
-       (healers and dps take tank-sized hits and die fast); off-tanks pick up adds
-    3. Healer mana: healers drain mana per heal (`mpEnd` already exists); out of mana means no more heals,
-       which is how long fights turn into wipes
-    4. Snowball into a wipe: the fight is lost when all tanks are dead and the boss isn't almost dead,
-       or when more than half the group is down; then everyone goes down within a few casts (like now)
-    5. Damage done depends on who's alive: the enemy health curve slows down as dps die, so a fight
-       with deaths runs longer and has more chance to go wrong (cap the length so a fight can't stall)
-    6. Size the damage: boss hit size from the boss level and the raid's gear requirement (like `refHp` for solo),
-       healing from healer gear; tune both so the wipe rate comes out near today's (about 6% per dungeon boss,
-       10–18% per raid boss for a group geared just right), and much lower when overgeared
-    7. Let everything that matters feed in: gear (members' gear levels, your gear), talents (damage taken,
-       healing), cooldowns (shields, burst, heal cooldowns), boss scripts (Deep Breath, Ragnaros' adds)
-    8. Battle rezzes and soulstones (optional): a druid or warlock can bring one dead member back once per fight
-    9. Chronicle: name what went wrong ("Lorrik died to Wrath of Ragnaros", "The healers ran out of mana",
-       "Wiped at 12%"), and keep "Wiped at x%" for the boss frame
-    10. Calibrate with the long-run harness: wipe rate per raid by gear, deaths per hour, and that
-        overgeared raids almost never wipe while undergeared ones wipe often
 - [ ] **World chat and guild chat** (a chat panel, or chat lines in the chronicle that can be filtered)
   - General and Trade chat for the zone (Barrens chat, Chuck Norris jokes, "LF healer for Strat", gold sellers,
     "Where is Mankrik's wife?"), Looking for Group, the odd world PvP shout ("Southshore under attack!")
@@ -52,6 +23,19 @@ Open items first, then what has shipped (with what's still missing from each).
 
 ## Done
 
+- [x] **Boss wipes from the fight itself** (fightsim.js): every boss pull is played once as it starts, tick by tick,
+  and stored on the task (who died when and to what, wiped or not, at how much of the boss's health); the bars act it
+  out (the dead drop to 0 and stop, on a wipe the rest go down after them). Tanks soak the boss and hand it on when they
+  die, raid-wide hits and spikes land on everyone, healers heal the most hurt while their mana lasts (a mana potion,
+  a druid's Innervate), a druid's Rebirth and a warlock's soulstone bring one back, the hero's shield, heal and burst
+  cooldowns and healing talents count; lost when the tanks are gone, half the group is down or it runs far too long.
+  How hard the boss hits (the pressure) comes from the old wipe chance (gear, first kills, boss order, resistance,
+  the pre-raid set), fitted offline on snapshots of real groups so the average wipe rate stayed where it was (about
+  4% per dungeon boss, a quarter of raid boss pulls); in a five-man the hero's role evens out on average (`FIVE_ROLE`).
+  Deaths in a won pull: rezzed after the kill (the hero pays a repair bill, not counted as a death). The chronicle
+  names what happened ("lost Ulaud to Wrath of Ragnaros at the worst moment", "the healers ran out of mana")
+  - Still missing: fights running longer when dps die (the task's length stays the same), boss scripts (Deep Breath,
+    Ragnaros's adds) as their own events in the fight, trash pulls with real deaths
 - [x] **Damage meter numbers**: the hero's part comes from the casts in the pull (`heroPullWeight` in ui.js: burst
   windows and area spells on a pack push it up, casts lost to a stun or a fear pull it down, against the same casts at
   plain strength), so the hero lands anywhere in the top few of a raid instead of always first; raid bosses have more
