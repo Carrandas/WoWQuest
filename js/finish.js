@@ -213,7 +213,7 @@ const FINISH = {
         S.queue.unshift(ghost);
         return;
       }
-      const again = { ...t, el: 0 }; delete again.ve; delete again.foe; delete again.wipe;
+      const again = { ...t, el: 0 }; delete again.ve; delete again.foe; delete again.wipe; delete again.dead; delete again.left; delete again.why;
       S.queue.unshift(ghost, regroupTask(raid), again);
       return;
     }
@@ -225,7 +225,7 @@ const FINISH = {
       if (S.guild) S.guild.wipes = 0;
       guildLoot(t.dn, t.boss);
     }
-    log(`${t.boss} has been defeated.`, "boss");
+    log(`${t.boss} has been defeated.${fightDeaths(t)}`, "boss");
     wbBossKill(t.boss); // a head for the city gates
     facBoss(t.dn, t.boss); // reputation from raid bosses
     if (raid) resLine(t.boss); // resistance gear for the bosses that check it
