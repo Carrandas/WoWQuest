@@ -135,7 +135,38 @@ function wipeChance(t) {
   }
   const d = instanceRow(t.dn); return 0.06 * (d ? clamp(1 + (d.max - 2 - S.level) * 0.12, 0.4, 2) : 1);
 }
-const bossWipes = t => t.k === "boss" && (t.wipe ?? (t.wipe = Math.random() < wipeChance(t)));
+// what the group brings into the pull: the hero's cooldowns ready (a lot in a five-man, a little in a raid of 40), the
+// healers' mana, the hero's healing talents. Rolled into the chance when the pull starts (the bars and the chronicle
+// follow the roll; nothing here is played out afterwards)
+// the base wipe chances go up by this much (dungeons, raids), so the average pull wipes about as often as before
+const PREP_BASE = [0.95, 0.92];
+function wipePrep(t) {
+  const raid = !!(S.dg && S.dg.raid), w = 5 / (raid && RAID_INFO[t.dn] ? RAID_INFO[t.dn].size : 5), role = heroRole();
+  let f = PREP_BASE[raid ? 1 : 0];
+  (t.cds || []).forEach(c => { f *= 1 - w * (0.1); });
+  const mana = (S.party || []).filter(m => m.role === "heal").map(m => m.mp).concat(role === "heal" && !raid ? [S.mpF ?? 1] : []); // in a raid the hero is one healer of many
+  const mp = mana.length ? mana.reduce((a, b) => a + b, 0) / mana.length : 1;
+  f *= 1 + 0.8 * Math.max(0, 0.8 - mp); // healers who come in low run dry before the end
+  if (role === "heal") f *= Math.pow(1 / talMod("l"), w / 2);
+  return { f, mp };
+}
+// the roll, once, at the start of the pull: wiped or not, at how much of the boss's health, and what went wrong
+function bossWipes(t) {
+  if (t.k !== "boss") return false;
+  if (t.wipe != null) return t.wipe;
+  const prep = wipePrep(t);
+  t.wipe = Math.random() < Math.min(0.9, wipeChance(t) * prep.f);
+  if (t.wipe) { t.left = +(0.08 + Math.random() * 0.4).toFixed(2); t.why = wipeWhy(t, prep); }
+  return t.wipe;
+}
+function wipeWhy(t, prep) {
+  if (prep.mp < 0.45 && Math.random() < 0.7) return "the healers ran out of mana";
+  if (!(S.bossKills[t.boss] > 0) && Math.random() < 0.4) return `nobody knew the fight yet`;
+  const rot = BOSS_ROT[t.boss], moves = rot ? [rot[0], rot[2], ...rot[1].split(",")].filter(m => m && m !== "Auto Attack") : [];
+  const tank = heroRole() === "tank" ? S.name : ((S.party || []).find(m => m.role === "tank") || { name: "the tank" }).name;
+  if (!moves.length) return pick([`${tank} went down and ${t.boss} ran through the healers`, `the adds got loose`, `${t.boss} enraged`, `somebody pulled aggro`, `a fear sent half the group into the next room`, `the off-tank was out of position`]);
+  return pick([`${tank} died to ${pick(moves)}`, `half the group died to ${pick(moves)}`, `${pick(moves)} at the worst moment`]);
+}
 // play a pull out as a timeline: everyone takes a hit on each of their own casts, and every
 // finished heal lands on whoever is hurt most right then (a tank, if it's close)
 function simFight(t) {

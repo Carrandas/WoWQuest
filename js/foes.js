@@ -236,7 +236,7 @@ function foeOf(t) {
   if (t.foe) return t.foe;
   const casts = t.casts || [], N = Math.max(1, casts.length), raid = !!(S.dg && S.dg.raid), units = foeUnits(t, raid);
   const boss = t.k === "boss" ? units[units.length - 1] : null;
-  if (boss && bossWipes(t)) boss.left = 0.08 + Math.random() * 0.4; // how much health the boss has left when the group wipes
+  if (boss && bossWipes(t)) boss.left = t.left || 0.3; // how much health the boss has left when the group wipes (rolled with the wipe)
   const w0 = heroWeights(t, casts, N);
   // a pack (no boss): played out cast by cast, so area spells hurt every enemy still standing;
   // everything else goes down enemy by enemy
