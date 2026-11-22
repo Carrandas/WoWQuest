@@ -32,6 +32,7 @@ function migrate() {
   legendMigrate(); // and the legendaries as quest chains
   if (!S.wb) S.wb = newWb();
   if (!S.fish) { S.fish = newFish(S.level); S.fish.sk = clamp(S.level * 2 - 20, 0, 100); } // fishing came later: a little picked up on the way
+  if (!S.fac) S.fac = { "Argent Dawn": (S.si && S.si.rep) || 0 }; // reputation came later; the invasion's Argent Dawn count moves in
   if (!S.si) { S.si = newSi(); if (S.lock.Naxxramas || S.dungeons.includes("Naxxramas")) S.si.start = S.si.end = S.time; } // the Scourge Invasion came later: over for anyone already in Naxxramas
   if (!S.aq) { S.aq = newAq(); if (AQ_RAIDS.some(n => S.dungeons.includes(n) || S.lock[n])) { S.aq.open = true; S.aq.start = S.aq.end = S.aq.gong = S.time; S.aq.by = "someone"; } }
   if (!S.bossKills) { S.bossKills = {}; RAIDS.filter(r => S.dungeons.includes(r.name)).forEach(r => r.bosses.forEach(b => S.bossKills[b] = 1)); }

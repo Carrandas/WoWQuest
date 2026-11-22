@@ -329,6 +329,7 @@ function enchantGear(self, made) {
     }
     it.ench = { name: enchName(slot, e[1]), t }; done.push(`${it.ench.name} on ${it.name}`);
   }
+  facEnchants(); // the reputation enchants stay on their slot (factions.js)
   if (!done.length) return;
   if (made) made.push(...done.map(x => "Enchant " + x));
   else log(`Enchanted ${done.join(", ")}.`, "spell");
