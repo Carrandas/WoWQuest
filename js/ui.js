@@ -343,7 +343,8 @@ function renderHero() {
   setHtml("hName", `${S.pvp.rank ? `<small class="ptitle">${esc(rankName(S.pvp.rank))}</small>` : ""}${esc(S.name)}`); $("hName").style.color = c.color;
   $("tWhere").textContent = where();
   $("hSub").innerHTML = `Level <b>${S.level}</b> ${esc(S.race)} <b style="color:${c.color}">${esc(S.cls)}</b> · ${esc(c.trees[S.spec])}${S.guild ? ` <span class="gtag">&lt;${esc(S.guild.name)}&gt;</span>` : ""}`;
-  $("stats").innerHTML = STATS.map(k => `<div class="stat ${k === mainStat() ? "prime" : ""}"><span class="lbl">${k}</span><b>${S.stats[k]}</b></div>`).join("");
+  const gst = gearStats();
+  $("stats").innerHTML = STATS.map(k => `<div class="stat ${k === mainStat() ? "prime" : ""}" title="${S.stats[k]} from levels, ${gst[k]} from gear"><span class="lbl">${k}</span><b>${S.stats[k] + gst[k]}</b></div>`).join("");
   $("vitals").innerHTML = [
     ["money", money(S.money)],
     ["mount", S.mount ? esc(rideName()) : S.level >= 40 ? "saving up…" : "on foot until 40"],
