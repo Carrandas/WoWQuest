@@ -25,6 +25,7 @@ function goalDefs() {
   siGoals(out); // the Scourge Invasion, while it's on
   fishGoals(out); // fishing: Artisan, the city's legend, the Extravaganza
   facGoals(out); // exalted with a faction
+  dsetGoals(out); // the pre-raid set
   if (!hasMount("Deathcharger's Reins")) out.push({ id: "baron", name: "Deathcharger's Reins", what: "Run Stratholme again and again for Baron Rivendare's horse. One in a hundred: a week, or months.",
     prog: () => [0, null], txt: () => `${bk("Baron Rivendare")} Baron kills`, done: () => hasMount("Deathcharger's Reins") });
   if (!hasMount("Swift Zulian Tiger") && !hasMount("Swift Razzashi Raptor")) out.push({ id: "zg", name: "A Zul'Gurub mount", what: "Raid Zul'Gurub every reset for Thekal's tiger or Mandokir's raptor. One in a hundred each.",
@@ -106,7 +107,7 @@ function goalRaid(open) {
 function goalDungeon() {
   if (hasGoal("baron") && Math.random() < 0.6) return instanceRow("Stratholme");
   if (goalWith("pets:") && Math.random() < 0.4) return instanceRow("Lower Blackrock Spire");
-  return null;
+  return dsetDungeon(); // the pre-raid set (prebis.js)
 }
 
 // ---------- the quests tab ----------

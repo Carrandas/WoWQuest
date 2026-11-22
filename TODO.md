@@ -35,8 +35,6 @@ Open items first, then what has shipped (with what's still missing from each).
   - Raid numbers run low (about 125 dps/hps per player); raise raid boss health and heal sizes
 - [ ] **Area spells on boss adds** (bosses still go down one target at a time)
 - [ ] **More to do at 60** (what's left of "Life at 60" below)
-  - Pre-raid best-in-slot hunting: the dungeon set from Upper Blackrock Spire, Stratholme and Scholomance, then the
-    long chain that upgrades it (Dungeon Set 2); a pre-raid set goal
   - World events: Darkmoon Faire weeks (cards, tickets, the turtles), the Gurubashi Arena chest
   - The event minipets and Mr. Pinchy; the Tabard of the Argent Dawn and other rare good-lookers with the collections
   - The Ahn'Qiraj war effort as real materials out of the bags, and the gong-banger's moment in other heroes' chronicles
@@ -75,6 +73,13 @@ Open items first, then what has shipped (with what's still missing from each).
 
 ## Done
 
+- [x] **Pre-raid best in slot** (prebis.js): the dungeon set piece by piece (the helm from Darkmaster Gandling, the
+  shoulders from Overlord Wyrmthalak, the chest from General Drakkisath, the legs from Baron Rivendare, the rest from
+  any level 52+ dungeon), the pre-raid set goal (the dungeon of a missing piece), and Dungeon Set 2 as a goal chain
+  (Deliana or Mokvar, Bodley's Ghost Revealer, the Braziers, Kormok, Jarien and Sothos, Mor Grayhoof, Isalien, Lord
+  Valthalak) for the class's Tier 0.5 set; two achievements
+  - Still missing: the other dungeon set pieces' real bosses (gloves, belt, boots, bracers), Tier 0.5 is usually behind
+    the hero's raid gear by the time it's done (true to classic, but a fresh 60 has little use for the goal then either)
 - [x] **Farming runs** (farming.js): a route per gathering profession (herbs, Thorium and Dark Iron, devilsaurs, or
   Stratholme and the Plaguelands without one) with rare finds (Black Lotus, Arcane Crystal, Dark Iron Ore for the Thorium
   Brotherhood, Devilsaur Leather, Righteous Orbs, Essence of Undeath): kept for the crafts (flasks without the AH's
