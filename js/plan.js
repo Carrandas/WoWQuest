@@ -179,6 +179,7 @@ function queueCity() {
   if (!local && !ev) fishCity(q, where); // off the pier, now and then
   if (!local) farmCity(q); // the daily cooldowns: Arcanite, Mooncloth
   if (!local && !ev) calCity(q); // a holiday or the Darkmoon Faire that's on
+  if (!local) resCity(q); // the Onyxia Scale Cloak, once Blackwing Lair is near
   if (!local && !ev) funCity(q); // a duel, a dance, a lap around the world
   if (!local && !ev) q.push({ k: "shop", d: `Browsing the Auction House in ${where}`, t: sec(18) });
   if (S.level >= 40 && S.mount < 1 && !classMount()) q.push({ k: "mount", d: `Visiting the riding trainer`, t: sec(8) });
