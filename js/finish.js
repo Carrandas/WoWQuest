@@ -174,6 +174,8 @@ const FINISH = {
   },
   lfg(t) {
     log(`[${pick(PLAYERS)}]: ${t.chat}`, "chat");
+    if (S.dg && S.dg.raid) chatEvent("raidinv", S.dg.name); else chatEvent("lfg", t.chat);
+    const fr = (S.party || []).find(m => m.friend); if (fr && !(S.dg && S.dg.raid)) chatEvent("whisper", { name: fr.name, cls: fr.cls, txt: `got a spot for you in ${t.dn || "the run"}, coming?` });
     if (!S.party) return;
     if (S.dg) S.dg.formed = true;
     if (S.party.length > 4) {
@@ -204,6 +206,7 @@ const FINISH = {
       S.deaths++; S.repair += S.level * S.level * (raid ? 25 : 5); loseBuffs(); if (S.pet) S.pet.dead = true;
       log(`Wiped on ${t.boss} at ${Math.round((t.left || 0.3) * 100)}%: ${t.why || "it went wrong"}. Corpse run…`, "death"); S.hpF = 0; (S.party || []).forEach(m => m.hp = 0);
       partySwap(t); if (raid) guildWipe(t.boss);
+      chatEvent("wipe");
       const ghost = { k: "ghost", d: "Running back through the instance as a ghost", t: sec(60) };
       // three wipes in a raid and it's over for tonight: on to the exit
       if (raid && S.dg && ++S.dg.wipes >= RAID_TRIES) {
@@ -221,7 +224,7 @@ const FINISH = {
     if (raid) {
       const first = !(S.bossKills[t.boss] > 0), l = raidLock(t.dn) || (S.lock[t.dn] = { at: S.time, killed: 0, last: 0 });
       l.killed = S.dg.killed; S.bossKills[t.boss] = (S.bossKills[t.boss] || 0) + 1;
-      if (first) { log(`First kill: ${t.boss}!`, "ach"); serverFirst(t.boss); }
+      if (first) { log(`First kill: ${t.boss}!`, "ach"); serverFirst(t.boss); chatEvent("firstkill", t.boss); }
       if (S.guild) S.guild.wipes = 0;
       guildLoot(t.dn, t.boss);
     }
@@ -298,6 +301,7 @@ function finish(t) {
 // ---------- the clock ----------
 function advance(dt) {
   S.time += dt;
+  chatTick(); // world and guild chat (chat.js: its own random numbers)
   let guard = 0;
   while (dt > 0 && guard++ < 400) {
     if (!S.task) { if (!S.queue.length) plan(); S.task = S.queue.shift() || { k: "rest", d: "Taking a breather", t: 3000 }; S.task.el = 0; useCooldowns(S.task); bossWipes(S.task); dirty = true; } // a boss pull's outcome is rolled as it starts
