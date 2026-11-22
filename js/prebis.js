@@ -35,7 +35,7 @@ function dsetDungeon() {
 }
 // Molten Core past the first three bosses needs the pre-raid set: worn dungeon set pieces count one each, Tier 0.5
 // (and raid set pieces) a bit more, and every missing piece makes the later bosses wipe more (up to DSET_WIPE more)
-const DSET_WIPE = 1.3;
+const DSET_WIPE = 1.0;
 const dsetReady = () => Math.min(8, SET_SLOTS[0].reduce((a, s) => { const it = S.equip[s], st = it && it.set; return a + (st == null ? 0 : st === 0 ? 1 : 1.3); }, 0));
 const dsetWipe = (dn, i) => dn === "Molten Core" && i >= 3 ? 1 + DSET_WIPE * (1 - dsetReady() / 8) : 1;
 function dsetGoals(out) {
