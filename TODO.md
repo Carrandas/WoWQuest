@@ -72,6 +72,7 @@ Open items first, then what has shipped (with what's still missing from each).
   for the level while levelling, at 60 one prize per year (the holiday's raid-level epic, from a prize bag, or one of
   its minipets: Whiskers the Rat and Speedy, the four Winter Veil pets); the Gurubashi Arena chest at 60 (the Arena
   Grand Master); goals for each, a calendar line in the Quests tab, three achievements
+  - The Darkmoon Faire reputation (factions.js, from Faire visits and decks; more tickets per rank, a goal)
   - The holiday epics' names are made up (vanilla holidays had no raid-level gear)
   - Still missing: the city visits dressed up for the season, holiday goals with their own steps ("Honor 10 Elders"),
     the Darkmoon Faire's other decks (Warlords: Twisting Nether)

@@ -12,6 +12,7 @@ const facPts = f => (S.fac && S.fac[f]) || 0;
 const facRank = f => FAC_RANKS.reduce((a, r, i) => facPts(f) >= r[0] ? i : a, 0);
 const facRankName = f => FAC_RANKS[facRank(f)][1];
 const facThe = f => f === "Timbermaw Hold" ? f : "the " + f; // "with Timbermaw Hold", "with the Argent Dawn"
+const DMF_FAC = "Darkmoon Faire";
 const role3 = () => heroRole() === "heal" ? 2 : isCaster() ? 1 : 0; // melee, caster, healer
 // the factions: where the trips go (null: no trips, only raids), the foes, what's turned in, the rewards per rank
 const FACTIONS = {
@@ -35,6 +36,12 @@ const FACTIONS = {
       2: { txt: "Quartermaster Lightspark sells the Dawn recipes.", craft: { Blacksmithing: "Plans: Girdle of the Dawn", Leatherworking: "Pattern: Dawn Treaders", Tailoring: "Pattern: Argent Boots" } },
       3: { txt: "The Dawn's best recipes, and the Naxxramas attunement for half the price.", craft: { Blacksmithing: "Plans: Gloves of the Dawn", Tailoring: "Pattern: Golden Mantle of the Dawn" } },
       4: { txt: "Exalted with the Argent Dawn: the Naxxramas attunement is free." } } },
+  // only at the Faire itself (calendar.js): the turn-ins, Sayge's fortunes, the decks; the reward is more tickets per visit
+  "Darkmoon Faire": { zone: null, goal: "Every Darkmoon Faire in full: all the profession turn-ins, Sayge's questions and the lesser decks for Silas Darkmoon. More prize tickets at every step. A few months of Faires.",
+    rewards: { 1: { txt: "Silas Darkmoon knows your name: a few more prize tickets for every turn-in." },
+      2: { txt: "Honored with the Faire: Gelvas Grimegate rounds up in your favour." },
+      3: { txt: "Revered with the Faire: Sayge reads your fortune before anyone else's." },
+      4: { txt: "Exalted with the Darkmoon Faire: one of Silas Darkmoon's own. The carnies wave you past the queue." } } },
   "Thorium Brotherhood": { zone: "Searing Gorge and Blackrock Depths", foes: ["Dark Iron Taskmaster", "Dark Iron Slaver", "Dark Iron Geologist", "Fireguard", "Molten Elemental"],
     turnin: "Dark Iron Ore, Fiery Cores and Lava Cores to Lokhtos Darkbargainer at Thorium Point",
     rewards: { 1: { txt: "Lokhtos Darkbargainer will trade with you now." },
@@ -109,9 +116,9 @@ const FAC_FINISH = { facturn(t) { facGain(t.fac, 120 + R(80)); S.money += 8000 +
 function facGoals(out) {
   if (S.level < 60) return;
   Object.entries(FACTIONS).forEach(([f, d]) => {
-    if (!d.zone || facRank(f) >= 4) return;
+    if ((!d.zone && !d.goal) || facRank(f) >= 4) return;
     const top = FAC_RANKS[4][0];
-    out.push({ id: "fac:" + f, name: `Exalted with ${facThe(f)}`, what: `Free evenings go to ${facThe(f)}: ${d.zone}, ${d.turnin}. ${Object.entries(d.rewards).map(([r, w]) => `${FAC_RANKS[r][1]}: ${w.item ? w.item().name : w.ench ? w.ench.map(e => e[1]()).filter((x, i, a) => a.indexOf(x) === i).join(", ") : w.craft ? "recipes" : "the story"}`).join(" · ")}. Weeks.`,
+    out.push({ id: "fac:" + f, name: `Exalted with ${facThe(f)}`, what: `${d.zone ? `Free evenings go to ${facThe(f)}: ${d.zone}, ${d.turnin}.` : d.goal} ${Object.entries(d.rewards).map(([r, w]) => `${FAC_RANKS[r][1]}: ${w.item ? w.item().name : w.ench ? w.ench.map(e => e[1]()).filter((x, i, a) => a.indexOf(x) === i).join(", ") : w.craft ? "recipes" : "the story"}`).join(" · ")}. Weeks.`,
       prog: () => [Math.min(facPts(f), top), top], txt: () => `${facRankName(f)} (${facPts(f).toLocaleString()} of ${top.toLocaleString()})`, done: () => facRank(f) >= 4 });
   });
 }

@@ -66,7 +66,9 @@ function holDone(t) {
 function dmfDone() {
   const c = S.cal; if (c.seen[occ("dmf")]) return;
   c.seen[occ("dmf")] = 1;
-  const n = S.level < 60 ? 15 + R(30) : 150 + R(100);
+  const all = hasGoal("fac:" + DMF_FAC); // with the goal: every turn-in and game, not just the trade goods
+  const n = Math.round((S.level < 60 ? 15 + R(30) : 150 + R(100)) * (1 + 0.1 * facRank(DMF_FAC)) * (all ? 1.3 : 1));
+  facGain(DMF_FAC, (S.level < 60 ? 1000 : 2500 + R(1000)) * (all ? 2 : 1));
   c.tickets += n; spend("mats", Math.min(spendable(), S.level * 300));
   S.buffs["Sayge's Dark Fortune of Damage"] = S.time + 120 * MIN;
   log(`Silas Darkmoon's Faire: ${n} prize tickets for the trade goods, and Sayge's Dark Fortune of Damage. ${pick(["The Tonk Controllers are all taken.", "Flik's frog gets away again.", "Someone wins a Darkmoon Faire Fortune: \"You will be the first to fall.\""])}`, "quest");
@@ -79,6 +81,7 @@ function dmfDone() {
   if (!c.card && spendable() >= DMF_DECK * (hasGoal("dmfcard") ? 1 : 1.5)) {
     spend("gear", DMF_DECK); c.card = true;
     log(`Bought the last cards of ${dmfDeck()} on the Auction House (${moneyTxt(DMF_DECK)}) and turned the deck in to Professor Thaddeus Paleo.`, "gold");
+    facGain(DMF_FAC, 2000);
     gain({ name: dmfCard(), slot: "Trinket", ilvl: 66, q: 4 }, "The deck's reward:");
   }
 }
