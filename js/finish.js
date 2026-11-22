@@ -23,11 +23,11 @@ function lootDrop(dn, boss) {
   const pool = mine.length && Math.random() < 0.7 ? mine : free.length ? free : mine;
   const ri = RAID_INFO[dn], r = Math.random();
   const dropIlvl = () => ri ? ri.ilvl[0] + R(ri.ilvl[1] - ri.ilvl[0] + 1) : Math.round((d.min + d.max) / 2) + 3;
-  let it;
+  let it, ds;
   if (ri && ri.set != null && r < 0.55) {
     const pin = boss === "Onyxia" ? "Head" : boss === "Ragnaros" ? "Legs" : null, tier = pin ? 2 : ri.set;
     it = setPiece(tier, SET_ILVL[tier], pin);
-  } else if (!raid && d.min >= 52 && S.level >= 58 && r < 0.3) it = setPiece(0, SET_ILVL[0]);
+  } else if (!raid && d.min >= 52 && S.level >= 58 && (ds = dsetDrop(boss))) { it = setPiece(0, SET_ILVL[0], ds); dsetGot(ds); } // the dungeon set (prebis.js)
   // a generic piece for the weakest slot, so every slot can reach blue (dungeons) or purple (raids)
   else if (r > 0.8) it = makeItem(weakestSlot(), dropIlvl(), ri ? 4 : 3);
   else if (pool.length) {

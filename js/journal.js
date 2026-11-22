@@ -149,6 +149,8 @@ ACH.push(...[
   { id: "wbdr", name: "Dragons of Nightmare", desc: "Kill one of the Emerald Dragons at the Great Trees.", test: () => WB_DRAGONS.some(wbK) },
   { id: "facex", name: "Exalted", desc: "Reach exalted with Timbermaw Hold, the Hydraxian Waterlords, the Zandalar Tribe, the Argent Dawn or the Thorium Brotherhood.", test: () => !!S.fac && Object.keys(FACTIONS).some(f => facRank(f) >= 4) },
   { id: "facex3", name: "Ambassador of the Old World", desc: "Reach exalted with three of the five reputation factions at 60.", test: () => !!S.fac && Object.keys(FACTIONS).filter(f => facRank(f) >= 4).length >= 3 },
+  { id: "dset8", name: "Pre-Raid Ready", desc: "Collect all eight pieces of your dungeon set.", test: () => !!S.preb && dsetHave() >= 8 },
+  { id: "dset2", name: "Dungeon Set 2", desc: "Finish the upgrade quests for your Tier 0.5 set.", test: () => !!S.att && attDone("dset2") },
   { id: "lotus", name: "Black Lotus", desc: "Find a Black Lotus on a farming run.", cat: "prof", test: () => profCount("lotus") > 0 },
   { id: "transmute", name: "The Daily Transmute", desc: "Transmute 30 Arcanite Bars.", cat: "prof", test: () => profCount("transmute") >= 30 },
   { id: "fish300", name: "Artisan Fisherman", desc: "Reach 300 fishing.", test: () => !!S.fish && S.fish.sk >= 300 },

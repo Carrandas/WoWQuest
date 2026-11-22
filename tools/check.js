@@ -167,7 +167,7 @@ const RAID_ORDER = ["Zul'Gurub", "Onyxia's Lair", "Molten Core", "Ruins of Ahn'Q
 const RAID_SHORT = ["ZG", "Ony", "MC", "AQ20", "BWL", "AQ40", "Naxx"];
 // target day (after reaching 60) for the first full clear, and how far off the median may be
 // (weeks of Molten Core before Blackwing Lair, then a couple of clears of each tier before the next)
-const RAID_TARGET = { "Onyxia's Lair": [3, 7], "Molten Core": [7, 13], "Blackwing Lair": [26, 40], "Temple of Ahn'Qiraj": [40, 58], "Naxxramas": [55, 85] };
+const RAID_TARGET = { "Onyxia's Lair": [3, 7], "Molten Core": [8, 16], "Blackwing Lair": [26, 40], "Temple of Ahn'Qiraj": [40, 58], "Naxxramas": [55, 85] };
 async function endgame(seeds, days) {
   const jobs = [];
   for (const h of END_HEROES) for (let s = 1; s <= seeds; s++) jobs.push({ h, run: () => sim("new", "end60", s, { PRE: `${newHero(h)};window.DAYS=${days}` }) });
