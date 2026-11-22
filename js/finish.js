@@ -170,7 +170,7 @@ const FINISH = {
       S.queue.push(farmTask()); // a route for the gathering profession (farming.js)
     }
     if (S.level >= 60) aqWarQueue(S.queue) || attTrip(S.queue); // the Ten Hours War, or an attunement step that is a trip
-    const d = pickDungeon(); if (d) (d.si ? queueSI : d.fish ? queueFish : d.fac ? queueFac : BGS.includes(d) ? queueBG : WP_RAIDS.includes(d) ? queueWP : WB_ROWS.includes(d) ? queueWB : queueDungeon)(d);
+    const d = pickDungeon(); if (d) (d.si ? queueSI : d.fish ? queueFish : d.fac ? queueFac : d.arena ? queueArena : BGS.includes(d) ? queueBG : WP_RAIDS.includes(d) ? queueWP : WB_ROWS.includes(d) ? queueWB : queueDungeon)(d);
   },
   lfg(t) {
     log(`[${pick(PLAYERS)}]: ${t.chat}`, "chat");
@@ -280,7 +280,7 @@ const FINISH = {
   ...PVP_FINISH, // bgq, bgin, bgobj, bgrez, bgend
   ...WP_FINISH, // wpsee, wpgo, wpend, wpcity
   ...ATT_FINISH, // att, aqhand, aqwar
-  ...WB_FINISH, ...CQ_FINISH, ...SI_FINISH, ...FISH_FINISH, ...FAC_FINISH, ...FARM_FINISH, // facturn; farmcd; wbsee, wbgo, wbobj, wbhead; cq; siend; fish, fishend, fishstep, fxstart, fxend
+  ...WB_FINISH, ...CQ_FINISH, ...SI_FINISH, ...FISH_FINISH, ...FAC_FINISH, ...FARM_FINISH, ...CAL_FINISH, // facturn; farmcd; hol, dmf, arenaend; wbsee, wbgo, wbobj, wbhead; cq; siend; fish, fishend, fishstep, fxstart, fxend
 };
 function finish(t) {
   const ve = vitalEnd(t); S.hpF = ve[0]; S.mpF = ve[1]; partyFinish(t);

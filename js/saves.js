@@ -32,6 +32,7 @@ function migrate() {
   legendMigrate(); // and the legendaries as quest chains
   if (!S.wb) S.wb = newWb();
   if (!S.fish) { S.fish = newFish(S.level); S.fish.sk = clamp(S.level * 2 - 20, 0, 100); } // fishing came later: a little picked up on the way
+  if (!S.cal) S.cal = newCal(); // the calendar came later
   prebMigrate(); // the pre-raid set came later
   if (!S.farm) S.farm = newFarm(); // farming runs came later
   if (!S.fac) S.fac = { "Argent Dawn": (S.si && S.si.rep) || 0 }; // reputation came later; the invasion's Argent Dawn count moves in

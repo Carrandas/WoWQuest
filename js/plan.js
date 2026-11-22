@@ -178,6 +178,7 @@ function queueCity() {
   if (!local && !ev) wbCity(q, where); // a head on the city gates
   if (!local && !ev) fishCity(q, where); // off the pier, now and then
   if (!local) farmCity(q); // the daily cooldowns: Arcanite, Mooncloth
+  if (!local && !ev) calCity(q); // a holiday or the Darkmoon Faire that's on
   if (!local && !ev) q.push({ k: "shop", d: `Browsing the Auction House in ${where}`, t: sec(18) });
   if (S.level >= 40 && S.mount < 1 && !classMount()) q.push({ k: "mount", d: `Visiting the riding trainer`, t: sec(8) });
   if (S.level >= 60 && S.mount < 2 && !classMount()) q.push({ k: "mount", d: `Counting gold for an epic mount`, t: sec(6) });
@@ -203,7 +204,7 @@ function pickDungeon() {
     const fx = fxPick(); if (fx) return fx; // Sunday afternoon in Booty Bay
     const open = RAIDS.filter(raidOpen);
     if (open.length && Math.random() < 0.7) return goalRaid(open) || (Math.random() < 0.7 ? open[open.length - 1] : pick(open));
-    return wbPick() || siPick() || facPick() || fishPick() || wpPick() || pvpPick() || goalDungeon() || attDungeon() || pick(DUNGEONS.filter(d => d.min >= 52 && ok(d)));
+    return wbPick() || siPick() || facPick() || fishPick() || arenaPick() || wpPick() || pvpPick() || goalDungeon() || attDungeon() || pick(DUNGEONS.filter(d => d.min >= 52 && ok(d)));
   }
   return DUNGEONS.find(d => ok(d) && !S.dungeons.includes(d.name) && S.level >= d.min && S.level <= d.min + 6);
 }

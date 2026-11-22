@@ -31,6 +31,12 @@ const MINIPETS = [
   ["Smolderweb Hatchling", "drop", "B", [/^Mother Smolderweb$/, "Lower Blackrock Spire", 12]],
   ["Worg Pup", "drop", "B", [/^Quartermaster Zigris$/, "Lower Blackrock Spire", 12]],
   ["Mechanical Chicken", "quest", "B", ["Oglethorpe Obnoticus", "the three OOX escorts (Tanaris, Feralas, the Hinterlands)"]],
+  ["Whiskers the Rat", "event", "B", ["Children's Week"]],
+  ["Speedy", "event", "B", ["Children's Week"]],
+  ["Winter Reindeer", "event", "B", ["the Feast of Winter Veil"]],
+  ["Father Winter's Helper", "event", "B", ["the Feast of Winter Veil"]],
+  ["Winter's Little Helper", "event", "B", ["the Feast of Winter Veil"]],
+  ["Tiny Snowman", "event", "B", ["the Feast of Winter Veil"]],
   ["Mechanical Squirrel", "craft", "B", [75]],
   ["Pet Bombling", "craft", "B", [205]],
   ["Lifelike Mechanical Toad", "craft", "B", [265]],
@@ -45,6 +51,7 @@ function minipetWhere(m) {
   if (m.src === "neutral") return `Sold by ${a} in ${b} (${moneyTxt(c)})`;
   if (m.src === "drop") return `A rare drop in ${b}`;
   if (m.src === "quest") return `A reward from ${a}, for ${b}`;
+  if (m.src === "event") return `A gift during ${a} (one a year, at random)`;
   return `Built with Engineering (${a})`;
 }
 // a new pet: it follows the hero from now on (text: how it was found, for the chronicle)

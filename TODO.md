@@ -35,7 +35,6 @@ Open items first, then what has shipped (with what's still missing from each).
   - Raid numbers run low (about 125 dps/hps per player); raise raid boss health and heal sizes
 - [ ] **Area spells on boss adds** (bosses still go down one target at a time)
 - [ ] **More to do at 60** (what's left of "Life at 60" below)
-  - World events: Darkmoon Faire weeks (cards, tickets, the turtles), the Gurubashi Arena chest
   - The event minipets and Mr. Pinchy; the Tabard of the Argent Dawn and other rare good-lookers with the collections
   - The Ahn'Qiraj war effort as real materials out of the bags, and the gong-banger's moment in other heroes' chronicles
   - Doing things for fun, as chronicle flavour: duels outside Orgrimmar or Ironforge, a lap around the world, /dance
@@ -46,14 +45,6 @@ Open items first, then what has shipped (with what's still missing from each).
   - Bosses that are a wall without it (Sapphiron far below the target); crafters making their own pieces (Dark Iron,
     the Cenarion leather sets, Glacial, Icebane); the Onyxia Scale Cloak against Nefarian's Shadow Flame
   - Rebalance so the endgame timeline holds: the timeline is tuned without resistance, the gear only helps
-- [ ] **Seasonal holidays, on the in-game calendar** (extra goals while one is on)
-  - Hallow's End (the Headless Horseman's pumpkin, costume wands, candy buckets), Winter Veil (Greatfather Winter, a
-    present on the 25th, snowball fights in Ironforge or Orgrimmar), the Lunar Festival (the Elders around the world,
-    fireworks in Moonglade), Love is in the Air, Children's Week (an orphan following the hero around), Midsummer
-    (the bonfires), Harvest Festival, and the Darkmoon Faire weeks
-  - While one is on, its own goals show up next to the player's (with a time limit): "Honor 10 Elders", "Collect
-    the Hallow's End treats", a holiday minipet or item at the end; a calendar line in the Quests tab
-  - Holiday achievements, and the city visits dressed up for the season
 - [ ] **World chat and guild chat** (a chat panel, or chat lines in the chronicle that can be filtered)
   - General and Trade chat for the zone (Barrens chat, Chuck Norris jokes, "LF healer for Strat", gold sellers,
     "Where is Mankrik's wife?"), Looking for Group, the odd world PvP shout ("Southshore under attack!")
@@ -73,6 +64,17 @@ Open items first, then what has shipped (with what's still missing from each).
 
 ## Done
 
+- [x] **The calendar, the Darkmoon Faire, the holidays, the Gurubashi Arena** (calendar.js): twelve months of ten game
+  days (a random start date per hero); the Darkmoon Faire the first three days of every month (Elwynn Forest and Mulgore
+  in turn: prize tickets, Sayge's fortune, Darkmoon Prizes while levelling, the Amulet or Orb of the Darkmoon for 1200
+  tickets, a Darkmoon Card for a deck bought on the AH: a gold sink); the Lunar Festival, Love is in the Air,
+  Noblegarden, Children's Week, Midsummer, the Harvest Festival, Hallow's End and Winter Veil on their months: a gift
+  for the level while levelling, at 60 one prize per year (the holiday's raid-level epic, from a prize bag, or one of
+  its minipets: Whiskers the Rat and Speedy, the four Winter Veil pets); the Gurubashi Arena chest at 60 (the Arena
+  Grand Master); goals for each, a calendar line in the Quests tab, three achievements
+  - The holiday epics' names are made up (vanilla holidays had no raid-level gear)
+  - Still missing: the city visits dressed up for the season, holiday goals with their own steps ("Honor 10 Elders"),
+    the Darkmoon Faire's other decks (Warlords: Twisting Nether)
 - [x] **Pre-raid best in slot** (prebis.js): the dungeon set piece by piece (the helm from Darkmaster Gandling, the
   shoulders from Overlord Wyrmthalak, the chest from General Drakkisath, the legs from Baron Rivendare, the rest from
   any level 52+ dungeon), the pre-raid set goal (the dungeon of a missing piece), and Dungeon Set 2 as a goal chain
