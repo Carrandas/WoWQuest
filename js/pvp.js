@@ -137,8 +137,11 @@ function bgFight(f, st) {
   const allies = shuffle(S.party.map((_, i) => i)).slice(0, nAl).sort((a, b) => a - b);
   const focus = !allies.length || (f.focus ?? Math.random() < 0.4);
   const dieP = clamp(0.1 + (heroRole() === "heal" ? 0.08 : 0) + (armorType() === "Cloth" ? 0.05 : 0) - (gearScore() / 60 - 1.25) * 0.3 + (focus ? 0.15 : 0) + (big ? 0.1 : 0), 0.04, 0.5);
-  const die = Math.random() < dieP;
-  return { k: "trash", bg: true, d: f.d, t: p.t, foes, casts: p.casts, aoeShare: share, allies, tgt: focus ? "you" : S.party[pick(allies)].name, die, dieAt: +(0.55 + Math.random() * 0.4).toFixed(2) };
+  // the one they're after drinks a PvP potion (if there's one in the bags): a better chance to live through it
+  const pot = focus && S.level >= 60 && S.cons.pvp > 0 && Math.random() < 0.6 ? pvpPotion() : null;
+  if (pot) S.cons.pvp--;
+  const die = Math.random() < dieP - (pot ? 0.08 : 0);
+  return { k: "trash", bg: true, pot, d: f.d, t: p.t, foes, casts: p.casts, aoeShare: share, allies, tgt: focus ? "you" : S.party[pick(allies)].name, die, dieAt: +(0.55 + Math.random() * 0.4).toFixed(2) };
 }
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = R(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const scoreTxt = (sc, st) => `${st.us} ${sc[0]}, ${st.them} ${sc[1]}`;
@@ -254,7 +257,7 @@ function pvpPool(c, role) {
   const r = PVP_ROT[c + ":" + role] || PVP_ROT[c];
   return { open: [r[0]], fill: r[1].split(","), extra: r[2].split(","), end: r[3] };
 }
-// a finished skirmish: killing blows and honorable kills for the scoreboard, and the hero's death (no repair bill)
+// a finished skirmish: killing blows and honorable kills for the scoreboard, wear on the hero's gear (a death costs much more)
 function bgFightEnd(t) {
   const d = S.dg; if (!d || !d.bg) return;
   // the ones in the fight (scoreboard index: 0 is the hero, i + 1 is party member i) share the killing blows and get the honorable kills
@@ -265,12 +268,26 @@ function bgFightEnd(t) {
   ids.forEach(j => sb.hk[j] = (sb.hk[j] || 0) + players);
   d.hk += players; d.ed += t.foes.length; S.pvp.hk += players;
   if (ids.length > 1 && Math.random() < 0.3) { const j = ids[1 + R(ids.length - 1)]; sb.d[j] = (sb.d[j] || 0) + 1; d.od++; }
+  if (t.pot) log(`Drank ${article(t.pot)} in the middle of the fight.`, "gold");
+  S.repair += Math.round(S.level * S.level * (t.die ? PVP_DEATH_WEAR : PVP_WEAR));
   if (t.die) {
     sb.d[0] = (sb.d[0] || 0) + 1; d.od++; S.pvp.deaths++;
     const k = pick(t.foes);
     log(`Killed by ${k.name}${k.cls ? ` (${k.cls.toLowerCase()})` : ""}. Back to the graveyard.`, "death");
     S.queue.unshift({ k: "bgrez", d: "Waiting at the graveyard for the spirit healer", t: sec(30) });
   }
+}
+// PvP costs: gear wear per skirmish and per death (times level squared: at 60 about 7 silver and 72 silver),
+// and the potions a ranked player drinks. Like repairs, the potions don't wait for the epic mount savings
+const PVP_WEAR = 0.2, PVP_DEATH_WEAR = 2, PVP_POT_PRICE = 5000, PVP_POTS = 3;
+const pvpPotion = () => pick(["Free Action Potion", "Swiftness Potion", "Major Healing Potion", "Living Action Potion"]);
+// on a city visit at 60, once battlegrounds are open: top the PvP potions up to three (keeping 20 gold back)
+function pvpSupplies() {
+  if (S.level < 60 || !pvpOpen()) return;
+  let b = 0; while ((S.cons.pvp || 0) + b < PVP_POTS && S.money - (b + 1) * PVP_POT_PRICE >= 200000) b++;
+  if (!b) return;
+  S.cons.pvp = (S.cons.pvp || 0) + b; spend("sup", b * PVP_POT_PRICE);
+  log(`Bought ${b} potion${b > 1 ? "s" : ""} for the battlegrounds for ${moneyTxt(b * PVP_POT_PRICE)}.`, "gold");
 }
 // the hero's health in a fight it dies in: down to nothing at the moment it was rolled for
 function bgDeath(t, hero) {

@@ -66,7 +66,7 @@ function wpOutcome(t, fo, sf) {
     sf.tl = sf.tl.map(([a, v]) => [a, Math.max(v, 0.06)]); sf.end = Math.max(sf.end, 0.06);
   }
 }
-// a finished world PvP fight (instead of a normal kill): no quest progress, no loot, no repair bill for dying to a player
+// a finished world PvP fight (instead of a normal kill): no quest progress, no loot; dying to a player costs a repair bill
 function wpEnd(t) {
   const sf = soloFight(t), w = S.wpvp, f = t.foes[0];
   if (sf.drank && S.cons.hp > 0) S.cons.hp--;
@@ -76,7 +76,7 @@ function wpEnd(t) {
     log(t.foes.length > 1 ? `Beat ${wpWho(f)} and ${t.foes[1].name} two against one!` : pick([`Won the fight against ${wpWho(f)}.`, `${wpWho(f)} goes down. /bow.`, `Beat ${wpWho(f)}. They'll be back.`]), "boss");
     return;
   }
-  w.lost++; loseBuffs(); if (S.pet) S.pet.dead = true; S.hpF = 0;
+  w.lost++; loseBuffs(); S.repair += Math.round(S.level * S.level * PVP_DEATH_WEAR); if (S.pet) S.pet.dead = true; S.hpF = 0;
   const ghost = { k: "ghost", d: "Running back to your corpse as a ghost", t: sec(45) }, rez = { k: "rez", d: "Resurrecting and drinking up", t: sec(10) };
   if (t.gank) {
     if (!t.again) w.ganked++;

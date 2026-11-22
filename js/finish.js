@@ -152,6 +152,7 @@ const FINISH = {
     socialCity(); // the guild: founded, recruiting
     minipetShop(); // a cheap vendor pet comes before the rest of the shopping
     buySupplies(spendable() * 0.5); // potions and the like come first: half of the spare gold may go to supplies
+    pvpSupplies(); // battleground potions, bought even while saving for the epic mount
     const bag = BAGS.filter(b => b.lvl <= L).pop();
     // tailors sew their own bags
     if (bag && !(hasProf("Tailoring") && S.prof.cap) && S.money >= bag.price && bagUpgrade(bag)) { spend("gear", bag.price); giveBag(bag, S.bagSlots.length < 4 ? "Bought" : "Swapped a small bag for"); }

@@ -284,7 +284,7 @@ function masterwork(craft) {
 // gold kept back for the next mount
 const MOUNT_COST = 900000, EPIC_MOUNT_COST = 10000000; // 90g at 40, 1000g at 60
 const mountReserve = () => S.level >= 34 && S.mount < 1 ? MOUNT_COST : S.level >= 56 && S.mount < 2 ? EPIC_MOUNT_COST : 0;
-const spendable = () => Math.max(0, S.money - mountReserve());
+const spendable = () => Math.max(0, S.money - mountReserve() - attReserve());
 function spend(kind, c) {
   c = Math.max(0, Math.round(c)); S.money -= c;
   const wk = Math.floor(S.time / WEEK);

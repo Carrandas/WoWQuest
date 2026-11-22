@@ -4,6 +4,7 @@
 // saves from before the journal existed: fill in what we can
 function migrate() {
   S.buffs = S.buffs || {}; S.cons = S.cons || { hp: 0, mp: 0, elix: 0, stone: 0 };
+  if (S.cons.pvp == null) S.cons.pvp = 0;
   if (S.cons.food == null) { S.cons.food = 10; S.cons.drink = cls().mp ? 10 : 0; }
   S.elites = S.elites || []; S.feats = S.feats || []; S.dstat = S.dstat || {};
   if (!S.zones) { S.zones = route().slice(0, S.leg + (S.arrived ? 1 : 0)).map(l => ({ z: l.z, old: 1, q: 0, k: 0 })); }

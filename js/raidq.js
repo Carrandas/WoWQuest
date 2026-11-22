@@ -109,6 +109,8 @@ const attKeys = () => Object.keys(ATT_CHAINS).filter(k => !ATT_CHAINS[k].goal &&
 const attGoalKeys = () => Object.keys(ATT_CHAINS).filter(k => ATT_CHAINS[k].goal);
 const attStepTxt = k => { if (attDone(k)) return "done"; const s = attCur(k), c = typeof s[3] === "string" ? ` (${S.attN[k] || 0} of ${s[3].slice(1)})` : ""; return `step ${attStep(k) + 1} of ${ATT_CHAINS[k].steps.length}: ${s[1]}${c}`; };
 const attWorking = k => S.level >= 60 && !attDone(k) && (!ATT_CHAINS[k].goal || hasGoal("att:" + k));
+// gold kept back for the chains' gold steps that are up next (spendable() leaves it alone, like the mount savings)
+const attReserve = () => S.level < 60 ? 0 : attKeys().concat(attGoalKeys()).filter(attWorking).reduce((a, k) => { const s = attCur(k); return a + (s[0] === "gold" ? s[2] : 0); }, 0);
 
 function attAdvance(k) {
   const c = ATT_CHAINS[k], s = c.steps[attStep(k)];
@@ -142,7 +144,7 @@ function attTick() {
   attKeys().concat(attGoalKeys()).filter(attWorking).forEach(k => {
     const s = attCur(k);
     if (s[0] === "boss" && S.bossKills[s[2]] > 0) attAdvance(k);
-    else if (s[0] === "gold" && spendable() >= s[2]) { spend("gear", s[2]); attAdvance(k); }
+    else if (s[0] === "gold" && S.money >= s[2]) { spend("gear", s[2]); attAdvance(k); } // a raid key comes before the epic mount
   });
   aqTick();
 }
