@@ -167,9 +167,7 @@ const FINISH = {
     const gf = S.level >= 60 ? goalFarm(pick(["Winterspring", "Eastern Plaguelands", "Silithus", "Burning Steppes"])) : null;
     if (gf && gf.cloth) S.queue.push({ k: "farm", d: gf.d, t: sec(240), cloth: true });
     else if (S.level >= 60 && (S.money < 500000 || gf)) {
-      const g = ["Mining", "Herbalism", "Skinning"].find(hasProf), z = pick(["Winterspring", "Eastern Plaguelands", "Silithus", "Burning Steppes"]);
-      const d = g === "Mining" ? `Farming Thorium in ${z}` : g === "Herbalism" ? `Farming Dreamfoil in ${z}` : g ? `Farming Rugged Leather in ${z}` : pick(["Running Stratholme for gold", `Farming Runecloth in ${z}`]);
-      S.queue.push({ k: "farm", d, t: sec(240) });
+      S.queue.push(farmTask()); // a route for the gathering profession (farming.js)
     }
     if (S.level >= 60) aqWarQueue(S.queue) || attTrip(S.queue); // the Ten Hours War, or an attunement step that is a trip
     const d = pickDungeon(); if (d) (d.si ? queueSI : d.fish ? queueFish : d.fac ? queueFac : BGS.includes(d) ? queueBG : WP_RAIDS.includes(d) ? queueWP : WB_ROWS.includes(d) ? queueWB : queueDungeon)(d);
@@ -245,6 +243,7 @@ const FINISH = {
     if (t.cloth && S.prof) { addMat("Cloth", 4, 20 + R(15)); log(`Farmed Runecloth: ${moneyTxt(c)} and a stack of Runecloth for the turn-ins.`, "gold"); return; }
     if (g) { const n = 6 + R(8); addMat(g, 4, n); bump(g, n); bump("top:" + g, n); }
     log(`${t.d.replace(/^\w+ing/, m => m === "Running" ? "Ran" : "Farmed")}: ${moneyTxt(c)}${g ? ` and some ${MATS[g][4]}` : ""}.`, "gold");
+    if (t.route) farmEnd(t); // the rare finds (farming.js)
   },
   conjure(t) { S.cons[t.kind] = Math.max(S.cons[t.kind] || 0, 20); },
   ration(t) {
@@ -281,7 +280,7 @@ const FINISH = {
   ...PVP_FINISH, // bgq, bgin, bgobj, bgrez, bgend
   ...WP_FINISH, // wpsee, wpgo, wpend, wpcity
   ...ATT_FINISH, // att, aqhand, aqwar
-  ...WB_FINISH, ...CQ_FINISH, ...SI_FINISH, ...FISH_FINISH, ...FAC_FINISH, // facturn; wbsee, wbgo, wbobj, wbhead; cq; siend; fish, fishend, fishstep, fxstart, fxend
+  ...WB_FINISH, ...CQ_FINISH, ...SI_FINISH, ...FISH_FINISH, ...FAC_FINISH, ...FARM_FINISH, // facturn; farmcd; wbsee, wbgo, wbobj, wbhead; cq; siend; fish, fishend, fishstep, fxstart, fxend
 };
 function finish(t) {
   const ve = vitalEnd(t); S.hpF = ve[0]; S.mpF = ve[1]; partyFinish(t);

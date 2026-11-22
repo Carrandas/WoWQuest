@@ -35,8 +35,6 @@ Open items first, then what has shipped (with what's still missing from each).
   - Raid numbers run low (about 125 dps/hps per player); raise raid boss health and heal sizes
 - [ ] **Area spells on boss adds** (bosses still go down one target at a time)
 - [ ] **More to do at 60** (what's left of "Life at 60" below)
-  - Farming runs as their own activity: Black Lotus routes, Thorium and Dark Iron, Righteous Orbs and Essence of
-    Undeath for the top crafts, daily cooldowns (Arcanite transmute, Mooncloth)
   - Pre-raid best-in-slot hunting: the dungeon set from Upper Blackrock Spire, Stratholme and Scholomance, then the
     long chain that upgrades it (Dungeon Set 2); a pre-raid set goal
   - World events: Darkmoon Faire weeks (cards, tickets, the turtles), the Gurubashi Arena chest
@@ -77,6 +75,12 @@ Open items first, then what has shipped (with what's still missing from each).
 
 ## Done
 
+- [x] **Farming runs** (farming.js): a route per gathering profession (herbs, Thorium and Dark Iron, devilsaurs, or
+  Stratholme and the Plaguelands without one) with rare finds (Black Lotus, Arcane Crystal, Dark Iron Ore for the Thorium
+  Brotherhood, Devilsaur Leather, Righteous Orbs, Essence of Undeath): kept for the crafts (flasks without the AH's
+  Black Lotus, the top crafts at 300 for a third of the price), the rest sold; the daily Transmute: Arcanite and the
+  Mooncloth cooldown on city visits; two achievements
+  - Still missing: farming runs as a goal of their own, Righteous Orbs and Essence of Undeath feeding real recipes
 - [x] **Reputation grinds** (factions.js): one reputation scale (`S.fac`, friendly to exalted) for Timbermaw Hold, the
   Hydraxian Waterlords (Molten Core only; past honored only Golemagg and Ragnaros; the runes doused with Aqual
   Quintessence; Ocean's Breeze or Tidal Loop at revered), the Zandalar Tribe (Zul'Gurub; the idol enchants at honored,

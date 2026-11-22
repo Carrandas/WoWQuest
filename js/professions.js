@@ -212,7 +212,7 @@ function craftConsumables(run) {
     let n = 0;
     while ((S.cons[k] || 0) < top) {
       const r = recipes(run.craft).filter(x => canCraft(run, x)).pop(); if (!r) break;
-      if (k === "flask") { if (r.t < 4 || spendable() < BLACK_LOTUS * 2) break; spend("mats", BLACK_LOTUS); } // a flask needs a Black Lotus
+      if (k === "flask") { if (r.t < 4) break; if (!farmLotus()) { if (spendable() < BLACK_LOTUS * 2) break; spend("mats", BLACK_LOTUS); } } // a flask needs a Black Lotus (a farmed one, or the AH's)
       useRecipe(run, r); S.cons[k] = (S.cons[k] || 0) + (k === "band" || k === "feast" ? 2 : 1); n++;
       if (k === "flask") bump("flask"); else if (k === "hp" || k === "mp" || k === "elix") bump("pots");
     }
@@ -274,9 +274,11 @@ const MASTER = {
 function masterwork(craft) {
   const p = S.prof, m = MASTER[craft] && MASTER[craft](); if (!m || p.sk[craft] < 300) return;
   const it = { name: m.name, ilvl: 70, q: 4, slot: m.slot, made: true };
-  if (power(it) <= power(S.equip[m.slot]) || spendable() < m.cost) return;
-  spend("mats", m.cost);
-  log(`Bought the ${m.mat} for ${moneyTxt(m.cost)} and crafted ${m.name}!`, "loot4");
+  const own = farmCan(m.mat), cost = own ? Math.round(m.cost * 0.3) : m.cost; // farmed materials (farming.js): only the rest of the recipe to buy
+  if (power(it) <= power(S.equip[m.slot]) || spendable() < cost) return;
+  if (own) farmMat(m.mat);
+  spend("mats", cost);
+  log(own ? `Crafted ${m.name} from farmed materials (${moneyTxt(cost)} for the rest)!` : `Bought the ${m.mat} for ${moneyTxt(m.cost)} and crafted ${m.name}!`, "loot4");
   gain(it, "Crafted"); p.made++; bump("q4"); p.recent.unshift({ n: m.name, L: S.level });
 }
 
