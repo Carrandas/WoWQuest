@@ -136,7 +136,7 @@ function foeActions(u, n) {
 }
 const foeHidden = (u, k) => !!(u.hide && u.hide.some(([a, b]) => k >= a && k < b));
 const foePhase = (u, k) => (u.phases || []).filter(p => p.k <= k).pop() || null;
-const foeHp = (L, rank) => Math.round((L < 10 ? 40 + L * 18 : L * L * 1.1 + L * 20) * ({ elite: 3, boss: 7, "raid elite": 25, "raid boss": 230 }[rank] || 1));
+const foeHp = (L, rank) => Math.round((L < 10 ? 40 + L * 18 : L * L * 1.1 + L * 20) * ({ elite: 3, boss: 7, "raid elite": 40, "raid boss": 360 }[rank] || 1));
 // enemy control: the hero loses the cast it was working on
 const CTRL = { Polymorph: "Polymorphed", "Kidney Shot": "Stunned", "Hammer of Justice": "Stunned", Intercept: "Stunned", Blind: "Stunned", "Scatter Shot": "Stunned",
   "Psychic Scream": "Feared", "Howl of Terror": "Feared", "Intimidating Shout": "Feared", "Death Coil": "Feared", Counterspell: "Interrupted", Pummel: "Interrupted", Silence: "Interrupted", "Earth Shock": "Interrupted",
@@ -266,17 +266,26 @@ function layoutPack(units, pack, N) {
 // at its thresholds while its adds are dealt with (and maybe hides meanwhile)
 function layoutChunks(t, units, boss, raid, N) {
   const addW = raid ? 0.07 : 0.14, sc = boss ? BOSS_SCRIPT[t.boss] || [] : [], chunks = [], marks = [];
+  // a boss's adds: one by one, or together when the group has area damage (mages, warlocks, a tank's Consecration:
+  // groupAoe, or the hero's own); then they all go down in one stretch, and faster than one at a time
+  const aoe = n => n < 2 ? 0 : Math.max(groupAoe(Math.max(3, n)), heroAoe().length ? 0.15 : 0);
+  const addGroup = list => {
+    const share = aoe(list.length);
+    if (!share) return list.forEach(u => chunks.push({ u, from: 1, to: 0, wt: addW }));
+    chunks.push({ u: list[0], us: list, from: 1, to: 0, wt: addW * list.length * (1 - share) });
+  };
   if (!boss) units.forEach(u => chunks.push({ u, from: 1, to: 0, wt: 1 }));
   else {
     const startAdds = units.slice(0, -1), late = sc.some(p => p.adds), end = boss.left || 0;
-    if (!late) startAdds.forEach(u => chunks.push({ u, from: 1, to: 0, wt: addW }));
+    if (!late) addGroup(startAdds);
     let hp = 1;
     sc.forEach(p => {
       if (p.at <= end) return;
       chunks.push({ u: boss, from: hp, to: p.at, wt: hp - p.at }); hp = p.at;
       const m = { p, at: chunks.length, adds: [] };
       (p.adds ? startAdds : []).concat((p.spawn || []).map(n => { const a = foeUnit(n, boss.L - 1, raid ? "raid elite" : "elite"); units.splice(units.length - 1, 0, a); return a; }))
-        .forEach(a => { m.adds.push(a); chunks.push({ u: a, from: 1, to: 0, wt: addW }); });
+        .forEach(a => m.adds.push(a));
+      addGroup(m.adds);
       m.end = chunks.length; marks.push(m);
     });
     chunks.push({ u: boss, from: hp, to: end, wt: Math.max(0.05, hp - end) });
@@ -285,7 +294,7 @@ function layoutChunks(t, units, boss, raid, N) {
   let acc = 0, prev = 0;
   chunks.forEach((c, i) => { acc += c.wt; c.a = prev; c.b = i === chunks.length - 1 ? N : Math.min(N, Math.max(prev + (N > chunks.length ? 1 : 0), Math.round(acc / W * N))); prev = c.b; });
   units.forEach(u => {
-    const mine = chunks.filter(c => c.u === u);
+    const mine = chunks.filter(c => c.u === u || (c.us && c.us.includes(u)));
     u.segs = mine.map(c => ({ a: c.a, b: c.b, from: c.from, to: c.to }));
     const last = mine[mine.length - 1];
     u.spawn = 0; u.a = mine.length ? mine[0].a : N + 1; u.b = !mine.length ? N + 1 : last.to > 0 ? N : last.b;
@@ -297,7 +306,7 @@ function layoutChunks(t, units, boss, raid, N) {
     (boss.phases = boss.phases || []).push({ k, label: m.p.label, pool: m.p.pool, say: m.p.say });
     if (m.p.hide) { (boss.hide = boss.hide || []).push([k, kEnd]); boss.phases.push({ k: kEnd, label: m.p.after, say: m.p.back }); }
   });
-  units.forEach(u => { if (!chunks.some(c => c.u === u)) u.spawn = N + 1; });
+  units.forEach(u => { if (!chunks.some(c => c.u === u || (c.us && c.us.includes(u)))) u.spawn = N + 1; });
 }
 // Frost Nova roots everything close by: melee enemies (not bosses) lose their next two actions
 function frostNova(casts, units) {

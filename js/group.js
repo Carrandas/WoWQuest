@@ -194,7 +194,8 @@ function pullCosts(P, t) {
   const lo = x => Math.max(0.05, x);
   // the damage each role soaks is the pull's usual cost plus its share of the healing on offer
   let supply = 0;
-  P.forEach(p => { if (p.role === "heal") p.casts.forEach(s => { if (isHeal(s)) supply += 0.15; }); });
+  const big = S.dg && S.dg.raid && !S.dg.bg ? RAID_HEAL : 1; // raids: bigger hits, bigger heals (the meter shows raid-sized numbers)
+  P.forEach(p => { if (p.role === "heal") p.casts.forEach(s => { if (isHeal(s)) supply += 0.15 * big; }); });
   const W = { tank: 3, dps: 0.6, heal: 0.3 }, wsum = P.reduce((a, p) => a + W[p.role], 0);
   const tough = heroTaken(false, (dungeonRow() || { max: S.level }).max);
   P.forEach((p, i) => { const d = fightDrop(p.role, t.k); if (!i) { d[0] *= tough; d[1] *= talMod("m"); } p.mpEnd = lo(p.mp - d[1]); p.hit = (d[0] + supply * HEAL_EFF * W[p.role] / wsum) / (p.casts.length || 1); p.cur = p.hp; p.tl = [[0, p.hp]]; });
@@ -225,6 +226,7 @@ function playPull(P, t, ev) {
   const put = (p, at, v) => { p.cur = Math.min(1, Math.max(0.05, v)); p.tl.push([at, p.cur]); };
   const heal = (h, q, at, v) => { const was = q.cur; put(q, at, v); if (q.cur > was) h.healEv.push({ at, amt: Math.round((q.cur - was) * q.mx) }); };
   let shield = 0;
+  const big = S.dg && S.dg.raid && !S.dg.bg ? RAID_HEAL : 1; // raid heals are bigger (and so are the hits: pullCosts)
   for (const { at, i, k, dmg } of ev) {
     const p = P[i];
     if (k == null) { let a = dmg; if (!i && shield > 0) { const soak = Math.min(shield, a); shield -= soak; a -= soak; } if (a > 0) put(p, at, p.cur - a); continue; }
@@ -234,15 +236,16 @@ function playPull(P, t, ev) {
     if (p.splash > 0) put(p, at, p.cur - p.hit * p.splash * (0.6 + Math.random() * 0.8));
     if (p.role !== "heal" || !isHeal(s)) continue;
     const hurt = P.map((q, j) => [1 - q.cur + (q.role === "tank" ? 0.08 : 0), j]).sort((a, b) => b[0] - a[0]);
-    const hm = i ? 1 : talMod("l"); // the hero's healing talents
+    const hm = (i ? 1 : talMod("l")) * big; // the hero's healing talents, raid-sized heals
     if (GROUP_HEALS.test(s)) { hurt.slice(0, 5).forEach(([, x]) => heal(p, P[x], at, P[x].cur + 0.07 * hm)); continue; }
     const q = P[Math.random() < 0.85 ? hurt[0][1] : hurt[R(Math.min(4, hurt.length))][1]];
     heal(p, q, at, q.cur + healAmt(s) * hm);
-    if (/Chain Heal/.test(s)) hurt.filter(([, x]) => P[x] !== q).slice(0, 2).forEach(([, x], n) => heal(p, P[x], at, P[x].cur + (n ? 0.04 : 0.07)));
+    if (/Chain Heal/.test(s)) hurt.filter(([, x]) => P[x] !== q).slice(0, 2).forEach(([, x], n) => heal(p, P[x], at, P[x].cur + (n ? 0.04 : 0.07) * big));
     p.casts[k] = `${s} on ${q.name}`;
   }
 }
 let HEAL_EFF = 1.05;
+const RAID_HEAL = 2.5;
 // the group's side of a task, worked out once when it starts (kept in memory, not in the save)
 const PF = new WeakMap();
 function partyFight(t) {
