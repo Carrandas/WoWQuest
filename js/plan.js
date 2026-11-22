@@ -174,6 +174,7 @@ function queueCity() {
   if (S.repair > 0) q.push({ k: "repair", d: `Repairing gear at the blacksmith`, t: sec(5) });
   const ev = !local && wpCityEvent(q); // Corrupted Blood, Kazzak: train and get out
   if (!local) aqCity(q); // the Ahn'Qiraj war effort: supplies handed in
+  if (!local && !ev) wbCity(q, where); // a head on the city gates
   if (!local && !ev) q.push({ k: "shop", d: `Browsing the Auction House in ${where}`, t: sec(18) });
   if (S.level >= 40 && S.mount < 1) q.push({ k: "mount", d: `Visiting the riding trainer`, t: sec(8) });
   if (S.level >= 60 && S.mount < 2) q.push({ k: "mount", d: `Counting gold for an epic mount`, t: sec(6) });
@@ -181,7 +182,7 @@ function queueCity() {
 }
 
 // a dungeon or raid by name
-const instanceRow = n => DUNGEONS.concat(RAIDS).find(d => d.name === n);
+const instanceRow = n => DUNGEONS.concat(RAIDS, WB_ROWS).find(d => d.name === n);
 // a raid is open when the previous tier is cleared, your gear is ready and you are not saved to it
 // raid lockouts: { at (when it started), killed (bosses down this lockout, in order), last (the last raid night) }.
 // A raid takes several nights: the next one carries on from the first boss still standing, until the reset
@@ -198,7 +199,7 @@ function pickDungeon() {
   if (S.level >= 60) {
     const open = RAIDS.filter(raidOpen);
     if (open.length && Math.random() < 0.7) return goalRaid(open) || (Math.random() < 0.7 ? open[open.length - 1] : pick(open));
-    return wpPick() || pvpPick() || goalDungeon() || attDungeon() || pick(DUNGEONS.filter(d => d.min >= 52 && ok(d)));
+    return wbPick() || wpPick() || pvpPick() || goalDungeon() || attDungeon() || pick(DUNGEONS.filter(d => d.min >= 52 && ok(d)));
   }
   return DUNGEONS.find(d => ok(d) && !S.dungeons.includes(d.name) && S.level >= d.min && S.level <= d.min + 6);
 }

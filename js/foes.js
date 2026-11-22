@@ -36,6 +36,13 @@ const BOSS_ROT = {
   "Bloodlord Mandokir": ["Charge", "Whirlwind,Threatening Gaze,Cleave,Auto Attack", "Level Up"],
   "C'Thun": ["Eye Beam", "Eye Beam,Dark Glare,Eye Tentacles,Digestive Acid", "Dark Glare"],
   "Patchwerk": ["Hateful Strike", "Auto Attack,Hateful Strike,Auto Attack", "Enrage"],
+  "The Four Horsemen": ["Mark of Korth'azz", "Meteor,Void Zone,Righteous Fire,Holy Wrath,Mark of Blaumeux,Mark of Mograine,Mark of Zeliek", "Shield Wall"],
+  "Azuregos": ["Frost Breath", "Mark of Frost,Arcane Vacuum,Manastorm,Cleave,Frost Breath,Chill,Auto Attack", "Reflection"],
+  "Lord Kazzak": ["Shadow Bolt Volley", "Mark of Kazzak,Twisted Reflection,Cleave,Thunderclap,Capture Soul,Shadow Bolt Volley", "Shadow Bolt Volley"],
+  "Ysondre": ["Noxious Breath", "Lightning Wave,Tail Sweep,Mark of Nature,Noxious Breath,Auto Attack", "Lightning Wave"],
+  "Lethon": ["Noxious Breath", "Shadow Bolt Whirl,Tail Sweep,Mark of Nature,Noxious Breath,Auto Attack", "Draw Spirit"],
+  "Emeriss": ["Noxious Breath", "Volatile Infection,Tail Sweep,Mark of Nature,Noxious Breath,Auto Attack", "Corruption of the Earth"],
+  "Taerar": ["Noxious Breath", "Arcane Blast,Bellowing Roar,Tail Sweep,Mark of Nature,Noxious Breath", "Bellowing Roar"],
   "Kel'Thuzad": ["Frostbolt", "Frost Blast,Shadow Fissure,Detonate Mana,Frostbolt", "Chains of Kel'Thuzad"],
   "Captain Galvangar": ["Mortal Strike", "Auto Attack,Whirlwind,Cleave,Frighten,Mortal Strike", "Enrage"],
   "Captain Balinda Stonehearth": ["Fireball", "Arcane Explosion,Cone of Cold,Fireball,Summon Water Elemental", "Arcane Explosion"],
@@ -74,6 +81,32 @@ const BOSS_SCRIPT = {
   "Kel'Thuzad": [{ at: 0.45, spawn: ["Guardian of Icecrown", "Guardian of Icecrown"], label: "Phase 3: Guardians", say: "Kel'Thuzad calls the Guardians of Icecrown to his side." }],
   "Patchwerk": [{ at: 0.05, label: "Enraged", pool: ["Hateful Strike", "Hateful Strike", "Auto Attack"], say: "Patchwerk goes berserk as he nears death." }],
   "Majordomo Executus": [{ at: 0.5, spawn: ["Flamewaker Elite", "Flamewaker Healer"], label: "Reinforcements", say: "Majordomo calls more Flamewakers into the fight." }],
+  "Hakkar": [
+    { at: 0.66, spawn: ["Son of Hakkar", "Son of Hakkar"], label: "Blood Siphon", say: "Hakkar drinks the blood of the raid with Blood Siphon. Whoever didn't kill a Son of Hakkar for its poisoned blood heals him." },
+    { at: 0.33, spawn: ["Son of Hakkar", "Son of Hakkar"], label: "Blood Siphon", say: "Another Blood Siphon. The raid leader screams for someone to get poisoned." }],
+  "C'Thun": [
+    { at: 0.85, label: "Dark Glare", pool: ["Dark Glare", "Eye Beam", "Eye Tentacles"], say: "The Eye of C'Thun turns red and its Dark Glare sweeps across the room. Anyone in its path is gone." },
+    { at: 0.5, spawn: ["Giant Claw Tentacle", "Giant Eye Tentacle"], label: "Phase 2: C'Thun", pool: ["Digestive Acid", "Eye Beam", "Giant Eye Tentacles", "Auto Attack"], say: "The Eye falls and the Old God himself rises from the floor. Raiders vanish into C'Thun's stomach: \"You are already dead.\"" }],
+  "The Four Horsemen": [
+    { at: 0.7, label: "Tanks rotating", say: "Thane Korth'azz, Lady Blaumeux, Highlord Mograine and Sir Zeliek each mark the raid. The tanks rotate between corners as the marks stack." },
+    { at: 0.25, label: "The last horseman", pool: ["Holy Wrath", "Righteous Fire", "Auto Attack"], say: "Three of the Horsemen are down. Sir Zeliek's Holy Wrath chains through whoever stands too close." }],
+  "Vaelastrasz the Corrupt": [
+    { at: 0.95, label: "Essence of the Red", say: "Vaelastrasz, free for a moment: \"Too late, friends! Nefarius' corruption has taken hold. I cannot... control myself.\" His Essence of the Red gives the raid endless mana and rage." },
+    { at: 0.5, label: "Burning Adrenaline", pool: ["Burning Adrenaline", "Flame Breath", "Cleave", "Fire Nova"], say: "Burning Adrenaline: a raider runs from the group and explodes. Then the main tank gets it." }],
+  "Azuregos": [
+    { at: 0.6, label: "Arcane Vacuum", say: "Azuregos pulls the whole raid to him with Arcane Vacuum and wipes his threat list. The tanks scramble." },
+    { at: 0.3, label: "Manastorm", pool: ["Manastorm", "Frost Breath", "Cleave", "Chill"], say: "A Manastorm crackles over the casters. Anyone who died is held by the Mark of Frost: no running back in." }],
+  "Lord Kazzak": [
+    { at: 0.5, label: "Capture Soul", say: "Lord Kazzak: \"Your soul is mine!\" Every raider who dies heals him with Capture Soul." },
+    { at: 0.15, label: "Supreme mode", pool: ["Shadow Bolt Volley", "Shadow Bolt Volley", "Cleave"], say: "Lord Kazzak: \"The Legion will conquer all!\" He fires a Shadow Bolt Volley every second: kill him now or never." }],
+  "Ysondre": [{ at: 0.75, spawn: ["Demented Druid Spirit", "Demented Druid Spirit"], label: "Druid spirits", say: "Ysondre calls the Demented Druid Spirits out of the Dream." },
+    { at: 0.4, spawn: ["Demented Druid Spirit", "Demented Druid Spirit"], label: "Druid spirits", say: "More spirits. Noxious Breath leaves half the raid asleep in the grass." }],
+  "Lethon": [{ at: 0.75, spawn: ["Spirit Shade", "Spirit Shade"], label: "Draw Spirit", say: "Lethon draws a Spirit Shade out of every raider. The shades drift towards him to heal him." },
+    { at: 0.4, spawn: ["Spirit Shade", "Spirit Shade"], label: "Draw Spirit", say: "Draw Spirit again: the shades have to die before they reach him." }],
+  "Emeriss": [{ at: 0.75, label: "Corruption of the Earth", say: "Emeriss: \"Taste your world's corruption!\" Corruption of the Earth eats away at everyone, and mushrooms sprout from the dead." },
+    { at: 0.4, label: "Corruption of the Earth", pool: ["Volatile Infection", "Noxious Breath", "Tail Sweep"], say: "Another Corruption of the Earth. The healers are out of mana." }],
+  "Taerar": [{ at: 0.75, spawn: ["Shade of Taerar", "Shade of Taerar", "Shade of Taerar"], label: "Shades of Taerar", say: "Taerar vanishes and three Shades of Taerar take his place." },
+    { at: 0.4, spawn: ["Shade of Taerar", "Shade of Taerar", "Shade of Taerar"], label: "Shades of Taerar", say: "The shades again, and Bellowing Roar sends the raid running." }],
 };
 function foePool(name, kind, rank, who) {
   if (who && who.cls) return pvpPool(who.cls, who.role); // a player in a battleground

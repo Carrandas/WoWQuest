@@ -243,6 +243,10 @@ const RAID_INFO = {
   "Ruins of Ahn'Qiraj": { size: 20, gs: 82, lock: 3, need: "Zul'Gurub", needClears: 2, wipe: 0.1, set: null, ilvl: [67, 72], last: "Ossirian the Unscarred" },
   "Temple of Ahn'Qiraj": { size: 40, gs: 96, lock: 7, need: "Blackwing Lair", needClears: 2, wipe: 0.22, set: 3, ilvl: [75, 81], last: "C'Thun" },
   "Naxxramas": { size: 40, gs: 100, lock: 7, need: "Temple of Ahn'Qiraj", needClears: 2, wipe: 0.21, set: 4, ilvl: [80, 90], last: "Kel'Thuzad" },
+  // the world bosses (wboss.js): out in the open, no lockout (once killed, gone for a few days), no attunement
+  "Azuregos": { size: 40, gs: 84, lock: 1, need: null, wipe: 0.14, set: null, ilvl: [70, 75], last: "Azuregos", world: true },
+  "Lord Kazzak": { size: 40, gs: 86, lock: 1, need: null, wipe: 0.15, set: null, ilvl: [71, 76], last: "Lord Kazzak", world: true },
+  ...Object.fromEntries(["Ysondre", "Lethon", "Emeriss", "Taerar"].map(n => [n, { size: 40, gs: 92, lock: 1, need: null, wipe: 0.17, set: null, ilvl: [72, 77], last: n, world: true }])),
 };
 const SET_ILVL = [60, 66, 76, 78, 86];
 const SET_SLOTS = [["Head", "Shoulder", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet"], null, null, ["Head", "Shoulder", "Chest", "Legs", "Feet"], null];
@@ -253,6 +257,13 @@ const LEGENDARY = {
 // each dungeon and raid becomes { name, min, max, side (A, H or B for both), abbr, trash: [...], bosses: [...], loot: [{ name, tag }] }
 for (const list of [DUNGEONS, RAIDS]) list.forEach(([name, min, max, side, abbr, trash, bosses, loot], i) =>
   list[i] = { name, min, max, side, abbr, trash: trash.split(","), bosses: bosses.split(","), loot: loot.split(",").map(x => { const [n, tag] = x.split("|"); return { name: n, tag }; }) });
+// the world bosses as one-boss rows (not in RAIDS: they come up on their own, see wboss.js)
+const WB_DRAGON_LOOT = "Nightmare Blade|m,Hammer of Bestial Fury|c,Polished Ironwood Crossbow|m,Green Dragonskin Cloak,Acid Inscribed Pauldrons,Trance Stone|c,Strangely Glyphed Legplates,Deviate Growth Cap|c";
+const WB_ROWS = [
+  ["Azuregos", "Azuregos", "Typhoon|m,Fang of the Mystics|c,Unmelting Ice Girdle,Leggings of Arcane Supremacy|c,Drape of Benediction|c,Crystal Adorned Crown|c,Puissant Cape|m"],
+  ["Lord Kazzak", "Kazzak", "Empyrean Demolisher|m,Fel Infused Leggings|c,Doomhide Gauntlets|m,Ring of Entropy|c,Flayed Doomguard Belt|m"],
+  ["Ysondre", "Ysondre", WB_DRAGON_LOOT], ["Lethon", "Lethon", WB_DRAGON_LOOT], ["Emeriss", "Emeriss", WB_DRAGON_LOOT], ["Taerar", "Taerar", WB_DRAGON_LOOT],
+].map(([name, abbr, loot]) => ({ name, min: 60, max: 60, side: "B", abbr, trash: [], bosses: [name], loot: loot.split(",").map(x => { const [n, tag] = x.split("|"); return { name: n, tag }; }) }));
 // ---------- dungeon quests, picked up before the first run: name|boss that completes it|objective|faction ----------
 const DQUESTS = {
   "Ragefire Chasm": ["Slaying the Beast|Taragaman the Hungerer|Taragaman's Heart", "Hidden Enemies|Jergosh the Invoker|Jergosh's Head", "Searching for the Lost Satchel|Oggleflint|Maur Grimtotem's Satchel"],
