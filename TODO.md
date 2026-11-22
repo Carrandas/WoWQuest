@@ -15,7 +15,9 @@ Open items first, then what has shipped (with what's still missing from each).
   friends, or stays and fills up with pugs); on raid nights people late for the invite, a night called off (only after
   the first Molten Core clear), the guild leader on Ventrilo after the third wipe, the loot council handing the hero's
   upgrade to someone else; in the chronicle and in guild chat
-  - Still missing: guild achievements, the guild waiting on members who aren't attuned yet
+  - Guild achievements (a Guild heading in the journal: founding it, a full roster, server firsts, the dragons,
+    Naxxramas, the guild bank, DKP, and the drama: the loot council, Ventrilo rants, farewell posts, the main tank
+    leaving, the split), and the guild waiting on members who aren't attuned yet on a new raid's first nights
 - [x] **World chat and guild chat** (chat.js): a chat panel under the chronicle (foldable, with channel filters): General
   for the zone (people looking for help, jokes, Barrens chat with Mankrik's wife and Chuck Norris), Trade in the
   capitals (spam: WTS and WTB with real items, enchanters, portals, gold sellers, the rival guild recruiting),

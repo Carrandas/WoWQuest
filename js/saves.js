@@ -60,6 +60,7 @@ function migrate() {
   if (!S.achSocial) { S.achSocial = 1; checkAch(true, "social"); }
   if (!S.achPvp) { S.achPvp = 1; checkAch(true, "pvp"); }
   if (!S.achRaidq) { S.achRaidq = 1; checkAch(true, "raidq"); }
+  if (!S.achGuild) { S.achGuild = 1; checkAch(true, "guild"); }
 }
 
 // ---------- save files: the same data as the browser save, as a download ----------

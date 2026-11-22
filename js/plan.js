@@ -221,7 +221,7 @@ function queueDungeon(d) {
   S.meter = { dn, dmg: [], heal: [], secs: 0, last: null };
   const dq = S.dungeons.includes(dn) ? [] : (DQUESTS[dn] || []).map(x => { const [name, boss, obj, side] = x.split("|"); return { name, boss, obj, side }; }).filter(x => !x.side || x.side === S.faction[0]);
   if (dq.length) q.push({ k: "dqpick", d: `Picking up quests for ${dn}`, t: sec(6 + 3 * dq.length), dn, dq: dq.map(x => ({ name: x.name, boss: x.boss, obj: x.obj, raid, done: false })) });
-  if (raid) dramaRaidStart(q); // people late for the invite (drama.js)
+  if (raid) dramaRaidStart(q, dn); // people late for the invite, or not attuned yet (drama.js)
   q.push({ k: "lfg", d: raid ? `Waiting on the raid invite for ${dn}` : `Looking for group: "${chat}"`, t: sec(raid ? 120 : 60 + R(120)), chat: raid ? `[${S.guild ? "Guild" : "Raid"}] ${abbr} invites going out, ${RAID_INFO[dn].size} man, be on time!` : chat, dn });
   q.push({ k: "dtravel", d: `Traveling to ${dn} with the group`, t: sec(raid ? 180 : 120), dn });
   const petBoss = petDungeon(q, raid, bosses);

@@ -104,6 +104,23 @@ ACH.push(...[
   { id: "guild40", name: "Raiding Guild", desc: "Have 40 members in your guild.", test: () => !!S.guild && S.guild.roster.length + S.friends.length + 1 >= 40 },
   { id: "sfirst", name: "Server First!", desc: "Beat the rival guild to a server first.", test: () => !!S.guild && Object.values(S.guild.firsts).some(x => x.us) },
 ].map(a => ({ ...a, cat: "social" })));
+// the guild: its milestones and its drama (drama.js)
+const gd = () => S.drama || {};
+ACH.push(...[
+  { id: "gfound", name: "Guild Master", desc: "Found your own guild.", test: () => !!S.guild && !!S.guild.founder },
+  { id: "g50", name: "A Full Roster", desc: "Have 50 members in your guild.", test: () => !!S.guild && S.guild.roster.length + S.friends.length + 1 >= 50 },
+  { id: "gfirst3", name: "Realm's Finest", desc: "Beat the rival guild to three server firsts.", test: () => !!S.guild && Object.values(S.guild.firsts).filter(x => x.us).length >= 3 },
+  { id: "gfirstall", name: "Undisputed", desc: "Beat the rival guild to every server first: Onyxia, Ragnaros, Nefarian, C'Thun and Kel'Thuzad.", test: () => !!S.guild && SERVER_FIRSTS.every(([b]) => S.guild.firsts[b] && S.guild.firsts[b].us) },
+  { id: "gdragon", name: "Dragonslayers", desc: "Kill Onyxia and Nefarian with your guild.", test: () => !!S.guild && S.bossKills.Onyxia > 0 && S.bossKills.Nefarian > 0 },
+  { id: "gnaxx", name: "The Fall of Kel'Thuzad", desc: "Clear Naxxramas with your guild.", test: () => !!S.guild && raidClears("Naxxramas") > 0 },
+  { id: "gbank", name: "Deep Pockets", desc: "Have 250 gold in the guild bank.", test: () => !!S.guild && S.guild.bank && S.guild.bank.gold >= 2500000 },
+  { id: "gdkp", name: "DKP Hoarder", desc: "Save up 500 DKP.", test: () => !!S.guild && (S.guild.dkp || 0) >= 500 },
+  { id: "glc", name: "Loot Council'd", desc: "Lose an upgrade to the raid leader's friend.", test: () => (gd().lc || 0) > 0 },
+  { id: "gyell", name: "Ventrilo Veteran", desc: "Hear the guild leader rant on voice chat three times.", test: () => (gd().yells || 0) >= 3 },
+  { id: "gquit", name: "Farewell Posts", desc: "See five guildmates quit the game.", test: () => (gd().quits || 0) >= 5 },
+  { id: "gmt", name: "Who's Tanking Tonight?", desc: "Lose the main tank to the rival guild.", test: () => (gd().mtGone || 0) > 0 },
+  { id: "gsplit", name: "Picking Sides", desc: "Live through the guild splitting up.", test: () => !!gd().split },
+].map(a => ({ ...a, cat: "guild" })));
 // PvP
 ACH.push(...[
   { id: "bgwin", name: "Victory!", desc: "Win a battleground.", test: () => Object.values(S.pvp.games).some(g => g.w > 0) },
