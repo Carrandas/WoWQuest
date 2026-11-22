@@ -95,10 +95,10 @@ function trainSpells() {
   for (const sp of c.list) {
     if (sp.lvl > S.level) continue;
     const name = spellName(sp.name), rank = RANK_SPELL(sp, S.level);
+    if (cqHeld(name)) continue; // a class quest first (classq.js)
     if (!(name in S.spells)) { S.spells[name] = rank; learned.push(name); cost += S.level * S.level * 4 + 10; }
     else if (S.spells[name] < rank) { S.spells[name] = rank; ranked.push(`${name} (Rank ${rank})`); cost += S.level * S.level * 4 + 10; }
-    if (/^Summon (Warhorse|Felsteed)$/.test(name)) S.mount = Math.max(S.mount, 1);
-    if (/^Summon (Charger|Dreadsteed)$/.test(name)) S.mount = 2;
+    classMountSpell(name);
   }
   cost = Math.min(cost, S.money); S.money -= cost;
   if (S.mounts) mountOwn(); // class mounts (Felsteed, Warhorse...) go into the collection
@@ -330,7 +330,7 @@ function newHero(f) {
     buffs: {}, cons: { hp: 0, mp: 0, elix: 0, stone: 0, food: 10, drink: CLASSES[f.cls].mp ? 10 : 0, band: 0, bomb: 0, feast: 0, flask: 0, pvp: 0 },
     prof: newProf(pairsFor(f.cls).includes(f.prof) ? f.prof : PAIR_FOR[f.cls], 1), elites: [], feats: [], zones: [], dstat: {}, ach: {},
     parts: {}, legendaries: [], lock: {}, runs: 0, trip: 0, cd: {}, achProf: 1,
-    bossKills: {}, runs60: 0, att: {}, attN: {}, aq: newAq(), achRaidq: 1, wb: newWb(), minipets: {}, companion: null, oox: [], mounts: {}, rep: {}, wintersaber: 0, wsToday: null, goals: [], goalsDone: {}, goalAuto: true, friends: [], duo: null, guild: null, achSocial: 1, pvp: newPvp(), achPvp: 1, wpvp: newWpvp(), pet: null, demons: {}, petStats: { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 }, rareHunt: null,
+    bossKills: {}, runs60: 0, att: {}, attN: {}, cq: {}, aq: newAq(), achRaidq: 1, wb: newWb(), minipets: {}, companion: null, oox: [], mounts: {}, rep: {}, wintersaber: 0, wsToday: null, goals: [], goalsDone: {}, goalAuto: true, friends: [], duo: null, guild: null, achSocial: 1, pvp: newPvp(), achPvp: 1, wpvp: newWpvp(), pet: null, demons: {}, petStats: { tamed: 0, rares: [], summoned: [], infernal: 0, doom: 0 }, rareHunt: null,
     kills: 0, deaths: 0, qdone: 0, qid: 0, since: 0, curQ: 0, repair: 0, dg: null, time: 0, log: [], logId: 0, task: null, queue: [], speed: 1, savedAt: Date.now() };
   SLOTS.forEach(s => S.equip[s] = null);
   S.equip["Main Hand"] = { name: c.start, ilvl: 2, q: 1, slot: "Main Hand" };

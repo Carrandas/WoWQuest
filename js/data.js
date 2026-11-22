@@ -66,7 +66,7 @@ const CLASSES = {
     sfx: ["Eagle", "Owl", "Monkey", "Tiger"],
     trees: ["Elemental", "Enhancement", "Restoration"], ult: ["Elemental Mastery", "Stormstrike", "Mana Tide Totem"],
     verbs: ["Smacking", "Battling", "Calling the elements on", "Taking on"],
-    spells: "1 Lightning Bolt* 10|1 Rockbiter Weapon 7|1 Healing Wave 10|4 Earth Shock* 7|4 Stoneskin Totem 6|6 Earthbind Totem|8 Lightning Shield 7|10 Searing Totem* 6|10 Stoneclaw Totem 6|10 Flame Shock* 6|10 Flametongue Weapon 6|12 Purge 2|12 Fire Nova Totem* 5|14 Frost Shock* 4|16 Cure Poison|18 Tremor Totem|20 Ghost Wolf|20 Lesser Healing Wave 6|20 Frostbrand Weapon 5|20 Healing Stream Totem 5|22 Water Breathing|26 Mana Spring Totem 4|28 Water Walking|30 Astral Recall|30 Reincarnation|30 Windfury Weapon 4|32 Chain Lightning* 4|40 Chain Heal 3|40 Mail" },
+    spells: "1 Lightning Bolt* 10|1 Rockbiter Weapon 7|1 Healing Wave 10|4 Earth Shock* 7|4 Stoneskin Totem 6|6 Earthbind Totem|8 Lightning Shield 7|10 Searing Totem* 6|10 Stoneclaw Totem 6|10 Flame Shock* 6|10 Flametongue Weapon 6|12 Purge 2|12 Fire Nova Totem* 5|14 Frost Shock* 4|16 Cure Poison|18 Tremor Totem|20 Ghost Wolf|20 Lesser Healing Wave 6|20 Frostbrand Weapon 5|20 Healing Stream Totem 5|22 Water Breathing|26 Mana Spring Totem 4|28 Water Walking|30 Astral Recall|30 Reincarnation|30 Windfury Weapon 4|30 Grounding Totem|32 Windfury Totem|32 Chain Lightning* 4|40 Chain Heal 3|40 Mail" },
   Mage: { color: "#69ccf0", res: "Mana", armor: ["Cloth", "Cloth"], prime: "INT", w: [0, 0, 1, 4, 2], hp: 15, mp: 18,
     start: "Bent Staff", blurb: "Fireballs, Frost Nova, and a fridge full of water.",
     main: ["Staff", "Dagger", "Spellblade"], off: ["Orb", "Tome", "Focus"], ranged: ["Wand"],

@@ -62,7 +62,9 @@ function wbSpawnLine(up) {
 function wbPick() {
   if (S.level < 60) return null;
   const ups = Object.values(S.wb.up).filter(u => { const ri = RAID_INFO[u.who]; return ri && gearScore() >= ri.gs; });
-  if (!ups.length || Math.random() >= (S.guild ? 0.6 : 0.3)) return null;
+  if (!ups.length) return null;
+  const want = ups.find(u => attWantsBoss(u.who)); if (want) return wbRow(want.who); // a quest step waits for it
+  if (Math.random() >= (S.guild ? 0.6 : 0.3)) return null;
   const u = pick(ups); return wbRow(u.who);
 }
 function queueWB(row) {

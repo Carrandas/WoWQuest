@@ -169,6 +169,7 @@ function queueCity() {
   const q = S.queue, c = cls(), local = S.level < 10, where = local ? hub() : city();
   if (!local) q.push({ k: "travel", d: `Hearthing to ${where}`, t: sec(14, 1), to: "city" });
   q.push({ k: "train", d: `Training with your ${S.cls.toLowerCase()} trainer in ${where}`, t: sec(10) });
+  cqQueue(q); // a class quest the trainer has
   const p = S.prof;
   if (p && trainCap()) { const c = crafts()[0]; q.push({ k: "craft", d: `Crafting ${CRAFT_AT[c]} (${c} ${Math.max(1, p.sk[c])})`, t: sec(12) }); }
   if (S.repair > 0) q.push({ k: "repair", d: `Repairing gear at the blacksmith`, t: sec(5) });
@@ -176,8 +177,8 @@ function queueCity() {
   if (!local) aqCity(q); // the Ahn'Qiraj war effort: supplies handed in
   if (!local && !ev) wbCity(q, where); // a head on the city gates
   if (!local && !ev) q.push({ k: "shop", d: `Browsing the Auction House in ${where}`, t: sec(18) });
-  if (S.level >= 40 && S.mount < 1) q.push({ k: "mount", d: `Visiting the riding trainer`, t: sec(8) });
-  if (S.level >= 60 && S.mount < 2) q.push({ k: "mount", d: `Counting gold for an epic mount`, t: sec(6) });
+  if (S.level >= 40 && S.mount < 1 && !classMount()) q.push({ k: "mount", d: `Visiting the riding trainer`, t: sec(8) });
+  if (S.level >= 60 && S.mount < 2 && !classMount()) q.push({ k: "mount", d: `Counting gold for an epic mount`, t: sec(6) });
   q.push({ k: "choose", d: `Studying the map for the next adventure`, t: sec(6) });
 }
 
