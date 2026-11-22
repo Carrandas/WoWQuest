@@ -17,7 +17,7 @@ const unitFrame = (cls, u) => `<div class="unit${cls ? " " + cls : ""}"><div cla
 function gameShell() {
   $("app").innerHTML = `
   <div class="topbar">
-    <div class="brand" id="brand">WoWQuest</div>
+    <div class="brand" id="brand" title="WoWQuest v${VERSION}">WoWQuest<small class="ver">v${VERSION}</small></div>
     <div class="controls">
       <span class="speedbox" id="speedbox" ${dev ? "" : "hidden"}><span class="lbl">speed</span>
         <div class="seg" id="speed">${SPEEDS.map(n => `<button type="button" data-s="${n}" aria-pressed="false">${n}×</button>`).join("")}</div></span>
