@@ -36,7 +36,6 @@ Open items first, then what has shipped (with what's still missing from each).
 - [ ] **Damage meter numbers**
   - Base your own damage on your actual casts instead of a share of the group's
   - Raid numbers run low (about 125 dps/hps per player); raise raid boss health and heal sizes
-- [ ] **Area spells on boss adds** (bosses still go down one target at a time)
 - [ ] **World chat and guild chat** (a chat panel, or chat lines in the chronicle that can be filtered)
   - General and Trade chat for the zone (Barrens chat, Chuck Norris jokes, "LF healer for Strat", gold sellers,
     "Where is Mankrik's wife?"), Looking for Group, the odd world PvP shout ("Southshore under attack!")
@@ -56,6 +55,9 @@ Open items first, then what has shipped (with what's still missing from each).
 
 ## Done
 
+- [x] **Area spells on boss adds** (`layoutChunks` in foes.js): a boss's adds (at the pull, or when a phase brings them)
+  go down together when the group has area damage (`groupAoe`, or the hero's own), in one stretch and faster than one
+  at a time: Garr's Firesworn, Lucifron's Protectors, Ragnaros's Sons of Flame
 - [x] **Resistance as a real stat** (resist.js): fire, nature, frost and shadow, from the resistance gear chains, the
   Onyxia Scale Cloak and the raid's buffs (paladin auras, shaman totems, Aspect of the Wild, Shadow Protection, Gift
   of the Wild: whoever is in the group); Ragnaros, Magmadar, Princess Huhuran, Kel'Thuzad and Sapphiron (a wall without
