@@ -4,11 +4,6 @@ Open items first, then what has shipped (with what's still missing from each).
 
 ## Open
 
-- [ ] **World chat and guild chat** (a chat panel, or chat lines in the chronicle that can be filtered)
-  - General and Trade chat for the zone (Barrens chat, Chuck Norris jokes, "LF healer for Strat", gold sellers,
-    "Where is Mankrik's wife?"), Looking for Group, the odd world PvP shout ("Southshore under attack!")
-  - Guild chat with the roster's personalities: grats on levels and loot, raid reminders, arguments, the guild leader's
-    message of the day, someone asking for a summon
 - [ ] **Guild drama** (the guild as people, not a roster)
   - Loot: the druid who rolls on cloth, ninja looters, loot council fights, the raid leader's friends getting
     promoted and geared first, a DKP fight over a legendary
@@ -23,6 +18,14 @@ Open items first, then what has shipped (with what's still missing from each).
 
 ## Done
 
+- [x] **World chat and guild chat** (chat.js): a chat panel under the chronicle (foldable, with channel filters): General
+  for the zone (people looking for help, jokes, Barrens chat with Mankrik's wife and Chuck Norris), Trade in the
+  capitals (spam: WTS and WTB with real items, enchanters, portals, gold sellers, the rival guild recruiting),
+  LookingForGroup (dungeons for the level, pugs at 60), Guild (the roster's personalities: grats, raid invites and raid
+  talk, dungeons, PvP, DKP, jokes, real life) and whispers (friends asking to group up for a quest or a dungeon, gold
+  sellers, beggars); lines on a timer per channel (quieter in dungeons, only the guild in a raid) and from events (a
+  ding, an epic, a first kill, a wipe, the raid forming); kept in memory, with its own random numbers (gameplay stays
+  exactly the same)
 - [x] **Boss wipes from the fight itself** (fightsim.js): every boss pull is played once as it starts, tick by tick,
   and stored on the task (who died when and to what, wiped or not, at how much of the boss's health); the bars act it
   out (the dead drop to 0 and stop, on a wipe the rest go down after them). Tanks soak the boss and hand it on when they

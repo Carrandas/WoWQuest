@@ -97,6 +97,7 @@ function duoStart() {
   const f = pick(S.friends);
   S.duo = { name: f.name, left: 25 + R(30) };
   log(`${f.name} whispers: "Need a hand? I'm on the same quests." They join you for a while.`, "chat");
+  chatEvent("whisper", { name: f.name, cls: f.cls, txt: "Need a hand? I'm on the same quests." });
 }
 
 // ---------- dungeons and raids ----------

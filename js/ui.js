@@ -69,6 +69,7 @@ function gameShell() {
         <div class="tabmeta"><small id="elapsed"></small></div>
         <ul class="log" id="log"></ul><ul class="journal" id="journal" hidden></ul><ul class="rows quests" id="quests" hidden></ul>
       </div>
+      ${chatPanel()}
     </div>
     <div class="col c-foe">
       <div class="sec foe idle" id="foe">
@@ -91,6 +92,7 @@ function gameShell() {
   renderFolds();
   onButton("dmMode", b => { dmMode = b.dataset.m; renderMeter(true); });
   onButton("dmScope", b => { dmScope = b.dataset.s; renderMeter(true); });
+  chatSetup();
   renderSpeed(); renderCharTab();
 }
 // collapsible boxes (progress meters, group frames, damage meter), remembered in this browser
@@ -514,6 +516,7 @@ function loop(now) {
   if (S) {
     advance(dt * speed);
     if (dirty) { renderLists(); dirty = false; }
+    renderChat();
     renderBars();
     saveTimer += dt;
     if (saveTimer > 5000) { saveTimer = 0; save(); setTimeout(() => { const el = $("saved"); if (el) el.textContent = ""; }, 1200); }

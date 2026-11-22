@@ -69,6 +69,7 @@ function gain(it, how) {
   if (power(it) > power(cur)) {
     S.equip[it.slot] = it;
     log(`${how} ${it.name} (item level ${it.ilvl}). Equipped.`, "loot" + Math.min(5, Math.max(2, it.q)));
+    if (it.q >= 4) chatEvent("epic");
     if (cur && cur.q >= 1) addBag({ name: cur.name, val: sellValue(cur), q: cur.q });
     return true;
   }
@@ -118,6 +119,7 @@ function gainXp(n) {
     if (S.level === 60) { S.xp = 0; log(`DING! Level 60! ${S.name} has reached the level cap after ${fmtPlayed(S.time)} played.`, "ding"); }
     else log(`Level ${S.level}! ${gains.join(", ")}.`, "lvl");
     if (S.level === 10) log(`Talent points unlocked. Going ${c.trees[S.spec]}.`, "spell");
+    chatEvent("level", S.level);
     talentGains(S.level - 1, S.level).forEach(g => log(`Talent: ${g}.`, "spell"));
   }
   dirty = true;
