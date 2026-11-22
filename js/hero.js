@@ -188,6 +188,26 @@ const stoneName = () => tierAt(STONE)[1] + (S.cls === "Paladin" ? " Weightstone"
 const hpPot = () => tierAt(HP_POT)[1], mpPot = () => (tierAt(MP_POT) || MP_POT[0])[1];
 // the stat that matters most for this class and spec (feral druids and enhancement shamans don't want intellect)
 const mainStat = () => isCaster() ? "INT" : cls().prime !== "INT" ? cls().prime : S.cls === "Shaman" ? "STR" : "AGI";
+// the stats on the hero's gear, for the character panel: a budget per item from its item level and quality, spread
+// the way the spec wants them (a cat's gear is agility, strength and stamina; a healer's intellect and spirit).
+// Shown only: the game's sums (health, mana) still run on the level-up stats
+const GEAR_SPLIT = {
+  str: [0.4, 0.15, 0.35, 0.05, 0.05], agi: [0.15, 0.45, 0.3, 0.05, 0.05], tank: [0.25, 0.2, 0.45, 0.05, 0.05],
+  caster: [0, 0, 0.3, 0.45, 0.25], heal: [0, 0, 0.3, 0.4, 0.3],
+};
+function gearSplit() {
+  const role = heroRole();
+  if (role === "heal") return GEAR_SPLIT.heal;
+  if (isCaster()) return GEAR_SPLIT.caster;
+  if (role === "tank") return S.cls === "Druid" ? [0.2, 0.3, 0.45, 0.03, 0.02] : GEAR_SPLIT.tank;
+  return mainStat() === "AGI" ? GEAR_SPLIT.agi : GEAR_SPLIT.str;
+}
+function gearStats() {
+  const split = gearSplit(), out = {}; STATS.forEach(k => out[k] = 0);
+  SLOTS.forEach(s => { const it = S.equip[s]; if (!it || it.slot === "Ranged" && !["Hunter", "Warrior", "Rogue"].includes(S.cls)) return; const b = it.ilvl * 0.45 * QMULT[it.q || 1] * (s === "Main Hand" ? 1.6 : 1); STATS.forEach((k, i) => out[k] += b * split[i]); });
+  STATS.forEach(k => out[k] = Math.round(out[k]));
+  return out;
+}
 function elixirName() { const e = tierAt(ELIXIR[mainStat()]); return e && e[1]; }
 function flaskName() { return S.cls === "Priest" || (S.cls === "Druid" && S.spec === 2) || (S.cls === "Paladin" && S.spec === 0) ? "Flask of Distilled Wisdom" : isCaster() ? "Flask of Supreme Power" : "Flask of the Titans"; }
 
