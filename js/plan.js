@@ -200,7 +200,7 @@ function pickDungeon() {
   if (S.level >= 60) {
     const open = RAIDS.filter(raidOpen);
     if (open.length && Math.random() < 0.7) return goalRaid(open) || (Math.random() < 0.7 ? open[open.length - 1] : pick(open));
-    return wbPick() || wpPick() || pvpPick() || goalDungeon() || attDungeon() || pick(DUNGEONS.filter(d => d.min >= 52 && ok(d)));
+    return wbPick() || siPick() || wpPick() || pvpPick() || goalDungeon() || attDungeon() || pick(DUNGEONS.filter(d => d.min >= 52 && ok(d)));
   }
   return DUNGEONS.find(d => ok(d) && !S.dungeons.includes(d.name) && S.level >= d.min && S.level <= d.min + 6);
 }

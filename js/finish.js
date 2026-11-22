@@ -172,7 +172,7 @@ const FINISH = {
       S.queue.push({ k: "farm", d, t: sec(240) });
     }
     if (S.level >= 60) aqWarQueue(S.queue) || attTrip(S.queue); // the Ten Hours War, or an attunement step that is a trip
-    const d = pickDungeon(); if (d) (BGS.includes(d) ? queueBG : WP_RAIDS.includes(d) ? queueWP : WB_ROWS.includes(d) ? queueWB : queueDungeon)(d);
+    const d = pickDungeon(); if (d) (d.si ? queueSI : BGS.includes(d) ? queueBG : WP_RAIDS.includes(d) ? queueWP : WB_ROWS.includes(d) ? queueWB : queueDungeon)(d);
   },
   lfg(t) {
     log(`[${pick(PLAYERS)}]: ${t.chat}`, "chat");
@@ -280,7 +280,7 @@ const FINISH = {
   ...PVP_FINISH, // bgq, bgin, bgobj, bgrez, bgend
   ...WP_FINISH, // wpsee, wpgo, wpend, wpcity
   ...ATT_FINISH, // att, aqhand, aqwar
-  ...WB_FINISH, ...CQ_FINISH, // wbsee, wbgo, wbobj, wbhead
+  ...WB_FINISH, ...CQ_FINISH, ...SI_FINISH, // wbsee, wbgo, wbobj, wbhead; cq; siend
 };
 function finish(t) {
   const ve = vitalEnd(t); S.hpF = ve[0]; S.mpF = ve[1]; partyFinish(t);
@@ -289,6 +289,7 @@ function finish(t) {
   pvpWeek();
   attTick();
   wbTick();
+  siTick();
   goalCheck();
   checkAch();
   dirty = true;

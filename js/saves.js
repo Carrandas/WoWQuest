@@ -31,6 +31,7 @@ function migrate() {
   cqMigrate(); // class quests came later
   legendMigrate(); // and the legendaries as quest chains
   if (!S.wb) S.wb = newWb();
+  if (!S.si) { S.si = newSi(); if (S.lock.Naxxramas || S.dungeons.includes("Naxxramas")) S.si.start = S.si.end = S.time; } // the Scourge Invasion came later: over for anyone already in Naxxramas
   if (!S.aq) { S.aq = newAq(); if (AQ_RAIDS.some(n => S.dungeons.includes(n) || S.lock[n])) { S.aq.open = true; S.aq.start = S.aq.end = S.aq.gong = S.time; S.aq.by = "someone"; } }
   if (!S.bossKills) { S.bossKills = {}; RAIDS.filter(r => S.dungeons.includes(r.name)).forEach(r => r.bosses.forEach(b => S.bossKills[b] = 1)); }
   // pets used to be a buff; now they're the real thing (pets.js)
