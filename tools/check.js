@@ -189,8 +189,8 @@ async function endgame(seeds, days) {
     const good = !t || (m != null && m >= t[0] && m <= t[1]); if (!good) ok = false;
     console.log(`  ${n.padEnd(22)} ${m == null ? "not cleared" : "day " + m.toFixed(1)}${never ? ` (${never} of ${vals.length} never)` : ""}${t ? `   target ${t[0]}-${t[1]} ${good ? "ok" : m == null || m > t[1] ? "LATE" : "EARLY"}` : ""}`);
   }
-  // the epic mount, for classes that buy it (paladins and warlocks get theirs from a class quest at 60)
-  const ep = outs.filter((r, i) => r && !["Paladin", "Warlock"].includes(jobs[i].h[1])).map(r => r.epic == null ? Infinity : r.epic).sort((x, y) => x - y), em = ep[ep.length >> 1];
+  // the epic mount: bought, or the paladin's and warlock's quest line
+  const ep = outs.filter(r => r).map(r => r.epic == null ? Infinity : r.epic).sort((x, y) => x - y), em = ep[ep.length >> 1];
   console.log(`  epic mount            ${em === Infinity ? "not bought by half of them" : "day " + em.toFixed(1)} (bought by ${ep.filter(v => v !== Infinity).length} of ${ep.length})   target 20-45 ${em >= 20 && em <= 45 ? "ok" : em < 20 ? "EARLY" : "LATE"}`);
   if (!(em >= 20 && em <= 45)) ok = false;
   console.log(ok ? "ENDGAME OK" : "ENDGAME OFF TARGET");

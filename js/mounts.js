@@ -18,8 +18,8 @@ const otherRaces = () => Object.keys(RACES).filter(r => RACES[r].f === S.faction
 // every mount this hero could collect: { name, epic, where }
 function mountList() {
   const r = race(), out = [{ name: r.mount, epic: false, where: `Riding trainer in ${r.city}, from level 40 (90g)` }, { name: r.epic, epic: true, where: `Epic riding in ${r.city}, at 60 (1000g)` }];
-  if (S.cls === "Paladin") out.push({ name: "Warhorse", epic: false, where: "Paladin class mount, level 40" }, { name: "Charger", epic: true, where: "Paladin class quest, level 60" });
-  if (S.cls === "Warlock") out.push({ name: "Felsteed", epic: false, where: "Warlock class mount, level 40" }, { name: "Dreadsteed", epic: true, where: "Warlock class quest, level 60" });
+  if (S.cls === "Paladin") out.push({ name: "Warhorse", epic: false, where: "Paladin class quest, level 40 (The Tome of Nobility)" }, { name: "Charger", epic: true, where: "Paladin quest line at 60 (The Charger)" });
+  if (S.cls === "Warlock") out.push({ name: "Felsteed", epic: false, where: "Warlock class quest, level 40" }, { name: "Dreadsteed", epic: true, where: "Warlock quest line at 60 (The Dreadsteed of Xoroth)" });
   otherRaces().forEach(o => { const c = RACE_REP[o];
     out.push({ name: RACES[o].mount, epic: false, where: `Exalted with ${c} (Runecloth turn-ins at 60)`, rep: c }, { name: RACES[o].epic, epic: true, where: `Exalted with ${c}, with epic riding`, rep: c }); });
   if (S.faction === "Alliance") out.push({ name: "Winterspring Frostsaber", epic: true, rare: true, where: "Exalted with the Wintersaber Trainers (Winterspring quests at 60)" });

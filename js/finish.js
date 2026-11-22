@@ -81,6 +81,7 @@ const FINISH = {
   kill(t) {
     S.since = (S.since || 0) + 1;
     if (t.wp) return wpEnd(t); // world PvP: a player, not a mob
+    if (t.cq) return cqFightEnd(t); // a class quest's named fight
     const sf = soloFight(t), who = n => t.elite ? n : article(n), by = t.killer ? `${who(t.killer.src)}'s ${t.killer.a}` : who(t.mob);
     if (sf.drank && S.cons.hp > 0) S.cons.hp--;
     petAfterFight(t, sf);
@@ -300,7 +301,7 @@ const FINISH = {
   ...PVP_FINISH, // bgq, bgin, bgobj, bgrez, bgend
   ...WP_FINISH, // wpsee, wpgo, wpend, wpcity
   ...ATT_FINISH, // att, aqhand, aqwar
-  ...WB_FINISH, // wbsee, wbgo, wbobj, wbhead
+  ...WB_FINISH, ...CQ_FINISH, // wbsee, wbgo, wbobj, wbhead
 };
 function finish(t) {
   const ve = vitalEnd(t); S.hpF = ve[0]; S.mpF = ve[1]; partyFinish(t);

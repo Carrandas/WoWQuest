@@ -10,7 +10,7 @@ const GOAL_FARM = 0.3;               // gold goals: the chance to farm between d
 // can't be picked yet, or null), prog() → [now, of] (of null: no bar), txt() (progress in words), done() }
 function goalDefs() {
   const out = [], bk = b => S.bossKills[b] || 0, g = c => Math.floor(c / 10000);
-  if (S.mount < 2) out.push({ id: "epic", name: "Epic mount", what: `Farm gold between raid nights for epic riding and a ${race().epic}. Two to six weeks.`,
+  if (S.mount < 2 && !classMount()) out.push({ id: "epic", name: "Epic mount", what: `Farm gold between raid nights for epic riding and a ${race().epic}. Two to six weeks.`,
     prog: () => [Math.min(S.money, EPIC_MOUNT_COST), EPIC_MOUNT_COST], txt: () => `${g(S.money)} of ${g(EPIC_MOUNT_COST)}g`, done: () => S.mount >= 2 });
   else out.push({ id: "gold", name: "A fat purse", what: "Keep farming after the epic mount until there's 2000 gold in the bank. A few weeks.",
     prog: () => [Math.min(S.money, GOAL_GOLD), GOAL_GOLD], txt: () => `${g(S.money)} of ${g(GOAL_GOLD)}g`, done: () => S.money >= GOAL_GOLD });

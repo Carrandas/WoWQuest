@@ -48,12 +48,11 @@ Open items first, then what has shipped (with what's still missing from each).
     as a raid fight. Swords, fist weapons and tanks only (no priests with Thunderfury)
   - Sulfuras: the Eye of Sulfuras plus the Sulfuron Hammer, which needs a blacksmith (the hero, or paying one)
   - Atiesh: the Anachronos quest and the four class versions (mage, warlock, priest, druid)
-  - Class quest weapons:
-    - Benediction / Anathema (priest): the Eye of Divinity from Majordomo Executus, the Splinter of Nordrassil
-    - Rhok'delar and Lok'delar (hunter): the Ancient Petrified Leaf from Majordomo, then four demons to kill alone
-      in Ashenvale, Azshara, Felwood and the Swamp of Sorrows: a real test for the pet
+  - Class quest weapons (Benediction and Rhok'delar are in, classq.js):
     - Quel'Serrar (tanks): the Foror's Compendium from Dire Maul, tempered in Onyxia's breath
-    - Shaman and druid quests, and the warlock and paladin epic mount quests as proper chains (mounts already in)
+    - Lok'delar, the stave that comes with Rhok'delar; the four demons' real spots (Ashenvale, Azshara, Felwood,
+      the Swamp of Sorrows)
+    - Priest racial spells (Fear Ward, Shadowguard, Touch of Weakness, Starshards...) from their quests at 10 and 20
   - Goals for each ("Thunderfury: 2 of 2 Bindings, 3 of 10 Elementium"), with the long chain as the grind
 - [ ] **More to do at 60** (what's left of "Life at 60" below)
   - Fishing as the third secondary skill: fishing trips, Nat Pagle's quests, the odd rare catch (Old Ironjaw, Old
@@ -102,6 +101,12 @@ Open items first, then what has shipped (with what's still missing from each).
 - [ ] **Expansion packs** (eventually)
 
 ## Done
+
+- [x] **Class quests** (classq.js): spells held back until their quest is done, on a city visit with a named fight
+  (Bear Form and Moonglade, Aquatic Form, the warlock's Voidwalker, Succubus, Felhunter and Felsteed, the four shaman
+  totem quests, Tame Beast, Defensive and Berserker Stance, Instant Poison, Redemption, the Warhorse), the Whirlwind Axe
+  and Verigan's Fist; at 60 the Charger and the Dreadsteed as quest chains with an 800 gold materials step (instead of
+  the 1000 gold epic mount, landing in the same weeks), Rhok'delar and Benediction / Anathema as goals
 
 - [x] **Professions**: gathering while questing, crafting on city visits, skill tiers to Artisan 300, recipes by
   colour, gear crafts (blue from skill 150), Tailoring bags, Alchemy potions and flasks, Enchanting (disenchanting,

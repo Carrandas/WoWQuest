@@ -9,7 +9,9 @@
 //   run:  a level 60 dungeon cleared (arg: the dungeon, or two joined by "/"; n: the chance a clear does it (the drop isn't
 //         there, the group skips the boss), or with "x": that many clears)
 //   boss: a raid boss killed (arg: the boss)
+//   boss: with n a number: only kills from now on count, each with that chance (a drop); arg may name several, joined by "/"
 //   gold: paid (arg: copper)
+//   fight: a named fight alone (arg: the foe, n: its level), played out like a class quest's (classq.js)
 const ATT_CHAINS = {
   mc: { raid: "Molten Core", name: "Attunement to the Core", steps: [
     ["go", "Find Lothos Riftwaker at the foot of Blackrock Mountain", 40],
@@ -105,8 +107,10 @@ const attStep = k => S.att[k] || 0;
 const attDone = k => attStep(k) >= ATT_CHAINS[k].steps.length;
 const attCur = k => attDone(k) ? null : ATT_CHAINS[k].steps[attStep(k)];
 // the chains this hero works on: the raid ones (its own faction's); the Scepter and the resistance sets only as goals
-const attKeys = () => Object.keys(ATT_CHAINS).filter(k => !ATT_CHAINS[k].goal && (!ATT_CHAINS[k].side || ATT_CHAINS[k].side === S.faction[0]));
-const attGoalKeys = () => Object.keys(ATT_CHAINS).filter(k => ATT_CHAINS[k].goal);
+// (class quest chains, classq.js: only the hero's class)
+const attMine = k => (!ATT_CHAINS[k].side || ATT_CHAINS[k].side === S.faction[0]) && (!ATT_CHAINS[k].cls || ATT_CHAINS[k].cls === S.cls);
+const attKeys = () => Object.keys(ATT_CHAINS).filter(k => !ATT_CHAINS[k].goal && attMine(k));
+const attGoalKeys = () => Object.keys(ATT_CHAINS).filter(k => ATT_CHAINS[k].goal && attMine(k));
 const attStepTxt = k => { if (attDone(k)) return "done"; const s = attCur(k), c = typeof s[3] === "string" ? ` (${S.attN[k] || 0} of ${s[3].slice(1)})` : ""; return `step ${attStep(k) + 1} of ${ATT_CHAINS[k].steps.length}: ${s[1]}${c}`; };
 const attWorking = k => S.level >= 60 && !attDone(k) && (!ATT_CHAINS[k].goal || hasGoal("att:" + k));
 // gold kept back for the chains' gold steps that are up next (spendable() leaves it alone, like the mount savings)
@@ -117,6 +121,7 @@ function attAdvance(k) {
   S.att[k] = attStep(k) + 1; delete S.attN[k];
   if (attDone(k)) {
     if (k === "scepter") return scepterDone();
+    if (c.cls) return cqChainDone(k);
     if (c.res) return log(`${c.name} complete: ${resNow(k)} ${c.res} resistance for ${c.bosses.join(" and ")}.`, "ach");
     log(`${c.name} is done: attuned to ${c.raid}!`, "ach");
   } else log(`${c.name}: ${s[1].replace(/:.*$/, "")} done${resOf(s) ? ` (${resNow(k)} ${c.res} resistance)` : ""}. Next: ${attCur(k)[1]}.`, "quest");
@@ -143,11 +148,23 @@ function attTick() {
   if (S.level < 60) return;
   attKeys().concat(attGoalKeys()).filter(attWorking).forEach(k => {
     const s = attCur(k);
-    if (s[0] === "boss" && S.bossKills[s[2]] > 0) attAdvance(k);
+    if (s[0] === "boss" && typeof s[3] === "number") attDrop(k, s);
+    else if (s[0] === "boss" && S.bossKills[s[2]] > 0) attAdvance(k);
     else if (s[0] === "gold" && S.money >= s[2]) { spend("gear", s[2]); attAdvance(k); } // a raid key comes before the epic mount
   });
   aqTick();
 }
+// a boss step that waits for a drop: each new kill of one of its bosses, a roll
+function attDrop(k, s) {
+  const kills = s[2].split("/").reduce((a, b) => a + (S.bossKills[b] || 0), 0);
+  if (S.attN[k] == null) { S.attN[k] = kills; return; }
+  if (kills <= S.attN[k]) return;
+  S.attN[k] = kills;
+  if (Math.random() < s[3]) attAdvance(k);
+  else log(`${ATT_CHAINS[k].name}: ${s[1].replace(/:.*$/, "")}, not this time.`, "quest");
+}
+// a world boss a step is waiting for (wbPick goes for it)
+const attWantsBoss = b => attKeys().concat(attGoalKeys()).filter(attWorking).some(k => { const s = attCur(k); return s[0] === "boss" && s[2].split("/").includes(b); });
 // the dungeon a step needs (on a free evening): always for a goal's chain or the chain of a raid goal, often otherwise
 function attDungeon() {
   const ks = attKeys().concat(attGoalKeys()).filter(k => attWorking(k) && attCur(k)[0] === "run" && attCur(k)[2].split("/").some(n => !RAID_INFO[n]));
@@ -158,9 +175,10 @@ function attDungeon() {
 }
 // trips and talks: one at a time, after the city visit (a goal's chain first)
 function attTrip(q) {
-  const ks = attKeys().concat(attGoalKeys()).filter(k => attWorking(k) && attCur(k)[0] === "go");
+  const ks = attKeys().concat(attGoalKeys()).filter(k => attWorking(k) && (attCur(k)[0] === "go" || attCur(k)[0] === "fight"));
   if (!ks.length) return false;
   const k = ks.find(x => hasGoal("att:" + x)) || ks[0], s = attCur(k);
+  if (s[0] === "fight") { q.push(cqFight(`${ATT_CHAINS[k].name}: ${s[1]}`, s[2], s[3] || 60, { ch: k, st: attStep(k) })); return true; }
   q.push({ k: "att", d: `${ATT_CHAINS[k].name}: ${s[1]}`, t: sec(s[2]), ch: k, st: attStep(k) });
   return true;
 }
@@ -253,12 +271,12 @@ function aqWar(t) {
 // a goal per unfinished chain (the Scepter only before the gong)
 function attGoals(out) {
   if (S.level < 60) return;
-  attKeys().concat(S.aq.gong == null || hasGoal("att:scepter") ? ["scepter"] : [], RES_KEYS).filter(k => !attDone(k)).forEach(k => {
+  attKeys().concat(S.aq.gong == null || hasGoal("att:scepter") ? ["scepter"] : [], RES_KEYS, attGoalKeys().filter(k => ATT_CHAINS[k].cls)).filter(k => !attDone(k)).forEach(k => {
     const c = ATT_CHAINS[k], n = c.steps.length;
     if (c.res) return out.push({ id: "att:" + k, name: c.name, what: `Reputation, crafts and raid drops for ${resTarget(k)} ${c.res} resistance, worn for ${c.bosses.join(" and ")} in ${c.vs}: fewer wipes there. ${n} steps, one to three weeks.`,
       need: k === "nature" && !S.aq.open ? "Needs the Gates of Ahn'Qiraj open" : k === "frost" && !attuned("Naxxramas") ? "Needs the Naxxramas attunement (The Dread Citadel)" : null,
       prog: () => [resNow(k), resTarget(k)], txt: () => `${resNow(k)} of ${resTarget(k)} ${c.res} resistance · ${attStepTxt(k)}`, done: () => attDone(k) });
-    out.push({ id: "att:" + k, name: c.name, what: k === "scepter"
+    out.push({ id: "att:" + k, name: c.name, what: c.what ? c.what : k === "scepter"
       ? `The long quest line for the Scepter of the Shifting Sands: Anachronos, the red shard from Blackwing Lair, Narain Soothfancy's blue shard, the green from Eranikus. Finish it before the war effort ends and the Scarab Gong is ${S.name}'s: the Black Qiraji Battle Tank. Weeks, and Nefarian has to die.`
       : `The quest line to ${c.raid}: ${n} steps, mostly between raid nights. As a goal, every free evening goes to it.`,
       prog: () => [attStep(k), n], txt: () => attStepTxt(k), done: () => attDone(k) });
@@ -268,7 +286,7 @@ function attGoals(out) {
 function attRender() {
   if (S.level < 60) return "";
   const ks = attKeys().filter(k => !attDone(k) && !hasGoal("att:" + k)), a = S.aq;
-  const rows = ks.map(k => `<li class="goal"><div class="gl"><b>${esc(ATT_CHAINS[k].name)} <span class="ilvl">(${esc(ATT_CHAINS[k].raid)})</span></b><small>${esc(attStepTxt(k))}</small></div></li>`);
+  const rows = ks.map(k => `<li class="goal"><div class="gl"><b>${esc(ATT_CHAINS[k].name)} <span class="ilvl">(${esc(ATT_CHAINS[k].raid || "class quest")})</span></b><small>${esc(attStepTxt(k))}</small></div></li>`);
   if (a.start != null && !a.open) rows.push(`<li class="goal"><div class="gl"><b>The Gates of Ahn'Qiraj</b><small>${a.gong != null ? `${esc(a.by)} has rung the Scarab Gong: the Ten Hours War` : aqPct() >= 100 ? "War effort complete: waiting for the Scepter of the Shifting Sands" : `War effort ${aqPct()}%${a.hand ? `, ${a.hand} hand-in${a.hand > 1 ? "s" : ""} from ${esc(S.name)}` : ""}`}</small><div class="bar"><i style="width:${aqPct()}%"></i></div></div></li>`);
   return rows.length ? `<li class="qhead">Raid quests</li>` + rows.join("") : "";
 }

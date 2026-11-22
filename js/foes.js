@@ -400,7 +400,7 @@ function soloFight(t) {
   }
   if (killer) { fo.stop = killer.k; t.killer = { src: killer.who, a: killer.act }; }
   const sf = { tl, end: cur / hm, drank, low: low / hm, ...(pet ? { pet: { tl: pet.tl, end: pet.cur / pet.max, died: pet.died } } : {}) };
-  if (t.wp) wpOutcome(t, fo, sf); // world PvP: the result was rolled at the start
+  if (t.wp || t.cq) wpOutcome(t, fo, sf); // world PvP and class quest fights: the result was rolled at the start
   return (t.sf = sf);
 }
 // what's next when nothing is being fought
