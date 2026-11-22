@@ -23,6 +23,7 @@ function goalDefs() {
   });
   attGoals(out); // the attunement chains, the Scepter of the Shifting Sands
   siGoals(out); // the Scourge Invasion, while it's on
+  fishGoals(out); // fishing: Artisan, the city's legend, the Extravaganza
   if (!hasMount("Deathcharger's Reins")) out.push({ id: "baron", name: "Deathcharger's Reins", what: "Run Stratholme again and again for Baron Rivendare's horse. One in a hundred: a week, or months.",
     prog: () => [0, null], txt: () => `${bk("Baron Rivendare")} Baron kills`, done: () => hasMount("Deathcharger's Reins") });
   if (!hasMount("Swift Zulian Tiger") && !hasMount("Swift Razzashi Raptor")) out.push({ id: "zg", name: "A Zul'Gurub mount", what: "Raid Zul'Gurub every reset for Thekal's tiger or Mandokir's raptor. One in a hundred each.",
