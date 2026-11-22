@@ -32,7 +32,7 @@ const FACTIONS = {
       4: { txt: "Rin'wosho the Trader sells the Zandalar's best enchant for the shoulders:", ench: [["Shoulder", () => ["Zandalar Signet of Might", "Zandalar Signet of Mojo", "Zandalar Signet of Serenity"][role3()], 3]] } } },
   "Argent Dawn": { zone: "the Plaguelands", foes: ["Cauldron Lord Bilemaw", "Scourge Champion", "Plaguehound", "Skeletal Executioner", "Cursed Mage", "Living Decay"],
     turnin: "Scourgestones to the Argent Dawn at Light's Hope Chapel",
-    rewards: { 1: { txt: "Officer Pureheart at Light's Hope Chapel greets you by name." },
+    rewards: { 1: { txt: "Officer Pureheart at Light's Hope Chapel greets you by name, and the quartermaster sells you the Argent Dawn's tabard.", tabard: "Tabard of the Argent Dawn" },
       2: { txt: "Quartermaster Lightspark sells the Dawn recipes.", craft: { Blacksmithing: "Plans: Girdle of the Dawn", Leatherworking: "Pattern: Dawn Treaders", Tailoring: "Pattern: Argent Boots" } },
       3: { txt: "The Dawn's best recipes, and the Naxxramas attunement for half the price.", craft: { Blacksmithing: "Plans: Gloves of the Dawn", Tailoring: "Pattern: Golden Mantle of the Dawn" } },
       4: { txt: "Exalted with the Argent Dawn: the Naxxramas attunement is free." } } },
@@ -64,6 +64,7 @@ function facReward(f, r) {
   const craft = w.craft && crafts().map(c => w.craft[c]).find(Boolean);
   log(`${w.txt}${craft ? ` ${S.name} buys ${craft}.` : ""}`, "quest");
   if (w.item) gain(w.item(), "Reputation reward:");
+  if (w.tabard) tabardGet(w.tabard);
   if (w.ench) facEnchants(true);
 }
 // the reputation enchants: on the item in the slot now, and again on whatever replaces it (after each enchant visit)

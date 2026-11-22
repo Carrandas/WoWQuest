@@ -334,7 +334,7 @@ function renderHero() {
   $("vitals").innerHTML = [
     ["money", money(S.money)],
     ["mount", S.mount ? esc(rideName()) : S.level >= 40 ? "saving up…" : "on foot until 40"],
-    ...(S.companion ? [["companion", esc(S.companion)]] : []), ["kills", S.kills.toLocaleString()], ["quests done", S.qdone.toLocaleString()], ["deaths", S.deaths.toLocaleString()], ...spentRow(),
+    ...(S.companion ? [["companion", esc(S.companion)]] : []), ...(tabardNow() ? [["tabard", esc(tabardNow())]] : []), ["kills", S.kills.toLocaleString()], ["quests done", S.qdone.toLocaleString()], ["deaths", S.deaths.toLocaleString()], ...spentRow(),
   ].map(([k, v]) => `<li><span class="k">${k}</span><span class="v">${v}</span></li>`).join("");
   const act = activeBuffs();
   $("bCount").textContent = `${act.length} active`;

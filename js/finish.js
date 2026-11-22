@@ -280,7 +280,7 @@ const FINISH = {
   ...PVP_FINISH, // bgq, bgin, bgobj, bgrez, bgend
   ...WP_FINISH, // wpsee, wpgo, wpend, wpcity
   ...ATT_FINISH, // att, aqhand, aqwar
-  ...WB_FINISH, ...CQ_FINISH, ...SI_FINISH, ...FISH_FINISH, ...FAC_FINISH, ...FARM_FINISH, ...CAL_FINISH, // facturn; farmcd; hol, dmf, arenaend; wbsee, wbgo, wbobj, wbhead; cq; siend; fish, fishend, fishstep, fxstart, fxend
+  ...WB_FINISH, ...CQ_FINISH, ...SI_FINISH, ...FISH_FINISH, ...FAC_FINISH, ...FARM_FINISH, ...CAL_FINISH, ...FUN_FINISH, // fun; facturn; farmcd; hol, dmf, arenaend; wbsee, wbgo, wbobj, wbhead; cq; siend; fish, fishend, fishstep, fxstart, fxend
 };
 function finish(t) {
   const ve = vitalEnd(t); S.hpF = ve[0]; S.mpF = ve[1]; partyFinish(t);

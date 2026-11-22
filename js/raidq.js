@@ -252,14 +252,16 @@ function scepterDone() {
 function aqCity(q) {
   const a = S.aq; if (S.level < 60 || a.start == null || a.gong != null || S.time >= a.end || Math.floor(S.time / DAY) === a.handDay) return; // once a day
   a.handDay = Math.floor(S.time / DAY);
-  const what = pick(["20 Copper Bars", "20 Runecloth Bandages", "20 Heavy Leather", "20 Purple Lotus", "20 Baked Salmon", "20 Thorium Bars", "20 Linen Bandages", "20 Arthas' Tears", "20 Spotted Yellowtail"]);
-  q.push({ k: "aqhand", d: `Handing in ${what} for the Ahn'Qiraj War Effort`, t: sec(8), what });
+  const own = aqSupply(); if (own) aqTake(own[0]); // from the bags first, set aside now (fun.js)
+  const what = own ? "20 " + own[1] : pick(["20 Copper Bars", "20 Runecloth Bandages", "20 Heavy Leather", "20 Purple Lotus", "20 Baked Salmon", "20 Thorium Bars", "20 Linen Bandages", "20 Arthas' Tears", "20 Spotted Yellowtail"]);
+  q.push({ k: "aqhand", d: `Handing in ${what} for the Ahn'Qiraj War Effort`, t: sec(8), what, bag: own && own[0] });
 }
 function aqHand(t) {
   const a = S.aq; a.hand++;
   if (a.end != null && a.gong == null) a.end -= 2 * HOUR;
-  const cost = Math.min(30000, spendable()); if (cost) spend("mats", cost);
-  log(`Handed in ${t.what} for the war effort (${aqPct()}%). A Commendation Signet for ${S.name}.`, "quest");
+  const own = !!t.bag;
+  if (!own) { const cost = Math.min(30000, spendable()); if (cost) spend("mats", cost); }
+  log(`Handed in ${t.what}${own ? " from the bags" : " (bought on the AH)"} for the war effort (${aqPct()}%). A Commendation Signet for ${S.name}.`, "quest");
 }
 // the Ten Hours War: if the hero is about, a few waves at the Scarab Wall (flavour: the gates open on the clock either way)
 function aqWarQueue(q) {

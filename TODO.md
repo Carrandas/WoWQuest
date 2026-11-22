@@ -34,11 +34,6 @@ Open items first, then what has shipped (with what's still missing from each).
   - Base your own damage on your actual casts instead of a share of the group's
   - Raid numbers run low (about 125 dps/hps per player); raise raid boss health and heal sizes
 - [ ] **Area spells on boss adds** (bosses still go down one target at a time)
-- [ ] **More to do at 60** (what's left of "Life at 60" below)
-  - The event minipets and Mr. Pinchy; the Tabard of the Argent Dawn and other rare good-lookers with the collections
-  - The Ahn'Qiraj war effort as real materials out of the bags, and the gong-banger's moment in other heroes' chronicles
-  - Doing things for fun, as chronicle flavour: duels outside Orgrimmar or Ironforge, a lap around the world, /dance
-    on the Ironforge bank
 - [ ] **Resistance as a real stat** (resistance sets are goals today, see below)
   - A resistance per school (fire, frost, nature, shadow) from gear, enchants, potions and the raid's buffs (paladin
     auras, shaman totems: today only names), shown in the gear tab next to item level
@@ -64,6 +59,10 @@ Open items first, then what has shipped (with what's still missing from each).
 
 ## Done
 
+- [x] **The small things at 60** (fun.js): doing things for fun on city visits (duels outside the capital, the dance
+  party on the bank, a lap around the world, the Thunder Bluff elevators, the gnome race to Booty Bay), the Ahn'Qiraj war
+  effort's supplies out of the bags when the hero has them, the Tabard of the Argent Dawn (friendly) or the guild's
+  tabard on the character sheet. Mr. Pinchy left out (The Burning Crusade)
 - [x] **The calendar, the Darkmoon Faire, the holidays, the Gurubashi Arena** (calendar.js): twelve months of ten game
   days (a random start date per hero); the Darkmoon Faire the first three days of every month (Elwynn Forest and Mulgore
   in turn: prize tickets, Sayge's fortune, Darkmoon Prizes while levelling, the Amulet or Orb of the Darkmoon for 1200
