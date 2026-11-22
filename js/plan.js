@@ -180,6 +180,7 @@ function queueCity() {
   if (!local) farmCity(q); // the daily cooldowns: Arcanite, Mooncloth
   if (!local && !ev) calCity(q); // a holiday or the Darkmoon Faire that's on
   if (!local) resCity(q); // the Onyxia Scale Cloak, once Blackwing Lair is near
+  if (!local && !ev) dramaTick(); // guild drama (drama.js)
   if (!local && !ev) funCity(q); // a duel, a dance, a lap around the world
   if (!local && !ev) q.push({ k: "shop", d: `Browsing the Auction House in ${where}`, t: sec(18) });
   if (S.level >= 40 && S.mount < 1 && !classMount()) q.push({ k: "mount", d: `Visiting the riding trainer`, t: sec(8) });
@@ -205,7 +206,7 @@ function pickDungeon() {
   if (S.level >= 60) {
     const fx = fxPick(); if (fx) return fx; // Sunday afternoon in Booty Bay
     const open = RAIDS.filter(raidOpen);
-    if (open.length && Math.random() < 0.7) return goalRaid(open) || (Math.random() < 0.7 ? open[open.length - 1] : pick(open));
+    if (open.length && Math.random() < 0.7 && !dramaCalloff()) return goalRaid(open) || (Math.random() < 0.7 ? open[open.length - 1] : pick(open));
     return wbPick() || siPick() || facPick() || fishPick() || arenaPick() || wpPick() || pvpPick() || goalDungeon() || attDungeon() || pick(DUNGEONS.filter(d => d.min >= 52 && ok(d)));
   }
   return DUNGEONS.find(d => ok(d) && !S.dungeons.includes(d.name) && S.level >= d.min && S.level <= d.min + 6);
@@ -220,6 +221,7 @@ function queueDungeon(d) {
   S.meter = { dn, dmg: [], heal: [], secs: 0, last: null };
   const dq = S.dungeons.includes(dn) ? [] : (DQUESTS[dn] || []).map(x => { const [name, boss, obj, side] = x.split("|"); return { name, boss, obj, side }; }).filter(x => !x.side || x.side === S.faction[0]);
   if (dq.length) q.push({ k: "dqpick", d: `Picking up quests for ${dn}`, t: sec(6 + 3 * dq.length), dn, dq: dq.map(x => ({ name: x.name, boss: x.boss, obj: x.obj, raid, done: false })) });
+  if (raid) dramaRaidStart(q); // people late for the invite (drama.js)
   q.push({ k: "lfg", d: raid ? `Waiting on the raid invite for ${dn}` : `Looking for group: "${chat}"`, t: sec(raid ? 120 : 60 + R(120)), chat: raid ? `[${S.guild ? "Guild" : "Raid"}] ${abbr} invites going out, ${RAID_INFO[dn].size} man, be on time!` : chat, dn });
   q.push({ k: "dtravel", d: `Traveling to ${dn} with the group`, t: sec(raid ? 180 : 120), dn });
   const petBoss = petDungeon(q, raid, bosses);

@@ -4,20 +4,18 @@ Open items first, then what has shipped (with what's still missing from each).
 
 ## Open
 
-- [ ] **Guild drama** (the guild as people, not a roster)
-  - Loot: the druid who rolls on cloth, ninja looters, loot council fights, the raid leader's friends getting
-    promoted and geared first, a DKP fight over a legendary
-  - People: members late for the raid invite, someone leaving in the middle of a raid, the main tank leaving for the
-    rival guild, a guild leader yelling on voice chat after the third wipe, a member quitting the game with a farewell
-    post, the guild splitting up (and the hero picking a side)
-  - Most of it as chronicle and guild chat lines with small real effects (a raid night called off, a slot to fill, a
-    lost upgrade), so it stays fun and doesn't wreck the raid timeline
-  - Also from the guild plan: guild achievements, the guild waiting on members who aren't attuned yet
 - [ ] **Save to Google** (save the game to a Google account)
 - [ ] **Expansion packs** (eventually)
 
 ## Done
 
+- [x] **Guild drama** (drama.js): now and then on a city visit a member quits the game with a farewell post, a DKP
+  fight, the raid leader's friend promoted, a druid rolling on cloth, a ninja looter on the ignore list, the main tank
+  leaving for the rival guild (a few harder raid nights), once at 60 the guild splitting up (the hero goes with their
+  friends, or stays and fills up with pugs); on raid nights people late for the invite, a night called off (only after
+  the first Molten Core clear), the guild leader on Ventrilo after the third wipe, the loot council handing the hero's
+  upgrade to someone else; in the chronicle and in guild chat
+  - Still missing: guild achievements, the guild waiting on members who aren't attuned yet
 - [x] **World chat and guild chat** (chat.js): a chat panel under the chronicle (foldable, with channel filters): General
   for the zone (people looking for help, jokes, Barrens chat with Mankrik's wife and Chuck Norris), Trade in the
   capitals (spam: WTS and WTB with real items, enchanters, portals, gold sellers, the rival guild recruiting),
