@@ -7,8 +7,11 @@ Open items first, then what has shipped (with what's still missing from each).
 - [ ] **Wipes from the fight itself** (raid and dungeon wipes are still a roll, based on gear)
   - Today: group fights never kill anyone (health floors at 5%); boss deaths only come from a roll at the pull
     (`bossWipes` / `wipeChance`), so cooldowns, talents and healing don't decide the outcome
-  - Quick step first: each cooldown ready at the start of a boss pull lowers the wipe chance (say 10% per shield
-    or burst, 15% per heal cooldown for healers), so being prepared counts while the rest stays as it is
+  - Done, the quick step (`wipePrep` in group.js): the roll happens as the pull starts, with what the group brings
+    in: each hero cooldown ready (10% in a five-man, an eighth of that in a raid of 40), the healers' mana (low mana,
+    more wipes), the hero's healing talents; the base chances are scaled so the average wipe rate stayed where it was.
+    The chronicle names what went wrong ("Wiped on Garr at 23%: the healers ran out of mana", a boss's move from
+    `BOSS_ROT`), and the boss frame shows the same percentage
   - The real plan:
     1. Let health reach zero in `simFight`: drop the 5% floor, a member at 0 is dead, stops casting
        (shown as "dead" already) and stops taking hits; enemy hits that would land on them move to the next target

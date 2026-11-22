@@ -202,7 +202,7 @@ const FINISH = {
     const raid = !!(S.dg && S.dg.raid);
     if (bossWipes(t)) {
       S.deaths++; S.repair += S.level * S.level * (raid ? 25 : 5); loseBuffs(); if (S.pet) S.pet.dead = true;
-      log(`Wiped on ${t.boss}. Corpse run…`, "death"); S.hpF = 0; (S.party || []).forEach(m => m.hp = 0);
+      log(`Wiped on ${t.boss} at ${Math.round((t.left || 0.3) * 100)}%: ${t.why || "it went wrong"}. Corpse run…`, "death"); S.hpF = 0; (S.party || []).forEach(m => m.hp = 0);
       partySwap(t); if (raid) guildWipe(t.boss);
       const ghost = { k: "ghost", d: "Running back through the instance as a ghost", t: sec(60) };
       // three wipes in a raid and it's over for tonight: on to the exit
@@ -300,7 +300,7 @@ function advance(dt) {
   S.time += dt;
   let guard = 0;
   while (dt > 0 && guard++ < 400) {
-    if (!S.task) { if (!S.queue.length) plan(); S.task = S.queue.shift() || { k: "rest", d: "Taking a breather", t: 3000 }; S.task.el = 0; useCooldowns(S.task); dirty = true; }
+    if (!S.task) { if (!S.queue.length) plan(); S.task = S.queue.shift() || { k: "rest", d: "Taking a breather", t: 3000 }; S.task.el = 0; useCooldowns(S.task); bossWipes(S.task); dirty = true; } // a boss pull's outcome is rolled as it starts
     const rem = S.task.t - S.task.el;
     if (dt >= rem) { dt -= rem; const t = S.task; S.task = null; finish(t); }
     else { S.task.el += dt; dt = 0; }
