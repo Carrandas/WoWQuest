@@ -34,6 +34,7 @@ function migrate() {
   if (!S.fish) { S.fish = newFish(S.level); S.fish.sk = clamp(S.level * 2 - 20, 0, 100); } // fishing came later: a little picked up on the way
   if (!S.resist) S.resist = newResist();
   if (!S.drama) S.drama = newDrama();
+  if (!Array.isArray(S.chatLog)) S.chatLog = []; // chat is saved with the hero now
   if (S.tabard === undefined) S.tabard = facRank("Argent Dawn") >= 1 ? "Tabard of the Argent Dawn" : null; // tabards came later
   if (!S.cal) S.cal = newCal(); // the calendar came later
   prebMigrate(); // the pre-raid set came later

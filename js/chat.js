@@ -3,11 +3,13 @@
 // recruiting), LookingForGroup (dungeons for the hero's level), Guild (the roster's personalities: grats, raid
 // invites and raid talk, dungeon and PvP talk, DKP, jokes, real life) and whispers (friends asking to group up, gold
 // sellers, beggars). Lines come on a timer per channel and from the game's events (chatEvent: a ding, an epic, a first
-// kill, a wipe, the raid forming, a friend asking to come along). Kept in memory only (CHAT, the last CHAT_MAX lines),
+// kill, a wipe, the raid forming, a friend asking to come along). Saved with the hero (S.chatLog: the last CHAT_MAX lines,
+// none older than a game day),
 // with its own random numbers so it never changes a gameplay roll.
 "use strict";
 
-const CHAT = [], CHAT_MAX = 120;
+const CHAT_MAX = 100, CHAT_AGE = DAY;
+const chatLog = () => S.chatLog || (S.chatLog = []);
 let chatDirty = true, chatTab = "all";
 // its own random numbers (gameplay rolls stay exactly as they were)
 let chatSeed = 0x2545f491;
@@ -17,8 +19,10 @@ const cR = n => Math.floor(cr() * n);
 const CH = { general: "General", trade: "Trade", lfg: "LookingForGroup", guild: "Guild", whisper: "Whisper" };
 
 function chatSay(ch, who, txt, cls) {
-  CHAT.push({ ch, who, txt, cls: cls || null, t: S.time });
-  if (CHAT.length > CHAT_MAX) CHAT.splice(0, CHAT.length - CHAT_MAX);
+  const L = chatLog();
+  L.push({ ch, who, txt, cls: cls || null, t: S.time });
+  let cut = Math.max(0, L.length - CHAT_MAX); while (cut < L.length && S.time - L[cut].t > CHAT_AGE) cut++; // old chat clears itself
+  if (cut) L.splice(0, cut);
   chatDirty = true;
 }
 
@@ -127,11 +131,13 @@ function chatEvent(kind, x) {
 // ---------- the panel ----------
 const CHAT_TABS = [["all", "All"], ["guild", "Guild"], ["general", "General"], ["trade", "Trade"], ["lfg", "LFG"], ["whisper", "Whispers"]];
 const chatPanel = () => `<div class="chatbox sec" data-fold-box="chat"><div class="chh"><span class="lbl">Chat</span><div class="seg" id="chTabs">${CHAT_TABS.map(([k, n]) => `<button type="button" data-ch="${k}" aria-pressed="${k === chatTab}">${n}</button>`).join("")}</div>${foldBtn("chat", "chat")}</div><ul class="chat" id="chat"></ul></div>`;
+let chatShown = null; // the log on screen (another save loaded: redraw)
 function renderChat() {
-  if (!chatDirty) return;
+  if (!chatDirty && chatShown === chatLog()) return;
+  chatShown = chatLog();
   const el = $("chat"); if (!el) return;
   chatDirty = false;
-  const rows = CHAT.filter(l => chatTab === "all" || l.ch === chatTab).slice(-60);
+  const rows = chatLog().filter(l => chatTab === "all" || l.ch === chatTab).slice(-60);
   const nameCol = l => l.cls && CLASSES[l.cls] ? ` style="color:${CLASSES[l.cls].color}"` : "";
   el.innerHTML = rows.map(l => l.ch === "whisper"
     ? `<li class="c-whisper"><b${nameCol(l)}>[${esc(l.who)}]</b> whispers: ${esc(l.txt)}</li>`
