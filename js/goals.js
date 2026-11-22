@@ -63,11 +63,11 @@ function addGoal(id, byHero) {
 // the hero's own picks: the next raid, then whatever takes its fancy. Never PvP (that's the player's call) or the gold goals: left alone, the hero
 // saves for the epic mount at the usual pace (weeks); a player who picks it gets there a few days sooner
 function autoGoals() {
-  const all = goalDefs().filter(d => !d.need && !hasGoal(d.id) && !S.goalsDone[d.id] && d.id !== "epic" && d.id !== "gold" && !d.id.startsWith("pvp:") && !d.id.startsWith("att:") && !d.id.startsWith("fac:") && d.id !== "avmount");
+  const all = goalDefs().filter(d => !d.need && !hasGoal(d.id) && !S.goalsDone[d.id] && d.id !== "epic" && d.id !== "gold" && !d.id.startsWith("pvp:") && (!d.id.startsWith("att:") || d.id === "att:dset2") && !d.id.startsWith("fac:") && d.id !== "avmount");
   while (S.goals.length < GOAL_AUTO) {
     const left = all.filter(d => !hasGoal(d.id)); if (!left.length) break;
     const fun = left.filter(x => !x.id.startsWith("raid:"));
-    const d = (!goalWith("raid:") && left.find(x => x.id.startsWith("raid:"))) || (fun.length ? pick(fun) : left[0]);
+    const d = (!goalWith("raid:") && left.find(x => x.id.startsWith("raid:"))) || (!raidClears("Molten Core") && left.find(x => x.id === "preraid" || x.id === "att:dset2")) || (fun.length ? pick(fun) : left[0]);
     addGoal(d.id, true);
   }
 }

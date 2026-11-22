@@ -78,8 +78,9 @@ Open items first, then what has shipped (with what's still missing from each).
   any level 52+ dungeon), the pre-raid set goal (the dungeon of a missing piece), and Dungeon Set 2 as a goal chain
   (Deliana or Mokvar, Bodley's Ghost Revealer, the Braziers, Kormok, Jarien and Sothos, Mor Grayhoof, Isalien, Lord
   Valthalak) for the class's Tier 0.5 set; two achievements
-  - Still missing: the other dungeon set pieces' real bosses (gloves, belt, boots, bracers), Tier 0.5 is usually behind
-    the hero's raid gear by the time it's done (true to classic, but a fresh 60 has little use for the goal then either)
+  - Molten Core past the third boss wipes more without the set (a week of dungeons before the first clear), and the
+    hero picks the pre-raid goals on their own until then, so Tier 0.5 is worn into the first Molten Core clears
+  - Still missing: the other dungeon set pieces' real bosses (gloves, belt, boots, bracers)
 - [x] **Farming runs** (farming.js): a route per gathering profession (herbs, Thorium and Dark Iron, devilsaurs, or
   Stratholme and the Plaguelands without one) with rare finds (Black Lotus, Arcane Crystal, Dark Iron Ore for the Thorium
   Brotherhood, Devilsaur Leather, Righteous Orbs, Essence of Undeath): kept for the crafts (flasks without the AH's

@@ -33,6 +33,11 @@ function dsetDungeon() {
   if (big.length && (Math.random() < 0.7 || dsetMissing().length === big.length)) return instanceRow(DSET_SRC[pick(big)][0]);
   return instanceRow(pick(["Lower Blackrock Spire", "Upper Blackrock Spire", "Scholomance", "Stratholme", "Dire Maul"]));
 }
+// Molten Core past the first three bosses needs the pre-raid set: worn dungeon set pieces count one each, Tier 0.5
+// (and raid set pieces) a bit more, and every missing piece makes the later bosses wipe more (up to DSET_WIPE more)
+const DSET_WIPE = 1.3;
+const dsetReady = () => Math.min(8, SET_SLOTS[0].reduce((a, s) => { const it = S.equip[s], st = it && it.set; return a + (st == null ? 0 : st === 0 ? 1 : 1.3); }, 0));
+const dsetWipe = (dn, i) => dn === "Molten Core" && i >= 3 ? 1 + DSET_WIPE * (1 - dsetReady() / 8) : 1;
 function dsetGoals(out) {
   if (S.level < 60 || dsetHave() >= SET_SLOTS[0].length) return;
   const n = SET_SLOTS[0].length;
@@ -55,7 +60,7 @@ Object.assign(ATT_CHAINS, {
       ["run", "Mor Grayhoof in Lower Blackrock Spire", "Lower Blackrock Spire", 0.5],
       ["run", "Isalien in Dire Maul", "Dire Maul", 0.5],
       ["go", "Bodley's Brazier of Invocation: more reagents, and the Mark of Valthalak", 150, "x2"],
-      ["gold", "Just Compensation: the materials for every piece (Arcanite, Thorium, Runecloth, Enchanted Leather, Righteous Orbs)", 2500000],
+      ["gold", "Just Compensation: the materials for every piece (Arcanite, Thorium, Runecloth, Enchanted Leather, Righteous Orbs)", 1500000],
       ["run", "Lord Valthalak in Upper Blackrock Spire, summoned with the Brazier of Invocation", "Upper Blackrock Spire", 0.4],
       ["go", "Bodley and the reforged set: Tier 0.5", 40],
     ] },
