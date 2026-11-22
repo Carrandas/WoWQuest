@@ -431,3 +431,4 @@ button:disabled { cursor: not-allowed; }
   .chat { max-height: 160px; font-size: 13px; }
   .chh .seg button { padding: 1px 7px; }
 }
+.brand .ver { font-family: var(--body); font-size: 11px; color: var(--dim); margin-left: 6px; letter-spacing: 0; vertical-align: middle; }

@@ -28,7 +28,7 @@ function dramaTick() {
 const DRAMA = {
   quit() {
     const m = rosterPick(); if (!m) return;
-    S.guild.roster = S.guild.roster.filter(x => x !== m);
+    S.guild.roster = S.guild.roster.filter(x => x !== m); S.drama.quits = (S.drama.quits || 0) + 1;
     log(`${m.name} quits the game. The farewell post on the guild forum: "It's been an honor, ${S.guild.name}. Selling my gear, PST."`, "chat");
     gsay(m, pick(["it's been fun guys. take care", "real life calls, gtg for good. love you all", "giving my gold to the guild bank. bye"]));
     ["o7", "noooo", "/salute", "can i have your mount?"].slice(0, 2 + R(2)).forEach(t => gsay(rosterPick(), t));
@@ -85,8 +85,16 @@ const DRAMA = {
 
 // ---------- raid nights ----------
 // the invites: sometimes late (people missing), and now and then nobody shows: the night is called off
-function dramaRaidStart(q) {
+function dramaRaidStart(q, dn) {
   if (!S.guild) return;
+  // a new raid: the guild waits on the members who haven't finished the attunement yet
+  if (dn && ATT_CHAINS[attChain(dn) || ""] && !raidClears(dn) && Math.random() < 0.5) {
+    const n = 2 + R(5);
+    q.push({ k: "move", d: `Waiting while ${n} guildmates finish the ${dn} attunement`, t: sec(90) });
+    log(`<${S.guild.name}> waits on ${n} members who still aren't attuned to ${dn}. "Hurry up, we're all at the door."`, "chat");
+    gsay(rosterPick(), pick(["almost done with the attunement, 5 min", "anyone have a spare Blackhand's Command?", "i'm at the last step, i swear"]));
+    return;
+  }
   if (Math.random() < 0.12) {
     const n = 2 + R(4);
     q.push({ k: "move", d: `Waiting at the stone: ${n} people are late for the invite`, t: sec(60) });
@@ -97,7 +105,7 @@ const dramaCalloff = () => !!S.guild && raidClears("Molten Core") > 0 && Math.ra
 // the third wipe: the guild leader on voice chat
 function dramaYell(boss) {
   const d = S.drama; if (!S.guild || Math.random() < 0.4 || S.time - (d.yell || 0) < 3 * DAY) return;
-  d.yell = S.time;
+  d.yell = S.time; d.yells = (d.yells || 0) + 1;
   log(`The guild leader on Ventrilo after the third wipe on ${boss}: ${pick(["\"ARE YOU GUYS EVEN LISTENING? DOTS! DOTS! STOP STANDING IN THE FIRE!\"", "\"Who is that shaman with the Flametongue totem? FIRE RESISTANCE, PEOPLE.\"", "\"I have been raid leading for six hours. SIX HOURS.\" A long silence.", "\"Tanks, where are you? Healers, why is everyone dead?\" Somebody unmutes to laugh."])}`, "chat");
   gsay(rosterPick(), "someone's mad"); gsay(rosterPick(), "it was the healers");
 }
@@ -105,6 +113,7 @@ function dramaYell(boss) {
 function dramaLoot(it) {
   if (!S.guild || !S.dg || !S.dg.raid || Math.random() >= 0.05) return false;
   const m = rosterPick(); if (!m) return false;
+  S.drama.lc = (S.drama.lc || 0) + 1;
   log(`${it.name} drops, and the loot council gives it to ${m.name}, the raid leader's friend. ${S.name} had the most DKP for it.`, "death");
   gsay(m, "ty!"); gsay(rosterPick(x => x !== m), "loot council strikes again");
   return true;

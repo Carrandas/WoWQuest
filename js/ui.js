@@ -17,7 +17,7 @@ const unitFrame = (cls, u) => `<div class="unit${cls ? " " + cls : ""}"><div cla
 function gameShell() {
   $("app").innerHTML = `
   <div class="topbar">
-    <div class="brand" id="brand">WoWQuest</div>
+    <div class="brand" id="brand" title="WoWQuest v${VERSION}">WoWQuest<small class="ver">v${VERSION}</small></div>
     <div class="controls">
       <span class="speedbox" id="speedbox" ${dev ? "" : "hidden"}><span class="lbl">speed</span>
         <div class="seg" id="speed">${SPEEDS.map(n => `<button type="button" data-s="${n}" aria-pressed="false">${n}×</button>`).join("")}</div></span>
@@ -554,7 +554,7 @@ function renderJournal() {
     // earned first (latest on top), then the ones still to get; professions and collections under their own headings
     const order = as => as.filter(a => S.ach[a.id]).sort((a, b) => (S.ach[b.id].p ?? -1) - (S.ach[a.id].p ?? -1)).concat(as.filter(a => !S.ach[a.id]));
     const row = a => { const e = S.ach[a.id]; return `<li class="${e ? "got" : "locked"}"><span class="ico">${e ? "★" : "☆"}</span><div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span>${e ? `<time>${when(e.at, e.L, e.p, e.pre)}</time>` : ""}</div></li>`; };
-    const CATS = [["prof", "Professions"], ["coll", "Collections"], ["social", "Friends and guild"], ["pvp", "PvP"], ["raidq", "Raid quests"]];
+    const CATS = [["prof", "Professions"], ["coll", "Collections"], ["social", "Friends and guild"], ["guild", "Guild"], ["pvp", "PvP"], ["raidq", "Raid quests"]];
     h = order(shown.filter(a => !a.cat)).map(row).join("") + CATS.map(([c, title]) => {
       const as = shown.filter(a => a.cat === c);
       return as.length ? `<li class="jhead">${title} <small>${as.filter(a => S.ach[a.id]).length} of ${as.length}</small></li>` + order(as).map(row).join("") : "";
