@@ -177,6 +177,7 @@ function queueCity() {
   if (!local) aqCity(q); // the Ahn'Qiraj war effort: supplies handed in
   if (!local && !ev) wbCity(q, where); // a head on the city gates
   if (!local && !ev) fishCity(q, where); // off the pier, now and then
+  if (!local) farmCity(q); // the daily cooldowns: Arcanite, Mooncloth
   if (!local && !ev) q.push({ k: "shop", d: `Browsing the Auction House in ${where}`, t: sec(18) });
   if (S.level >= 40 && S.mount < 1 && !classMount()) q.push({ k: "mount", d: `Visiting the riding trainer`, t: sec(8) });
   if (S.level >= 60 && S.mount < 2 && !classMount()) q.push({ k: "mount", d: `Counting gold for an epic mount`, t: sec(6) });

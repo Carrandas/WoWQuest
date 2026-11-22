@@ -424,7 +424,7 @@ function renderProfs() {
     ["crafted", p.made.toLocaleString()], ["gear crafted", gear],
     ...["Mining", "Herbalism", "Skinning"].filter(hasProf).map(n => [`${n.toLowerCase()} gathered`, c(n).toLocaleString()]),
     ["bags sewn", c("bags")], ["potions brewed", c("pots")], ["flasks made", c("flask")], ["disenchanted", c("de")],
-    ["own gear enchanted", c("selfEnch")], ["bombs thrown", c("bombs")], ["bandages used", c("band")], ["meals eaten", c("meals")],
+    ["own gear enchanted", c("selfEnch")], ["bombs thrown", c("bombs")], ["bandages used", c("band")], ["meals eaten", c("meals")], ["Black Lotus found", c("lotus")], ["Arcanite transmuted", c("transmute")], ["Mooncloth sewn", c("mooncloth")],
     ["sold on the AH", p.ah ? money(p.ah) : 0],
   ].filter(([k, v]) => v || k === "crafted");
   $("pTotals").innerHTML = totals.map(([k, v]) => `<li><span class="k">${k}</span><span class="v">${v}</span></li>`).join("");
