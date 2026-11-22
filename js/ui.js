@@ -405,8 +405,8 @@ function renderBars() {
   if (hf <= 0 && t && FIGHTS.includes(t.k)) $("tCasts").innerHTML = '<span class="dead">dead</span>';
   $("hpV").textContent = `${Math.round(hf * hm).toLocaleString()} / ${hm.toLocaleString()}`;
   $("hpB").style.width = (hf * 100).toFixed(1) + "%"; $("hpB").style.background = hpCol(hf);
-  const res = cls().res; $("mpL").textContent = res.toLowerCase();
-  if (cls().mp) { const mm = resMax(); $("mpV").textContent = `${Math.round(mf * mm).toLocaleString()} / ${mm.toLocaleString()}`; $("mpB").style.width = (mf * 100).toFixed(1) + "%"; $("mpB").style.background = resCol(res); }
+  const res = heroRes(); $("mpL").textContent = res.toLowerCase();
+  if (res === "Mana") { const mm = resMax(); $("mpV").textContent = `${Math.round(mf * mm).toLocaleString()} / ${mm.toLocaleString()}`; $("mpB").style.width = (mf * 100).toFixed(1) + "%"; $("mpB").style.background = resCol(res); }
   else { const v = secondPool(); $("mpV").textContent = `${v} / 100`; $("mpB").style.width = v + "%"; $("mpB").style.background = resCol(res); }
   const need = xpNeed(S.level);
   if (xpPop > 0) { const el = document.querySelector(".m-xp"); if (el) xpBubble(el, xpPop); xpPop = 0; }
@@ -490,12 +490,13 @@ function renderGroup(hf, mf) {
       <div class="gsub">Level ${m.L} ${esc(m.race)} ${m.cls}${m.me ? " · you" : isFriend(m.name) ? " · friend" : ""}</div>
       ${memberBars(i)}</div>`).join("");
   }
-  const paint = (i, c, hp, mp, fight, p, cast, L) => {
+  const paint = (i, c, hp, mp, fight, p, cast, L, role) => {
     bubble("g" + box.dataset.sig + "|" + i, $("gh" + i).closest(".gcard,.rcell"), hp, memberMax(c, L), fight);
-    const C = CLASSES[c], v = C.mp ? Math.round(mp * 100) : pool2(C.res, fight, p), key = Math.round(hp * 1000) + "|" + v + "|" + cast;
+    const res = i === 0 ? heroRes() : memberRes(c, role), mana = res === "Mana";
+    const v = mana ? Math.round(mp * 100) : pool2(res, fight, p), key = Math.round(hp * 1000) + "|" + v + "|" + cast;
     if (gCache[i] === key) return; gCache[i] = key;
     $("gh" + i).style.width = (hp * 100).toFixed(1) + "%"; $("gh" + i).style.background = hpCol(hp); $("ghv" + i).textContent = Math.round(hp * 100) + "%";
-    $("gm" + i).style.width = v + "%"; $("gm" + i).style.background = resCol(C.res); $("gmv" + i).textContent = C.mp ? v + "%" : v;
+    $("gm" + i).style.width = v + "%"; $("gm" + i).style.background = resCol(res); $("gmv" + i).textContent = mana ? v + "%" : v;
     $("gc" + i).innerHTML = cast;
   };
   const raidUi = box.classList.contains("raid"), t = S.task, castHtml = (cs, ci) => ci < 0 ? "&nbsp;" : (ci > 0 && !raidUi ? `<span>${esc(cs[ci - 1])}</span> › ` : "") + `<span class="cur">${esc(cs[ci])}</span>`;
@@ -503,7 +504,7 @@ function renderGroup(hf, mf) {
   const dead = '<span class="dead">dead</span>';
   paint(0, S.cls, hf, mf, hc.length > 0, t ? poolProgress(t) : 0, hf <= 0 && hc.length ? dead : castHtml(hc, hci), S.level);
   if (v.inst) renderMeter();
-  v.list.forEach((m, i) => { const n = v.inst ? memberNow(i) : helperNow(m, t && t.helpers ? t : null); paint(i + 1, m.cls, n.hp, n.mp, n.fight, n.p, n.hp <= 0 && n.fight ? dead : E && !n.fight && S.dg.duty ? `<span class="duty">${esc(S.dg.duty[i] || "")}</span>` : castHtml(n.casts, n.ci), m.L); });
+  v.list.forEach((m, i) => { const n = v.inst ? memberNow(i) : helperNow(m, t && t.helpers ? t : null); paint(i + 1, m.cls, n.hp, n.mp, n.fight, n.p, n.hp <= 0 && n.fight ? dead : E && !n.fight && S.dg.duty ? `<span class="duty">${esc(S.dg.duty[i] || "")}</span>` : castHtml(n.casts, n.ci), m.L, m.role); });
   if (E) { const f = t && t.bg ? foeOf(t) : null, k = f ? Math.floor(taskDone(t) * f.w.length) : 0;
     E.forEach((e, j) => { const n = enemyNow(e, f, k), key = Math.round(n.hp * 1000) + "|" + n.res + "|" + n.cast; if (gCache["x" + j] === key) return; gCache["x" + j] = key;
       $("xh" + j).style.width = (n.hp * 100).toFixed(1) + "%"; $("xh" + j).style.background = hpCol(n.hp); $("xhv" + j).textContent = Math.round(n.hp * 100) + "%";

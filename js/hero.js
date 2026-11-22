@@ -263,10 +263,19 @@ function vitalsNow() {
   }
   return [hp, mp];
 }
+// the hero's resource bar: a feral druid shifts (Bear Form tanking a group, or before Cat Form at 20: rage; Cat Form
+// questing and in a group as dps: energy), everyone else has their class's
+function heroRes() {
+  if (S.cls !== "Druid" || S.spec !== 1) return cls().res;
+  if (heroRole() === "tank" && S.party) return ("Bear Form" in S.spells || "Dire Bear Form" in S.spells) ? "Rage" : "Mana";
+  return "Cat Form" in S.spells ? "Energy" : "Bear Form" in S.spells ? "Rage" : "Mana";
+}
+// a group member's: a druid tank is in Bear Form
+const memberRes = (c, role) => c === "Druid" && role === "tank" ? "Rage" : CLASSES[c].res;
 // rage builds during a fight and fades after; energy dips and ticks back
 function secondPool() {
   const t = S.task, fight = t && FIGHTS.includes(t.k), p = t ? poolProgress(t) : 0;
-  return pool2(cls().res, fight, p);
+  return pool2(heroRes(), fight, p);
 }
 
 // buffs the hero wants up right now: [{name, min, item, cast}]
