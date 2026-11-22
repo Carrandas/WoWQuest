@@ -86,8 +86,39 @@ const CLASS_QUESTS = [
     ["go", () => `${lockTrainer()} names the price of a felsteed, and the reagents`, 40],
     ["fight", "Breaking in the Felsteed", "Felsteed", 2],
     ["go", "The Felsteed is bound: Summon Felsteed", 15]] },
+  // the priest's racial spells, one at 10 and one at 20 (not trainer spells: given by the quest, `grant`)
+  { id: "priHuman10", cls: "Priest", race: "Human", lvl: 10, name: "Desperate Prayer", grant: ["Desperate Prayer"], steps: [
+    ["go", "A lesson in Stormwind's cathedral: a prayer for when nothing else is left", 40],
+    ["go", "Back to the trainer: Desperate Prayer", 20]] },
+  { id: "priHuman20", cls: "Priest", race: "Human", lvl: 20, name: "Arcane Feedback", grant: ["Feedback"], steps: [
+    ["go", "Arcane Feedback: Brother Joshua in Stormwind, and a lesson about turning a mage's magic against them", 60],
+    ["go", "Back to the trainer: Feedback", 20]] },
+  { id: "priDwarf10", cls: "Priest", race: "Dwarf", lvl: 10, name: "Desperate Prayer", grant: ["Desperate Prayer"], steps: [
+    ["go", "A lesson from High Priest Rohan in Ironforge: a prayer for when nothing else is left", 40],
+    ["go", "Back to the trainer: Desperate Prayer", 20]] },
+  { id: "priDwarf20", cls: "Priest", race: "Dwarf", lvl: 20, name: "A Lack of Fear", grant: ["Fear Ward"], steps: [
+    ["go", "A Lack of Fear: Toldren Deepiron in Ironforge, and a test of nerve", 60],
+    ["go", "Back to the trainer: Fear Ward", 20]] },
+  { id: "priNightElf10", cls: "Priest", race: "Night Elf", lvl: 10, name: "Returning Home", grant: ["Starshards"], steps: [
+    ["go", "Returning Home: the priestesses of Elune, and the stars called down", 40],
+    ["go", "Back to the trainer: Starshards", 20]] },
+  { id: "priNightElf20", cls: "Priest", race: "Night Elf", lvl: 20, name: "Elune's Grace", grant: ["Elune's Grace"], steps: [
+    ["go", "A lesson from Astarii Starseeker in Darnassus: Elune's protection", 60],
+    ["go", "Back to the trainer: Elune's Grace", 20]] },
+  { id: "priUndead10", cls: "Priest", race: "Undead", lvl: 10, name: "Touch of Weakness", grant: ["Touch of Weakness"], steps: [
+    ["go", "A lesson in the Undercity: the Forsaken's curse, passed on with a touch", 40],
+    ["go", "Back to the trainer: Touch of Weakness", 20]] },
+  { id: "priUndead20", cls: "Priest", race: "Undead", lvl: 20, name: "Devouring Plague", grant: ["Devouring Plague"], steps: [
+    ["go", "A lesson in the Undercity: the plague that feeds the one who spreads it", 60],
+    ["go", "Back to the trainer: Devouring Plague", 20]] },
+  { id: "priTroll10", cls: "Priest", race: "Troll", lvl: 10, name: "Hex of Weakness", grant: ["Hex of Weakness"], steps: [
+    ["go", "A lesson from the Darkspear priests: the old hex of weakness", 40],
+    ["go", "Back to the trainer: Hex of Weakness", 20]] },
+  { id: "priTroll20", cls: "Priest", race: "Troll", lvl: 20, name: "Shadowguard", grant: ["Shadowguard"], steps: [
+    ["go", "A lesson from the Darkspear priests: shadows that bite back", 60],
+    ["go", "Back to the trainer: Shadowguard", 20]] },
 ];
-const cqMine = c => c.cls === S.cls;
+const cqMine = c => c.cls === S.cls && (!c.race || c.race === S.race);
 const cqDoneQ = c => (S.cq[c.id] || 0) >= c.steps.length;
 const cqDef = id => CLASS_QUESTS.find(c => c.id === id);
 // the epic mount spells wait for their chain at 60
@@ -155,6 +186,7 @@ function cqStep(t) {
 // a quest done: its spells (at the rank for the level, no training fee), the fee, the reward
 function cqFinish(c) {
   const learned = [];
+  (c.grant || []).forEach(n => { if (!(n in S.spells)) { S.spells[n] = 1; learned.push(n); } });
   (c.spells || []).forEach(n => { const sp = cls().list.find(x => spellName(x.name) === n); if (!sp || sp.lvl > S.level || n in S.spells) return; S.spells[n] = RANK_SPELL(sp, S.level); learned.push(n); classMountSpell(n); });
   if (c.fee) { const f = Math.min(c.fee, S.money); if (f) { spend("gear", f); log(`Paid ${moneyTxt(f)} for the reagents.`, "gold"); } }
   log(`Class quest complete: ${cqT(c.name)}.${learned.length ? ` Learned ${learned.join(", ")}.` : ""}`, "ach");
@@ -209,8 +241,16 @@ Object.assign(ATT_CHAINS, {
       ["go", "The Eye of Shadow: hunting the elite demons of the Blasted Lands and Winterspring, a rare drop", 200, "x12"],
       ["go", "The Splinter and the two Eyes joined: Benediction, and in its shadow Anathema", 30],
     ] },
-  quel: { cls: ["Warrior", "Paladin"], goal: true, name: "The Forging of Quel'Serrar", item: { name: "Quel'Serrar", slot: "Main Hand", ilvl: 71, q: 4 },
-    what: "A tank's sword: Foror's Compendium of Dragon Slaying from Dire Maul, Lorekeeper Lydros's Unfired Ancient Blade, laid where Onyxia's flame breath will hit it, and back to Lydros. Weeks.",
+  lamina: { cls: "Hunter", goal: true, name: "Ancient Sinew Wrapped Lamina", bag: { name: "Ancient Sinew Wrapped Lamina", slots: 18 },
+    need: () => attStep("rhok") < 2 ? "Needs the Ancient Petrified Leaf shown to Vartrus (Rhok'delar)" : null,
+    what: "Vartrus sends you on to Hastat the Ancient, who wants a Mature Blue Dragon Sinew from Azuregos: the hunter's quiver, the Ancient Sinew Wrapped Lamina. Needs Azuregos up and dead.",
+    steps: [
+      ["go", "Hastat the Ancient in Felwood: the sinew of a blue dragon", 40],
+      ["boss", "Mature Blue Dragon Sinew: from Azuregos in Azshara", "Azuregos", 0.8],
+      ["go", "Hastat wraps the sinew: the Ancient Sinew Wrapped Lamina", 30],
+    ] },
+  quel: { cls: ["Warrior", "Paladin"], tank: true, goal: true, name: "The Forging of Quel'Serrar", item: { name: "Quel'Serrar", slot: "Main Hand", ilvl: 71, q: 4 },
+    what: "A sword for warrior and paladin tanks: Foror's Compendium of Dragon Slaying from Dire Maul, Lorekeeper Lydros's Unfired Ancient Blade, laid where Onyxia's flame breath will hit it, and back to Lydros. Weeks.",
     steps: [
       ["run", "Foror's Compendium of Dragon Slaying: a rare find, from a Dire Maul boss or a dusty tome", "Dire Maul", 0.12],
       ["run", "Lorekeeper Lydros in the Athenaeum of Dire Maul: The Forging of Quel'Serrar", "Dire Maul", "x1"],
@@ -228,6 +268,7 @@ function cqChainDone(k) {
     if (sp && !(c.mount in S.spells)) { S.spells[c.mount] = 1; classMountSpell(c.mount); log(`Learned ${c.mount}. No 1000 gold needed: the ${c.mount.replace("Summon ", "")} is ${S.name}'s.`, "loot4"); }
     mountOwn();
   }
+  if (c.bag) { if (bagUpgrade(c.bag)) giveBag(c.bag, "Quest reward:"); else log(`Quest reward: ${c.bag.name}, but the bags are better already.`, "loot4"); }
   if (c.item) [].concat(typeof c.item === "function" ? c.item() : c.item).forEach(it => gain({ ...it }, "Quest reward:"));
 }
 // old saves: the quests below the hero's level count as done (the spells are known already), and a paladin or warlock

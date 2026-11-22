@@ -108,7 +108,7 @@ const attDone = k => attStep(k) >= ATT_CHAINS[k].steps.length;
 const attCur = k => attDone(k) ? null : ATT_CHAINS[k].steps[attStep(k)];
 // the chains this hero works on: the raid ones (its own faction's); the Scepter and the resistance sets only as goals
 // (class quest chains, classq.js: only the hero's class)
-const attMine = k => (!ATT_CHAINS[k].side || ATT_CHAINS[k].side === S.faction[0]) && (!ATT_CHAINS[k].cls || [].concat(ATT_CHAINS[k].cls).includes(S.cls));
+const attMine = k => (!ATT_CHAINS[k].side || ATT_CHAINS[k].side === S.faction[0]) && (!ATT_CHAINS[k].cls || [].concat(ATT_CHAINS[k].cls).includes(S.cls)) && (!ATT_CHAINS[k].tank || heroRole() === "tank");
 const attKeys = () => Object.keys(ATT_CHAINS).filter(k => !ATT_CHAINS[k].goal && attMine(k));
 const attGoalKeys = () => Object.keys(ATT_CHAINS).filter(k => ATT_CHAINS[k].goal && attMine(k));
 const attStepTxt = k => { if (attDone(k)) return "done"; const s = attCur(k), c = typeof s[3] === "string" ? ` (${S.attN[k] || 0} of ${s[3].slice(1)})` : ""; return `step ${attStep(k) + 1} of ${ATT_CHAINS[k].steps.length}: ${s[1]}${c}`; };
@@ -276,7 +276,8 @@ function attGoals(out) {
     if (c.res) return out.push({ id: "att:" + k, name: c.name, what: `Reputation, crafts and raid drops for ${resTarget(k)} ${c.res} resistance, worn for ${c.bosses.join(" and ")} in ${c.vs}: fewer wipes there. ${n} steps, one to three weeks.`,
       need: k === "nature" && !S.aq.open ? "Needs the Gates of Ahn'Qiraj open" : k === "frost" && !attuned("Naxxramas") ? "Needs the Naxxramas attunement (The Dread Citadel)" : null,
       prog: () => [resNow(k), resTarget(k)], txt: () => `${resNow(k)} of ${resTarget(k)} ${c.res} resistance · ${attStepTxt(k)}`, done: () => attDone(k) });
-    out.push({ id: "att:" + k, name: c.name, what: c.what ? c.what : k === "scepter"
+    if (c.cls) return out.push({ id: "att:" + k, name: c.name, what: c.what, need: c.need ? c.need() : null, prog: () => [attStep(k), n], txt: () => attStepTxt(k), done: () => attDone(k) });
+    out.push({ id: "att:" + k, name: c.name, what: k === "scepter"
       ? `The long quest line for the Scepter of the Shifting Sands: Anachronos, the red shard from Blackwing Lair, Narain Soothfancy's blue shard, the green from Eranikus. Finish it before the war effort ends and the Scarab Gong is ${S.name}'s: the Black Qiraji Battle Tank. Weeks, and Nefarian has to die.`
       : `The quest line to ${c.raid}: ${n} steps, mostly between raid nights. As a goal, every free evening goes to it.`,
       prog: () => [attStep(k), n], txt: () => attStepTxt(k), done: () => attDone(k) });
