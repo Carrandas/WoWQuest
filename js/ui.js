@@ -341,7 +341,7 @@ function renderHero() {
   $("buffs").innerHTML = act.map(n => { const left = S.buffs[n] - S.time; return `<li><span class="l buff">${esc(n)}</span><span class="rank">${left > 1e13 ? "" : Math.max(1, Math.ceil(left / MIN)) + " min"}</span></li>`; }).join("") || `<li><span class="empty">none right now</span></li>`;
 }
 function renderGear() {
-  $("gs").textContent = `avg item level ${Math.round(SLOTS.reduce((a, s) => a + (S.equip[s] ? S.equip[s].ilvl : 0), 0) / SLOTS.length)}`;
+  $("gs").textContent = `avg item level ${Math.round(SLOTS.reduce((a, s) => a + (S.equip[s] ? S.equip[s].ilvl : 0), 0) / SLOTS.length)}${S.level >= 60 ? ` · resistance: ${resTxt()}` : ""}`;
   $("equip").innerHTML = SLOTS.map(s => { const it = S.equip[s]; return `<li><span class="k">${s.toLowerCase()}</span><span class="v">${it ? `<span class="q${it.q}">${esc(it.name)}</span><span class="ilvl">${it.ilvl}</span>${it.ench ? `<small class="ench">${esc(it.ench.name)}</small>` : ENCH[s] && it.q >= 2 && S.level >= 20 ? '<small class="ench no">not enchanted</small>' : ""}` : '<span class="empty">empty</span>'}</span></li>`; }).join("");
 }
 function renderSpells() {

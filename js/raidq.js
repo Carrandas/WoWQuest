@@ -63,9 +63,9 @@ const ATT_CHAINS = {
     ["boss", "Nefarius's Corruption: kill Nefarian, so Vaelastrasz's spirit hands over the red shard", "Nefarian"],
     ["go", "The Scepter of the Shifting Sands: Anachronos binds the three shards", 50],
   ] },
-  // resistance gear for the bosses that ask for it (goals only): a step's fifth entry is the resistance it adds.
-  // A run step may name a raid: a raid night there counts
-  fire: { name: "Fire resistance gear", goal: true, res: "fire", vs: "Molten Core", bosses: ["Magmadar", "Ragnaros"], steps: [
+  // resistance gear for the bosses that ask for it (resist.js): a step's fifth entry is the resistance it adds. A goal,
+  // and worked on without one once its raid comes up (auto). A run step may name a raid: a raid night there counts
+  fire: { name: "Fire resistance gear", goal: true, auto: () => S.bossKills.Lucifron > 0, res: "fire", vs: "Molten Core", bosses: ["Magmadar", "Ragnaros"], steps: [
     ["go", "Thorium Brotherhood: Dark Iron Ore and Core Leather to Lokhtos Darkbargainer at Thorium Point, until friendly", 200, "x4", 0],
     ["go", "Greater Fire Resistance on the cloak, and a stack of Greater Fire Protection Potions", 50, 0, 15],
     ["run", "Dark Iron Ore and Fiery Cores from Blackrock Depths", "Blackrock Depths", "x3", 0],
@@ -73,14 +73,14 @@ const ATT_CHAINS = {
     ["run", "Lava Cores and Fiery Cores from Molten Core, for the Dark Iron Leggings", "Molten Core", "x2", 0],
     ["go", "Thorium Brotherhood revered: the Dark Iron Leggings, the Corehound Belt, Flarecore Wraps", 200, "x7", 80],
   ] },
-  nature: { name: "Nature resistance gear", goal: true, res: "nature", vs: "Temple of Ahn'Qiraj", bosses: ["Princess Huhuran", "Viscidus"], steps: [
+  nature: { name: "Nature resistance gear", goal: true, auto: () => S.aq.open, res: "nature", vs: "Temple of Ahn'Qiraj", bosses: ["Princess Huhuran", "Viscidus"], steps: [
     ["go", "Cenarion Circle: the Silithus quests at Cenarion Hold and the Twilight cultists, until friendly", 220, "x5", 0],
     ["go", "Greater Nature Protection Potions, and Greater Nature Resistance on the cloak", 50, 0, 15],
     ["run", "Ruins of Ahn'Qiraj for Cenarion Circle reputation and Silithid Carapace", "Ruins of Ahn'Qiraj", "x2", 0],
     ["go", "Cenarion Circle honored: the Sandstalker, Spitfire and Bramblewood bracers", 140, "x5", 60],
     ["go", "Cenarion Circle revered: the rest of the Sandstalker, Spitfire and Bramblewood sets", 220, "x7", 85],
   ] },
-  frost: { name: "Frost resistance gear", goal: true, res: "frost", vs: "Naxxramas", bosses: ["Sapphiron", "Kel'Thuzad"], steps: [
+  frost: { name: "Frost resistance gear", goal: true, auto: () => attuned("Naxxramas") && raidClears("Temple of Ahn'Qiraj") >= 1, res: "frost", vs: "Naxxramas", bosses: ["Sapphiron", "Kel'Thuzad"], steps: [
     ["go", "Argent Dawn revered: Scourgestones, Plaguelands quests, the Argent Dawn tabard", 240, "x8", 0],
     ["go", "Frost Protection Potions and a Glacial Cloak from a tailor", 60, 0, 30],
     ["run", "Frozen Runes from the Naxxramas trash", "Naxxramas", "x2", 0],
@@ -94,13 +94,7 @@ const RES_KEYS = ["fire", "nature", "frost"];
 const resOf = s => s[4] || 0;
 const resTarget = k => ATT_CHAINS[k].steps.reduce((a, s) => a + resOf(s), 0);
 const resNow = k => ATT_CHAINS[k].steps.slice(0, attStep(k)).reduce((a, s) => a + resOf(s), 0);
-const resFor = boss => RES_KEYS.find(x => ATT_CHAINS[x].bosses.includes(boss)) || null;
-// on the bosses that check it: fewer wipes with the gear on (up to a fifth with the full set; without it, as before)
-const resWipe = boss => { const k = resFor(boss); return k ? 1 - 0.2 * resNow(k) / resTarget(k) : 1; };
-function resLine(boss) {
-  const k = resFor(boss); if (!k || !resNow(k) || Math.random() < 0.5) return;
-  log(`${S.name} swaps into ${ATT_CHAINS[k].res} resistance gear for ${boss} (${resNow(k)} ${ATT_CHAINS[k].res} resistance). ${pick(["It barely tickles.", "The healers notice.", "Worth every Thorium Bar."])}`, "spell");
-}
+// what resistance does in a fight (resWipe, resLine): resist.js
 const ATT_PREF = 0.75; // without a goal: the chance a free evening goes to the dungeon the next step needs
 // the chain for a raid (for this faction), and the raids each chain opens
 const attChain = raid => Object.keys(ATT_CHAINS).find(k => ATT_CHAINS[k].raid === raid && (!ATT_CHAINS[k].side || ATT_CHAINS[k].side === S.faction[0])) || null;
@@ -114,7 +108,7 @@ const attKeys = () => Object.keys(ATT_CHAINS).filter(k => !ATT_CHAINS[k].goal &&
 const attGoalKeys = () => Object.keys(ATT_CHAINS).filter(k => ATT_CHAINS[k].goal && attMine(k));
 const attStepTxt = k => { if (attDone(k)) return "done"; const s = attCur(k), x = typeof s[3] === "string" ? s[3] : s[0] === "boss" && s[4], c = x ? ` (${(s[0] === "boss" ? S.attGot[k] : S.attN[k]) || 0} of ${x.slice(1)})` : s[0] === "gold" ? ` (${moneyTxt(attGold(s))})` : ""; return `step ${attStep(k) + 1} of ${ATT_CHAINS[k].steps.length}: ${s[1]}${c}`; };
 const attGold = s => typeof s[2] === "function" ? s[2]() : s[2];
-const attWorking = k => S.level >= 60 && !attDone(k) && (!ATT_CHAINS[k].goal || hasGoal("att:" + k));
+const attWorking = k => S.level >= 60 && !attDone(k) && (!ATT_CHAINS[k].goal || hasGoal("att:" + k) || (!!ATT_CHAINS[k].auto && ATT_CHAINS[k].auto()));
 // gold kept back for the chains' gold steps that are up next (spendable() leaves it alone, like the mount savings)
 const attReserve = () => S.level < 60 ? 0 : attKeys().concat(attGoalKeys()).filter(attWorking).reduce((a, k) => { const s = attCur(k); return a + (s[0] === "gold" ? attGold(s) : 0); }, 0);
 
@@ -297,8 +291,8 @@ function attGoals(out) {
 // the Quests tab: the chains in progress and the war effort
 function attRender() {
   if (S.level < 60) return "";
-  const ks = attKeys().filter(k => !attDone(k) && !hasGoal("att:" + k)), a = S.aq;
-  const rows = ks.map(k => `<li class="goal"><div class="gl"><b>${esc(ATT_CHAINS[k].name)} <span class="ilvl">(${esc(ATT_CHAINS[k].raid || "class quest")})</span></b><small>${esc(attStepTxt(k))}</small></div></li>`);
+  const ks = attKeys().concat(RES_KEYS.filter(attWorking)).filter(k => !attDone(k) && !hasGoal("att:" + k)), a = S.aq;
+  const rows = ks.map(k => `<li class="goal"><div class="gl"><b>${esc(ATT_CHAINS[k].name)} <span class="ilvl">(${esc(ATT_CHAINS[k].raid || ATT_CHAINS[k].vs || "class quest")})</span></b><small>${esc(attStepTxt(k))}</small></div></li>`);
   if (a.start != null && !a.open) rows.push(`<li class="goal"><div class="gl"><b>The Gates of Ahn'Qiraj</b><small>${a.gong != null ? `${esc(a.by)} has rung the Scarab Gong: the Ten Hours War` : aqPct() >= 100 ? "War effort complete: waiting for the Scepter of the Shifting Sands" : `War effort ${aqPct()}%${a.hand ? `, ${a.hand} hand-in${a.hand > 1 ? "s" : ""} from ${esc(S.name)}` : ""}`}</small><div class="bar"><i style="width:${aqPct()}%"></i></div></div></li>`);
   return rows.length ? `<li class="qhead">Raid quests</li>` + rows.join("") : "";
 }

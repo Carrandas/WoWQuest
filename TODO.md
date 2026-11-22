@@ -37,12 +37,6 @@ Open items first, then what has shipped (with what's still missing from each).
   - Base your own damage on your actual casts instead of a share of the group's
   - Raid numbers run low (about 125 dps/hps per player); raise raid boss health and heal sizes
 - [ ] **Area spells on boss adds** (bosses still go down one target at a time)
-- [ ] **Resistance as a real stat** (resistance sets are goals today, see below)
-  - A resistance per school (fire, frost, nature, shadow) from gear, enchants, potions and the raid's buffs (paladin
-    auras, shaman totems: today only names), shown in the gear tab next to item level
-  - Bosses that are a wall without it (Sapphiron far below the target); crafters making their own pieces (Dark Iron,
-    the Cenarion leather sets, Glacial, Icebane); the Onyxia Scale Cloak against Nefarian's Shadow Flame
-  - Rebalance so the endgame timeline holds: the timeline is tuned without resistance, the gear only helps
 - [ ] **World chat and guild chat** (a chat panel, or chat lines in the chronicle that can be filtered)
   - General and Trade chat for the zone (Barrens chat, Chuck Norris jokes, "LF healer for Strat", gold sellers,
     "Where is Mankrik's wife?"), Looking for Group, the odd world PvP shout ("Southshore under attack!")
@@ -62,6 +56,12 @@ Open items first, then what has shipped (with what's still missing from each).
 
 ## Done
 
+- [x] **Resistance as a real stat** (resist.js): fire, nature, frost and shadow, from the resistance gear chains, the
+  Onyxia Scale Cloak and the raid's buffs (paladin auras, shaman totems, Aspect of the Wild, Shadow Protection, Gift
+  of the Wild: whoever is in the group); Ragnaros, Magmadar, Princess Huhuran, Kel'Thuzad and Sapphiron (a wall without
+  frost resistance) wipe more the further the raid is below what they ask for, Nefarian's Shadow Flame without the
+  cloak; the chains are worked on without a goal once their raid comes up; the hero's resistance in the gear tab
+  - Still missing: resistance enchants and potions as their own items, crafters making their own pieces
 - [x] **The small things at 60** (fun.js): doing things for fun on city visits (duels outside the capital, the dance
   party on the bank, a lap around the world, the Thunder Bluff elevators, the gnome race to Booty Bay), the Ahn'Qiraj war
   effort's supplies out of the bags when the hero has them, the Tabard of the Argent Dawn (friendly) or the guild's
