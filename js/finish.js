@@ -38,6 +38,7 @@ function lootDrop(dn, boss) {
     it = { name, slot: namedSlot(name), ilvl: dropIlvl(), q };
   }
   if (!it) return;
+  if (dramaLoot(it)) return; // the loot council has other plans (drama.js)
   const bid = heroBid(); // guild raids: bought with DKP
   log(bid != null ? `${boss} dropped ${it.name}. You win it for ${bid} DKP.` : `${boss} dropped ${it.name}. Rolled Need: ${60 + R(41)}.`, "loot" + it.q);
   const de = dungeonEntry(dn); if (!de.loot.some(x => x.n === it.name)) de.loot.unshift({ n: it.name, q: it.q }); if (de.loot.length > 6) de.loot.length = 6;
@@ -211,6 +212,7 @@ const FINISH = {
       // three wipes in a raid and it's over for tonight: on to the exit
       if (raid && S.dg && ++S.dg.wipes >= RAID_TRIES) {
         log(`${S.dg.wipes} wipes on ${t.boss}. The raid calls it a night.`, "death");
+        dramaYell(t.boss);
         const end = S.queue.findIndex(x => x.k === "dend");
         if (end > 0) S.queue.splice(0, end);
         S.queue.unshift(ghost);
