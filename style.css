@@ -409,7 +409,7 @@ button:disabled { cursor: not-allowed; }
   .foe .unit { border-bottom: 0; padding-bottom: 0; margin-bottom: 0; }
   .adds { margin: 10px 0 0; }
   .classes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .log { max-height: 440px; }
+  .log { max-height: 320px; }
 }
 
 /* the chat panel under the chronicle */
