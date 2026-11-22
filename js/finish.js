@@ -14,7 +14,7 @@ function randomSlot() { let best = null; for (let i = 0; i < 3; i++) { const s =
 
 function lootDrop(dn, boss) {
   const d = instanceRow(dn); if (!d) return;
-  const raid = RAIDS.includes(d), caster = isCaster();
+  const raid = RAIDS.includes(d) || !!RAID_INFO[dn], caster = isCaster(); // world bosses count as raids
   const fits = d.loot.filter(x => !x.tag || (x.tag === "c") === caster);
   // named items ("Smite's Mighty Hammer") only drop from the boss they are named after
   const keys = b => b.replace(/'s?\b/g, "").split(/[ ,.]+/).filter(w => w.length > 3 && !/^(the|Lord|Lady|Baron|Captain|High|King|Prince|Commander|General|Master|Emperor|Doctor|Instructor|Chief|Witch|Overlord|Houndmaster|Interrogator|Inquisitor)$/.test(w));
@@ -191,7 +191,7 @@ const FINISH = {
       S.queue.push({ k: "farm", d, t: sec(240) });
     }
     if (S.level >= 60) aqWarQueue(S.queue) || attTrip(S.queue); // the Ten Hours War, or an attunement step that is a trip
-    const d = pickDungeon(); if (d) (BGS.includes(d) ? queueBG : WP_RAIDS.includes(d) ? queueWP : queueDungeon)(d);
+    const d = pickDungeon(); if (d) (BGS.includes(d) ? queueBG : WP_RAIDS.includes(d) ? queueWP : WB_ROWS.includes(d) ? queueWB : queueDungeon)(d);
   },
   lfg(t) {
     log(`[${pick(PLAYERS)}]: ${t.chat}`, "chat");
@@ -209,6 +209,7 @@ const FINISH = {
       const xp = S.level < 60 ? Math.round(mobXp(S.level + 2) * (14 + R(6))) : 0, coin = Math.round((S.level * S.level * 4 + 150) * (0.8 + Math.random() * 0.5) * (raid ? 4 : 1));
       S.money += coin; S.qdone++;
       noteDone(x.name);
+      if (x.name === "For The Horde!") wbRend(); // the Warchief's Blessing
       log(`Quest complete: "${x.name}". ${xp ? "+" + xp.toLocaleString() + " XP, " : ""}${moneyTxt(coin)}.`, "quest");
       if (xp) gainXp(xp);
       if (Math.random() < (raid ? 0.5 : 0.7)) gain(makeItem(randomSlot(), S.level + (raid ? 12 : 3), raid ? 4 : 3), "Quest reward:");
@@ -216,7 +217,7 @@ const FINISH = {
     S.dq = null;
   },
   dtravel(t) { S.loc = "dungeon"; log(`Entering ${t.dn}.`, "dung"); },
-  trash(t) { if (t.bg) { bgFightEnd(t); petAfterFight(t, null); friendChatter(); return; } if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); petAfterFight(t, null); minipetDrops(t.mobs || []); friendChatter(); },
+  trash(t) { if (t.bg) { if (t.wb) wbPvpEnd(t); else bgFightEnd(t); petAfterFight(t, null); friendChatter(); return; } if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); petAfterFight(t, null); minipetDrops(t.mobs || []); friendChatter(); },
   boss(t) {
     if (t.foe) t.foe.units.forEach(u => (u.phases || []).forEach(p => { if (p.say) log(p.say, "boss"); }));
     const raid = !!(S.dg && S.dg.raid);
@@ -246,6 +247,7 @@ const FINISH = {
       guildLoot(t.dn, t.boss);
     }
     log(`${t.boss} has been defeated.`, "boss");
+    wbBossKill(t.boss); // a head for the city gates
     if (raid) resLine(t.boss); // resistance gear for the bosses that check it
     (S.dq || []).filter(x => !x.done && x.boss === t.boss).forEach(x => { x.done = true; log(`Objective complete: ${x.obj} ("${x.name}").`, "quest"); });
     gainXp(mobXp(S.level + 2) * 5); petAfterFight(t, null); minipetDrops([t.boss]); mountDrops(t.boss, t.dn);
@@ -276,6 +278,7 @@ const FINISH = {
     if (got.length) log(`Buffed up: ${got.join(", ")}.`, "spell");
   },
   dend(t) {
+    if (wbRow(t.dn)) return wbEnd(t); // a world boss: no lockout, no clear
     // a raid only counts as cleared once the last boss is down (that can take several nights)
     const ri = RAID_INFO[t.dn], full = !ri || !S.dg || S.dg.killed >= S.dg.total;
     if (ri) (S.lock[t.dn] = raidLock(t.dn) || { at: S.time, killed: 0, last: 0 }).last = S.time;
@@ -297,6 +300,7 @@ const FINISH = {
   ...PVP_FINISH, // bgq, bgin, bgobj, bgrez, bgend
   ...WP_FINISH, // wpsee, wpgo, wpend, wpcity
   ...ATT_FINISH, // att, aqhand, aqwar
+  ...WB_FINISH, // wbsee, wbgo, wbobj, wbhead
 };
 function finish(t) {
   const ve = vitalEnd(t); S.hpF = ve[0]; S.mpF = ve[1]; partyFinish(t);
@@ -304,6 +308,7 @@ function finish(t) {
   petTick(t);
   pvpWeek();
   attTick();
+  wbTick();
   goalCheck();
   checkAch();
   dirty = true;

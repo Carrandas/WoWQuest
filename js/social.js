@@ -162,7 +162,11 @@ function serverFirst(boss) {
   const g = S.guild; if (!g || !(boss in g.rival.days) || g.firsts[boss]) return;
   const at60 = (S.ach.L60 && S.ach.L60.p) ?? g.at.p ?? 0; // saves from before the guild: count from when it was seeded
   const day = (S.time - at60) / DAY, rd = g.rival.days[boss];
-  if (day <= rd) { g.firsts[boss] = { us: true, ...stamp() }; log(`SERVER FIRST! <${g.name}> is the first guild on the realm to kill ${boss}! Screenshots everywhere.`, "ach"); }
+  if (day <= rd) {
+    g.firsts[boss] = { us: true, ...stamp() }; log(`SERVER FIRST! <${g.name}> is the first guild on the realm to kill ${boss}! Screenshots everywhere.`, "ach");
+    const m = g.roster.length ? pick(g.roster).name : null;
+    log(`[Guild] ${pick(["OMG OMG OMG", "SERVER FIRST!!!", "WE DID IT", "/cheer /cheer /cheer"])}${m ? ` (${m}: "${pick(["Everyone on the corpse for the screenshot!", "Somebody post it on the realm forums.", `Take that, <${g.rival.name}>.`, "I'm framing this one."])}")` : ""}`, "chat");
+  }
   else { g.firsts[boss] = { us: false, ...stamp() }; log(`<${g.rival.name}> got ${boss} first, ${Math.max(1, Math.round(day - rd))} day${Math.round(day - rd) > 1 ? "s" : ""} ago. Next time.`, "chat"); }
 }
 // old saves: a few friends and the guild they'd have by now, quietly

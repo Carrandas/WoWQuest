@@ -116,7 +116,7 @@ function renderGoals() {
     const [a, b] = d.prog();
     return `<li class="goal"><div class="gl"><b>${esc(d.name)}</b><small>${esc(d.txt())}</small>${b ? `<div class="bar"><i style="width:${Math.round(100 * a / b)}%"></i></div>` : ""}</div><button type="button" class="gx" data-gx="${esc(g.id)}" title="Drop this goal" aria-label="Drop ${esc(d.name)}">×</button></li>`;
   }).join("") + (S.goals.length < GOAL_SLOTS ? `<li class="gaddrow"><button type="button" class="ghost" data-gadd="1">+ pick a goal</button>${S.goalAuto ? `<small>${esc(S.name)} picks their own until you do</small>` : ""}</li>` : "")
-    + attRender() + `<li class="qhead">Quests</li>`;
+    + attRender() + wbRender() + `<li class="qhead">Quests</li>`;
 }
 function goalClick(b) { // clicks in the quests tab: drop a goal, open the picker
   if (b.dataset.gx) { S.goals = S.goals.filter(g => g.id !== b.dataset.gx); S.goalAuto = false; dirty = true; return; }

@@ -141,6 +141,17 @@ ACH.push(...[
   { id: "scepter", name: "The Scepter of the Shifting Sands", desc: "Put the three shards of the Scepter of the Shifting Sands together.", test: () => !!S.att && attDone("scepter") },
   { id: "scarab", name: "Scarab Lord", desc: "Bang the Scarab Gong yourself and open the gates of Ahn'Qiraj.", test: () => !!S.aq && S.aq.hero },
 ].map(a => ({ ...a, cat: "raidq" })));
+// world bosses
+const wbK = n => !!S.wb && (S.wb.kills[n] || 0) > 0;
+ACH.push(...[
+  { id: "wbaz", name: "Azuregos", desc: "Kill Azuregos in Azshara.", test: () => wbK("Azuregos") },
+  { id: "wbkz", name: "Lord Kazzak", desc: "Kill Lord Kazzak in the Blasted Lands.", test: () => wbK("Lord Kazzak") },
+  { id: "wbdr", name: "Dragons of Nightmare", desc: "Kill one of the Emerald Dragons at the Great Trees.", test: () => WB_DRAGONS.some(wbK) },
+  { id: "wbdr4", name: "The Emerald Nightmare", desc: "Kill all four Emerald Dragons: Ysondre, Lethon, Emeriss and Taerar.", test: () => WB_DRAGONS.every(wbK) },
+  { id: "wbpvp", name: "Mine, Not Yours", desc: "Drive the other faction off a world boss and kill it.", test: () => !!S.wb && S.wb.pvpWon > 0 },
+  { id: "wb10", name: "World Boss Hunter", desc: "Kill 10 world bosses.", test: () => !!S.wb && wbKills() >= 10 },
+  { id: "wbhead", name: "Hang It From the Gates", desc: "Turn in the Head of Onyxia or the Head of Nefarian.", test: () => !!S.wb && Object.keys(S.wb.heads).length > 0 },
+].map(a => ({ ...a, cat: "wboss" })));
 // minipets
 const mp = () => S.minipets || {}, mpHas = names => names.every(n => mp()[n]);
 ACH.push(...[

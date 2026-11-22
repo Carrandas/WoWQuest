@@ -516,7 +516,7 @@ function startGame() {
 }
 
 // ---------- journal tabs: achievements, zones, dungeons ----------
-const TABS = [["log", "Chronicle"], ["quests", "Quests"], ["ach", "Achievements"], ["zones", "Zones"], ["dung", "Dungeons"], ["coll", "Collection"], ["guild", "Guild"], ["pvp", "PvP"], ["raidq", "Raid quests"]];
+const TABS = [["log", "Chronicle"], ["quests", "Quests"], ["ach", "Achievements"], ["zones", "Zones"], ["dung", "Dungeons"], ["coll", "Collection"], ["guild", "Guild"], ["pvp", "PvP"], ["raidq", "Raid quests"], ["wboss", "World bosses"]];
 let uiTab = "log";
 const fmtDate = t => new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 const shortPlayed = ms => { const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor(m / 60) % 24; return d ? `${d}d ${h}h` : h ? `${h}h ${m % 60}m` : `${m % 60}m`; };
