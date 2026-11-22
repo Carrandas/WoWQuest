@@ -231,11 +231,22 @@ function meterFight(t) {
   const pf = partyFight(t); if (!pf || !pf.hero || !foeOf(t)) return null;
   // your gear against theirs: both measured as gear for the level, so being over- or undergeared shows
   const P = [pf.hero, ...pf.m], all = [{ role: heroRole(), L: S.level, gear: clamp(gearScore() / Math.max(1, S.level), 0.5, 2) * talMod("d") }, ...S.party.map(x => ({ role: x.role, L: x.L, gear: x.gear ?? (x.gear = contentGear()) }))];
-  if ((t.cds || []).some(c => c.type === "burst")) all[0].gear *= 1.2;
-  const w = all.map((a, i) => i && pf.m[i - 1].idle ? 0 : (DM_ROLE[a.role] || 0.5) * a.gear * (a.L / Math.max(1, S.level)) * (0.85 + Math.random() * 0.3)), ws = w.reduce((a, b) => a + b, 0) || 1;
+  // the hero's part comes from the casts in this pull: burst windows and area spells on a pack push it up, casts lost
+  // to a stun or a fear pull it down (the same casts at plain strength are 1)
+  const mine = clamp(heroPullWeight(t), 0.7, 1.6);
+  const w = all.map((a, i) => i && pf.m[i - 1].idle ? 0 : (DM_ROLE[a.role] || 0.5) * a.gear * (a.L / Math.max(1, S.level)) * (i ? 0.85 + Math.random() * 0.3 : mine)), ws = w.reduce((a, b) => a + b, 0) || 1;
   if (S.pet) { const ps = petShare(); w.push(w[0] * ps); w[0] *= 1 - ps; } // the pet's damage is its share of the hero's
   m = { share: w.map(x => x / ws), heal: P.map(p => p.healEv || []) };
   DMF.set(t, m); return m;
+}
+// how hard the hero's casts hit in a pull against the same casts at plain strength: the weights the health curves use
+// (burst windows, lost casts), with area spells counted once per enemy they reach
+function heroPullWeight(t) {
+  const f = foeOf(t), n = f.units.length, w = f.w || [], casts = t.casts || [];
+  if (!w.length) return 1;
+  let got = 0, plain = 0;
+  w.forEach((x, i) => { const s = (casts[i] || "").replace(/ on .+$/, ""), ae = AOE[s], p = LOST.test(s) ? 1 : castWeight(s); got += x * (ae && n > 1 ? 1 + ae[1] * (Math.min(n, ae[0]) - 1) : 1); plain += p; });
+  return plain ? got / plain : 1;
 }
 // damage and healing so far in a pull (raw = how far through it is, 0..1), per group member
 function meterNow(t, raw) {

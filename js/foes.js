@@ -136,7 +136,7 @@ function foeActions(u, n) {
 }
 const foeHidden = (u, k) => !!(u.hide && u.hide.some(([a, b]) => k >= a && k < b));
 const foePhase = (u, k) => (u.phases || []).filter(p => p.k <= k).pop() || null;
-const foeHp = (L, rank) => Math.round((L < 10 ? 40 + L * 18 : L * L * 1.1 + L * 20) * ({ elite: 3, boss: 7, "raid elite": 25, "raid boss": 230 }[rank] || 1));
+const foeHp = (L, rank) => Math.round((L < 10 ? 40 + L * 18 : L * L * 1.1 + L * 20) * ({ elite: 3, boss: 7, "raid elite": 40, "raid boss": 360 }[rank] || 1));
 // enemy control: the hero loses the cast it was working on
 const CTRL = { Polymorph: "Polymorphed", "Kidney Shot": "Stunned", "Hammer of Justice": "Stunned", Intercept: "Stunned", Blind: "Stunned", "Scatter Shot": "Stunned",
   "Psychic Scream": "Feared", "Howl of Terror": "Feared", "Intimidating Shout": "Feared", "Death Coil": "Feared", Counterspell: "Interrupted", Pummel: "Interrupted", Silence: "Interrupted", "Earth Shock": "Interrupted",

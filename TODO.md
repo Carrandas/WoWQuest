@@ -33,9 +33,6 @@ Open items first, then what has shipped (with what's still missing from each).
        "Wiped at 12%"), and keep "Wiped at x%" for the boss frame
     10. Calibrate with the long-run harness: wipe rate per raid by gear, deaths per hour, and that
         overgeared raids almost never wipe while undergeared ones wipe often
-- [ ] **Damage meter numbers**
-  - Base your own damage on your actual casts instead of a share of the group's
-  - Raid numbers run low (about 125 dps/hps per player); raise raid boss health and heal sizes
 - [ ] **World chat and guild chat** (a chat panel, or chat lines in the chronicle that can be filtered)
   - General and Trade chat for the zone (Barrens chat, Chuck Norris jokes, "LF healer for Strat", gold sellers,
     "Where is Mankrik's wife?"), Looking for Group, the odd world PvP shout ("Southshore under attack!")
@@ -55,6 +52,11 @@ Open items first, then what has shipped (with what's still missing from each).
 
 ## Done
 
+- [x] **Damage meter numbers**: the hero's part comes from the casts in the pull (`heroPullWeight` in ui.js: burst
+  windows and area spells on a pack push it up, casts lost to a stun or a fear pull it down, against the same casts at
+  plain strength), so the hero lands anywhere in the top few of a raid instead of always first; raid bosses have more
+  health (about 400 dps for a dps in Molten Core) and raid hits and heals are bigger (`RAID_HEAL`: about 280 hps
+  for a healer), so the meter shows raid-sized numbers
 - [x] **Area spells on boss adds** (`layoutChunks` in foes.js): a boss's adds (at the pull, or when a phase brings them)
   go down together when the group has area damage (`groupAoe`, or the hero's own), in one stretch and faster than one
   at a time: Garr's Firesworn, Lucifron's Protectors, Ragnaros's Sons of Flame
