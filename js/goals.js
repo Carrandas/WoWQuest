@@ -22,6 +22,7 @@ function goalDefs() {
       prog: () => [down(), r.bosses.length], txt: () => `${down()} of ${r.bosses.length} bosses killed`, done: () => raidClears(r.name) > 0 });
   });
   attGoals(out); // the attunement chains, the Scepter of the Shifting Sands
+  siGoals(out); // the Scourge Invasion, while it's on
   if (!hasMount("Deathcharger's Reins")) out.push({ id: "baron", name: "Deathcharger's Reins", what: "Run Stratholme again and again for Baron Rivendare's horse. One in a hundred: a week, or months.",
     prog: () => [0, null], txt: () => `${bk("Baron Rivendare")} Baron kills`, done: () => hasMount("Deathcharger's Reins") });
   if (!hasMount("Swift Zulian Tiger") && !hasMount("Swift Razzashi Raptor")) out.push({ id: "zg", name: "A Zul'Gurub mount", what: "Raid Zul'Gurub every reset for Thekal's tiger or Mandokir's raptor. One in a hundred each.",
@@ -116,7 +117,7 @@ function renderGoals() {
     const [a, b] = d.prog();
     return `<li class="goal"><div class="gl"><b>${esc(d.name)}</b><small>${esc(d.txt())}</small>${b ? `<div class="bar"><i style="width:${Math.round(100 * a / b)}%"></i></div>` : ""}</div><button type="button" class="gx" data-gx="${esc(g.id)}" title="Drop this goal" aria-label="Drop ${esc(d.name)}">×</button></li>`;
   }).join("") + (S.goals.length < GOAL_SLOTS ? `<li class="gaddrow"><button type="button" class="ghost" data-gadd="1">+ pick a goal</button>${S.goalAuto ? `<small>${esc(S.name)} picks their own until you do</small>` : ""}</li>` : "")
-    + attRender() + wbRender() + `<li class="qhead">Quests</li>`;
+    + attRender() + siRender() + wbRender() + `<li class="qhead">Quests</li>`;
 }
 function goalClick(b) { // clicks in the quests tab: drop a goal, open the picker
   if (b.dataset.gx) { S.goals = S.goals.filter(g => g.id !== b.dataset.gx); S.goalAuto = false; dirty = true; return; }

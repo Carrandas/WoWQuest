@@ -147,6 +147,8 @@ ACH.push(...[
   { id: "wbaz", name: "Azuregos", desc: "Kill Azuregos in Azshara.", test: () => wbK("Azuregos") },
   { id: "wbkz", name: "Lord Kazzak", desc: "Kill Lord Kazzak in the Blasted Lands.", test: () => wbK("Lord Kazzak") },
   { id: "wbdr", name: "Dragons of Nightmare", desc: "Kill one of the Emerald Dragons at the Great Trees.", test: () => WB_DRAGONS.some(wbK) },
+  { id: "siset", name: "Undead Slayer", desc: "Complete the Argent Dawn's Blessed set during the Scourge Invasion.", test: () => !!S.si && siPieces() >= 3 },
+  { id: "sidoom", name: "Shadow of a Doubt", desc: "Kill 10 Shadows of Doom during the Scourge Invasion.", test: () => !!S.si && S.si.doom >= 10 },
   { id: "wbdr4", name: "The Emerald Nightmare", desc: "Kill all four Emerald Dragons: Ysondre, Lethon, Emeriss and Taerar.", test: () => WB_DRAGONS.every(wbK) },
   { id: "wbpvp", name: "Mine, Not Yours", desc: "Drive the other faction off a world boss and kill it.", test: () => !!S.wb && S.wb.pvpWon > 0 },
   { id: "wb10", name: "World Boss Hunter", desc: "Kill 10 world bosses.", test: () => !!S.wb && wbKills() >= 10 },

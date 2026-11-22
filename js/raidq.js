@@ -48,7 +48,7 @@ const ATT_CHAINS = {
   naxx: { raid: "Naxxramas", name: "The Dread Citadel", steps: [
     ["go", "Report to Archmage Angela Dosantos at Light's Hope Chapel", 60],
     ["run", "Argent Dawn: Scourgestones and Plaguelands quests until honored", "Stratholme/Scholomance", "x6"],
-    ["gold", "Pay Archmage Angela Dosantos 60 gold for the attunement (honored with the Argent Dawn)", 600000],
+    ["gold", "Pay Archmage Angela Dosantos for the attunement: 60 gold, 30 at revered with the Argent Dawn, nothing at exalted", () => naxxFee()],
   ] },
   scepter: { name: "The Scepter of the Shifting Sands", goal: true, steps: [
     ["go", "Call to Arms: Anachronos in the Caverns of Time, Tanaris", 50],

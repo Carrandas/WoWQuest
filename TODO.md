@@ -34,12 +34,6 @@ Open items first, then what has shipped (with what's still missing from each).
   - Base your own damage on your actual casts instead of a share of the group's
   - Raid numbers run low (about 125 dps/hps per player); raise raid boss health and heal sizes
 - [ ] **Area spells on boss adds** (bosses still go down one target at a time)
-- [ ] **The Scourge Invasion** (the run-up to Naxxramas)
-  - Necropolises hang over a few zones (Eastern and Western Plaguelands, Winterspring, Azshara, Tanaris, Burning
-    Steppes); Scourge attacks on towns and quest hubs, cultists and shadowy figures in the capitals
-  - At 60: fighting the invasion between raid nights for Argent Dawn reputation and Necrotic Runes, traded for the
-    Argent Dawn gear (and a step of the Naxxramas attunement); the odd level 20 killed questing too close to a necropolis
-  - Ends when Naxxramas opens, so it goes with the raid timeline
 - [ ] **More to do at 60** (what's left of "Life at 60" below)
   - Fishing as the third secondary skill: fishing trips, Nat Pagle's quests, the odd rare catch (Old Ironjaw, Old
     Crafty); the Stranglethorn Fishing Extravaganza on Sundays (first to 40 Speckled Tastyfish wins the Arcanite
@@ -88,6 +82,15 @@ Open items first, then what has shipped (with what's still missing from each).
 
 ## Done
 
+- [x] **The Scourge Invasion** (scourge.js): from the Ahn'Qiraj war effort to the first night in Naxxramas; necropolises
+  over three of six zones (Plaguelands, Winterspring, Azshara, Tanaris, Burning Steppes) that move on when their shards
+  are broken, attacks on towns, cultists and Shadowy Figures in the capitals, low levels dying under a necropolis; at 60
+  invasion trips (waves at the Necrotic Shards, Shadows of Doom, the rare Lumbering Horror, Spirit of the Damned and Bone
+  Witch) for Necrotic Runes and Argent Dawn reputation; the Blessed set per armor type (fewer wipes in Naxxramas), the
+  attunement fee cheaper at revered and free at exalted, trips count toward its Argent Dawn step; a goal and two
+  achievements
+  - Still missing: the Tabard of the Argent Dawn and the rest of the rune vendor, the invasion in other heroes' chronicles
+    while levelling (the hero levels before it starts)
 - [x] **Legendaries, done properly** (legend.js): goals for Thunderfury (the Bindings from Garr and Baron Geddon,
   Highlord Demitrian, Elementium Ingots from Blackwing Lair, the Enchanted Elementium Bars, Prince Thunderaan summoned
   as a world boss), Sulfuras (the Eye from Ragnaros, Sulfuron Ingots from Golemagg, the Plans from Lokhtos, the
