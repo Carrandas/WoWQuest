@@ -191,10 +191,11 @@ function petAfterFight(t, sf) {
   }
   if (S.pet.kind === "beast") S.pet.happy = Math.max(0, S.pet.happy - 2);
 }
-// every other task: resting heals it fully, walking and the rest heal it a bit
+// every other task: resting heals it fully, walking and the rest heal it a bit (petHpAfter: the frame fills up along the way)
+const petHpAfter = t => t.k === "rest" || t.k === "rez" || t.k === "regroup" ? 1 : Math.min(1, S.pet.hp + 0.2);
 function petTick(t) {
   if (!S.pet || S.pet.dead || FIGHTS.includes(t.k)) return;
-  S.pet.hp = t.k === "rest" || t.k === "rez" || t.k === "regroup" ? 1 : Math.min(1, S.pet.hp + 0.2);
+  S.pet.hp = petHpAfter(t);
 }
 const PET_FINISH = {
   tame(t) {
@@ -234,7 +235,7 @@ function renderPet() {
   if (box.hidden) box.hidden = false;
   const t = S.task, fight = t && FIGHTS.includes(t.k) && !p.dead, raw = t ? taskDone(t) : 0;
   const sf = fight && t.k === "kill" && !S.party ? soloFight(t) : null;
-  const hp = p.dead ? 0 : sf && sf.pet ? hpAt(sf.pet, raw) : p.hp;
+  const hp = p.dead ? 0 : sf && sf.pet ? hpAt(sf.pet, raw) : t && !fight ? p.hp + (petHpAfter(t) - p.hp) * raw : p.hp; // healing up with the hero
   const n = (t && t.casts && t.casts.length) || 0, k = n ? Math.min(n - 1, Math.floor(raw * n)) : 0;
   const act = p.dead ? "dead" : hp <= 0 ? "dead" : fight && n ? petActs(n)[k] : p.kind === "beast" ? HAPPY(p.happy) : "following";
   const what = p.kind === "beast" ? `${p.rare ? "rare " : ""}${p.family.toLowerCase()}` : p.type.toLowerCase();
