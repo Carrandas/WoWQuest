@@ -191,9 +191,8 @@ const FINISH = {
     const d = pickDungeon(); if (d) (d.si ? queueSI : d.fish ? queueFish : d.fac ? queueFac : d.arena ? queueArena : BGS.includes(d) ? queueBG : WP_RAIDS.includes(d) ? queueWP : WB_ROWS.includes(d) ? queueWB : queueDungeon)(d);
   },
   lfg(t) {
-    log(`[${pick(PLAYERS)}]: ${t.chat}`, "chat");
-    if (S.dg && S.dg.raid) chatEvent("raidinv", S.dg.name); else chatEvent("lfg", t.chat);
-    const fr = (S.party || []).find(m => m.friend); if (fr && !(S.dg && S.dg.raid)) chatEvent("whisper", { name: fr.name, cls: fr.cls, txt: `got a spot for you in ${t.dn || "the run"}, coming?` });
+    const poster = pick(PLAYERS); log(`[${S.dg && S.dg.raid ? poster : S.name}]: ${t.chat}`, "chat");
+    if (S.dg && S.dg.raid) chatEvent("raidinv", S.dg.name);
     if (!S.party) return;
     if (S.dg) S.dg.formed = true;
     if (S.party.length > 4) {
@@ -324,7 +323,7 @@ function advance(dt) {
   chatTick(); // world and guild chat (chat.js: its own random numbers)
   let guard = 0;
   while (dt > 0 && guard++ < 400) {
-    if (!S.task) { if (!S.queue.length) plan(); S.task = S.queue.shift() || { k: "rest", d: "Taking a breather", t: 3000 }; S.task.el = 0; useCooldowns(S.task); bossWipes(S.task); dirty = true; } // a boss pull's outcome is rolled as it starts
+    if (!S.task) { if (!S.queue.length) plan(); S.task = S.queue.shift() || { k: "rest", d: "Taking a breather", t: 3000 }; S.task.el = 0; useCooldowns(S.task); bossWipes(S.task); if (S.task.k === "lfg") chatLfgStart(S.task); dirty = true; } // a boss pull's outcome is rolled as it starts
     const rem = S.task.t - S.task.el;
     if (dt >= rem) { dt -= rem; const t = S.task; S.task = null; finish(t); }
     else { S.task.el += dt; dt = 0; }

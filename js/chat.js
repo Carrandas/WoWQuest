@@ -191,11 +191,33 @@ function chatEvent(kind, x) {
   if (kind === "firstkill" && S.guild) several(4, () => cpick(["GG!!!", "finally!", "grats all!", "WOOOO", `${x} down!`, "gg, screenshot!"]));
   if (kind === "wipe" && S.guild && S.dg && S.dg.raid) several(2 + cR(2), () => cpick(["rez pls", "who pulled?", "release and run back", "healers oom?", "again, we got this", "wipe it", "nice threat, tank"]));
   if (kind === "raidinv" && S.guild) { const o = g(); if (o) chatSay("guild", o.name, `Invites going out for ${x}, be at the stone in 10`, o.cls); several(2, () => cpick(["inv pls", "+1 inv", "omw", "can i get a summon?"])); }
-  if (kind === "lfg") chatSay("lfg", S.name, x, S.cls);
   if (kind === "whisper") {
     chatSay("whisper", x.name, x.txt, x.cls);
     whisperBack(x.name, x.txt);
   }
+}
+
+// the hero's LFG post as the wait starts: the group's strangers whisper to join over the wait, the hero invites them
+function chatLfgStart(t) {
+  if (t.dn && RAIDS.some(r => r.name === t.dn)) return;
+  chatSay("lfg", S.name, t.chat, S.cls);
+  const who = S.party || [], n = who.length;
+  who.forEach((m, i) => {
+    if (m.friend) { // a friend asks first
+      const at = S.time + t.t * (0.05 + cr() * 0.1);
+      chatPending.push({ at, ch: "whisper", who: m.name, cls: m.cls, txt: cpick([`saw your LFG, i'm in!`, `ooh ${t.dn}, take me?`, "inv me!!", `need a ${m.role === "heal" ? "healer" : m.role === "tank" ? "tank" : m.cls.toLowerCase()}? :)`]) });
+      chatPending.push({ at: at + (2 + cr() * 4) * 1000, ch: "whisper", who: S.name, cls: S.cls, to: m.name, txt: cpick(["of course! inv", "yay, inv sent", "was hoping you'd ask, inv"]) });
+      return;
+    }
+    const at = S.time + t.t * (0.15 + 0.75 * (i + cr() * 0.8) / Math.max(1, n)), c = m.cls.toLowerCase();
+    const ask = m.role === "tank" ? cpick([`${c} tank here, inv?`, `can tank, ${m.L} ${c}`, "tank lf group, still need one?", "i can tank it"])
+      : m.role === "heal" ? cpick([`healer, ${c} ${m.L}, inv`, "need heals still?", "healer here, inv pls", `${m.L} ${c}, can heal`])
+      : cpick([`${m.L} ${c}, inv?`, "inv pls", `spot left? ${c} dps`, "can i join?", `${c} lf group, need the quests there`, "lf group?"]);
+    chatPending.push({ at, ch: "whisper", who: m.name, cls: m.cls, txt: ask });
+    chatPending.push({ at: at + (3 + cr() * 5) * 1000, ch: "whisper", who: S.name, cls: S.cls, to: m.name, txt: cpick(["inv", "sent", "inv'd", "sure, inv sent", "yep, inv"]) });
+  });
+  if (n < 4 && cr() < 0.5) { const s = stranger(); chatPending.push({ at: S.time + t.t * (0.3 + cr() * 0.5), ch: "whisper", who: s.name, cls: s.cls, txt: cpick(["still need dps?", "inv?", `${s.cls.toLowerCase()} lf group, spot?`]) });
+    chatPending.push({ at: S.time + t.t * 0.95, ch: "whisper", who: S.name, cls: S.cls, to: s.name, txt: cpick(["sorry, full now", "sorry, we're full", "just filled, sorry"]) }); }
 }
 
 // the hero answers a friend's whisper, a few seconds later
