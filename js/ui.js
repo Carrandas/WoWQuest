@@ -451,7 +451,8 @@ function renderProfs() {
 // a group member's pet (hunters from 10, warlocks): picked from the name, so the same friend always has the same one
 const nameHash = s => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
 function memberPet(m) {
-  if (m.me || !(m.cls === "Hunter" && m.L >= 10) && m.cls !== "Warlock") return null;
+  if (m.me) return S.pet ? { name: S.pet.name, what: S.pet.kind === "beast" ? S.pet.family.toLowerCase() : S.pet.type.toLowerCase() } : null; // your own
+  if (!(m.cls === "Hunter" && m.L >= 10) && m.cls !== "Warlock") return null;
   const h = nameHash(m.name);
   if (m.cls === "Warlock") { const type = m.L >= 30 && h % 3 === 0 ? "Felhunter" : m.L >= 20 && h % 3 === 1 ? "Succubus" : m.L >= 10 ? "Voidwalker" : "Imp"; const l = DEMON_NAMES[type]; return { name: l[h % l.length], what: type.toLowerCase() }; }
   const fams = Object.keys(PET_NAMES), fam = fams[h % fams.length], l = PET_NAMES[fam];
@@ -485,7 +486,7 @@ function renderGroup(hf, mf) {
   const v = groupView(), show = !!v, box = $("group");
   if (box.hidden === show) box.hidden = !show;
   if (!show) return;
-  const E = S.dg && S.dg.bg && S.dg.E, sig = v.list.map(m => m.name).join() + S.level + (v.inst ? "i" : "q") + (E ? "e" + E.length : "");
+  const E = S.dg && S.dg.bg && S.dg.E, sig = v.list.map(m => m.name).join() + (S.pet ? S.pet.name : "") + S.level + (v.inst ? "i" : "q") + (E ? "e" + E.length : "");
   if (box.dataset.sig !== sig) {
     box.dataset.sig = sig; gCache = {}; dmTick = -1;
     box.classList.toggle("nometer", !v.inst);
@@ -503,10 +504,10 @@ function renderGroup(hf, mf) {
   const paint = (i, c, hp, mp, fight, p, cast, L, role) => {
     bubble("g" + box.dataset.sig + "|" + i, $("gh" + i).closest(".gcard,.rcell"), hp, memberMax(c, L), fight);
     const res = i === 0 ? heroRes() : memberRes(c, role), mana = res === "Mana";
-    const v = mana ? Math.round(mp * 100) : pool2(res, fight, p), key = Math.round(hp * 1000) + "|" + v + "|" + cast;
+    const v = mana ? Math.round(mp * 100) : pool2(res, fight, p), key = Math.round(hp * 1000) + "|" + v + "|" + cast + (i === 0 && S.pet ? "|" + Math.round(petHpNow() * 100) : "");
     if (gCache[i] === key) return; gCache[i] = key;
     $("gh" + i).style.width = (hp * 100).toFixed(1) + "%"; $("gh" + i).style.background = hpCol(hp); $("ghv" + i).textContent = Math.round(hp * 100) + "%";
-    const pb = $("gp" + i); if (pb) { const ph = hp > 0 ? Math.min(1, hp + 0.05) : 0; pb.style.width = (ph * 100).toFixed(1) + "%"; pb.style.background = hpCol(ph); } // the pet follows its owner
+    const pb = $("gp" + i); if (pb) { const ph = i === 0 ? petHpNow() : hp > 0 ? Math.min(1, hp + 0.05) : 0; pb.style.width = (ph * 100).toFixed(1) + "%"; pb.style.background = hpCol(ph); } // the pet follows its owner
     $("gm" + i).style.width = v + "%"; $("gm" + i).style.background = resCol(res); $("gmv" + i).textContent = mana ? v + "%" : v;
     $("gc" + i).innerHTML = cast;
   };
