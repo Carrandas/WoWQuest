@@ -448,6 +448,15 @@ function renderProfs() {
   $("crafts").innerHTML = p.recent.map(x => `<li><span class="l">${esc(x.n)}</span><span class="rank">level ${x.L}</span></li>`).join("") || `<li><span class="empty">nothing made yet</span></li>`;
 }
 // a group member's health, resource and cast lines (filled in by renderGroup's paint)
+// a group member's pet (hunters from 10, warlocks): picked from the name, so the same friend always has the same one
+const nameHash = s => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+function memberPet(m) {
+  if (m.me || !(m.cls === "Hunter" && m.L >= 10) && m.cls !== "Warlock") return null;
+  const h = nameHash(m.name);
+  if (m.cls === "Warlock") { const type = m.L >= 30 && h % 3 === 0 ? "Felhunter" : m.L >= 20 && h % 3 === 1 ? "Succubus" : m.L >= 10 ? "Voidwalker" : "Imp"; const l = DEMON_NAMES[type]; return { name: l[h % l.length], what: type.toLowerCase() }; }
+  const fams = Object.keys(PET_NAMES), fam = fams[h % fams.length], l = PET_NAMES[fam];
+  return { name: l[(h >> 4) % l.length], what: fam.toLowerCase() };
+}
 const memberBars = (i, p = "g") => `<div class="gbar"><i id="${p}h${i}"></i><span id="${p}hv${i}"></span></div>
         <div class="gbar thin"><i id="${p}m${i}"></i><span id="${p}mv${i}"></span></div>
         <div class="gcast" id="${p}c${i}"></div>`;
@@ -489,7 +498,7 @@ function renderGroup(hf, mf) {
     $("gcards").innerHTML = all.map((m, i) => `<div class="gcard r-${m.role}${m.me ? " me" : ""}">
       <div class="gtop"><span class="gname" style="color:${CLASSES[m.cls].color}">${esc(m.name)}</span><span class="grole">${ROLE_NAME[m.role]}</span></div>
       <div class="gsub">Level ${m.L} ${esc(m.race)} ${m.cls}${m.me ? " · you" : isFriend(m.name) ? " · friend" : ""}</div>
-      ${memberBars(i)}</div>`).join("");
+      ${memberBars(i)}${(pt => pt ? `<div class="gpet"><span>${esc(pt.name)} <small>${esc(pt.what)}</small></span><div class="gbar thin"><i id="gp${i}"></i></div></div>` : "")(memberPet(m))}</div>`).join("");
   }
   const paint = (i, c, hp, mp, fight, p, cast, L, role) => {
     bubble("g" + box.dataset.sig + "|" + i, $("gh" + i).closest(".gcard,.rcell"), hp, memberMax(c, L), fight);
@@ -497,6 +506,7 @@ function renderGroup(hf, mf) {
     const v = mana ? Math.round(mp * 100) : pool2(res, fight, p), key = Math.round(hp * 1000) + "|" + v + "|" + cast;
     if (gCache[i] === key) return; gCache[i] = key;
     $("gh" + i).style.width = (hp * 100).toFixed(1) + "%"; $("gh" + i).style.background = hpCol(hp); $("ghv" + i).textContent = Math.round(hp * 100) + "%";
+    const pb = $("gp" + i); if (pb) { const ph = hp > 0 ? Math.min(1, hp + 0.05) : 0; pb.style.width = (ph * 100).toFixed(1) + "%"; pb.style.background = hpCol(ph); } // the pet follows its owner
     $("gm" + i).style.width = v + "%"; $("gm" + i).style.background = resCol(res); $("gmv" + i).textContent = mana ? v + "%" : v;
     $("gc" + i).innerHTML = cast;
   };
