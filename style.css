@@ -419,16 +419,16 @@ button:disabled { cursor: not-allowed; }
 .chh .seg { flex: 1; display: flex; flex-wrap: wrap; gap: 4px; }
 .chh .seg button { background: none; border: 1px solid var(--rim); border-radius: 999px; color: var(--dim); font-size: 12px; padding: 1px 9px; cursor: pointer; }
 .chh .seg button[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: var(--ink); font-weight: 700; }
-.chat { list-style: none; margin: 8px 0 0; padding: 0; max-height: 220px; overflow-y: auto; font-size: 13.5px; line-height: 1.35; }
-.chat li { padding: 1px 0; overflow-wrap: anywhere; }
-.chat b { font-weight: 600; }
-.chat .c-general, .chat .c-trade, .chat .c-lfg { color: #ffc0c0; }
-.chat .c-guild { color: #40ff40; }
-.chat .c-whisper { color: #ff80ff; }
-.chat .cempty { color: var(--dim); font-style: italic; }
-.chatbox.folded .chat, .chatbox.folded .seg { display: none; }
+#chat { list-style: none; margin: 8px 0 0; padding: 0; max-height: 220px; overflow-y: auto; font-size: 13.5px; line-height: 1.35; }
+#chat li { padding: 1px 0; overflow-wrap: anywhere; }
+#chat b { font-weight: 600; }
+#chat .c-general, #chat .c-trade, #chat .c-lfg { color: #ffc0c0; }
+#chat .c-guild { color: #40ff40; }
+#chat .c-whisper { color: #ff80ff; }
+#chat .cempty { color: var(--dim); font-style: italic; }
+.chatbox.folded #chat, .chatbox.folded .seg { display: none; }
 @media (max-width: 720px) {
-  .chat { max-height: 160px; font-size: 13px; }
+  #chat { max-height: 160px; font-size: 13px; }
   .chh .seg button { padding: 1px 7px; }
 }
 .brand .ver { font-family: var(--body); font-size: 11px; color: var(--dim); margin-left: 6px; letter-spacing: 0; vertical-align: middle; }
