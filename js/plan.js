@@ -9,8 +9,8 @@ function plan() {
   const q = S.queue, z = curZone(), h = hub();
   // 1. arrive in the current zone
   if (S.arrived !== z) {
-    const first = S.loc === "start";
-    q.push({ k: "arrive", d: first ? `Getting your bearings in ${z}` : S.level >= 10 ? `Taking the flight path to ${h}, ${z}` : `${travelVerb()} to ${h}, ${z}`, t: sec(first ? 6 : S.level >= 10 ? 140 : 60), zone: z });
+    const first = S.loc === "start", fly = S.level >= 10 && S.zones.some(e => e.z === z); // no flight path to a zone you have never been to
+    q.push({ k: "arrive", d: first ? `Getting your bearings in ${z}` : fly ? `Taking the flight path to ${h}, ${z}` : `${travelVerb()} to ${h}, ${z}, for the first time`, t: sec(first ? 6 : S.level >= 10 ? 140 : 60), zone: z });
     return;
   }
   // 2. out in the field
