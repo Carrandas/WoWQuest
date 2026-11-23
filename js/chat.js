@@ -18,9 +18,9 @@ const cpick = a => a[Math.floor(cr() * a.length)];
 const cR = n => Math.floor(cr() * n);
 const CH = { general: "General", trade: "Trade", lfg: "LookingForGroup", guild: "Guild", whisper: "Whisper" };
 
-function chatSay(ch, who, txt, cls) {
+function chatSay(ch, who, txt, cls, to) {
   const L = chatLog();
-  L.push({ ch, who, txt, cls: cls || null, t: S.time });
+  L.push({ ch, who, txt, cls: cls || null, t: S.time, ...(to ? { to } : {}) });
   let cut = Math.max(0, L.length - CHAT_MAX); while (cut < L.length && S.time - L[cut].t > CHAT_AGE) cut++; // old chat clears itself
   if (cut) L.splice(0, cut);
   chatDirty = true;
@@ -164,7 +164,7 @@ function chatTick() {
   if (!S || !S.time) return;
   const now = S.time, where = S.loc, inRaid = !!(S.dg && S.dg.raid);
   // the replies that are due (dropped if the hero has gone somewhere they can't be heard)
-  for (let i = 0; i < chatPending.length;) { const p = chatPending[i]; if (p.at > now) { i++; continue; } chatPending.splice(i, 1); if (now - p.at < 5 * MIN) chatSay(p.ch, p.who, p.txt, p.cls); }
+  for (let i = 0; i < chatPending.length;) { const p = chatPending[i]; if (p.at > now) { i++; continue; } chatPending.splice(i, 1); if (now - p.at < 5 * MIN) chatSay(p.ch, p.who, p.txt, p.cls, p.to); }
   for (const ch of Object.keys(CHAT_GAP)) {
     if (chatNext[ch] == null || chatNext[ch] - now > 4 * HOUR) { chatNext[ch] = now + (CHAT_GAP[ch][0] + cr() * (CHAT_GAP[ch][1] - CHAT_GAP[ch][0])) * 1000; continue; }
     if (now < chatNext[ch]) continue;
@@ -176,7 +176,7 @@ function chatTick() {
     chatNext[ch] = now + (gap[0] + cr() * (gap[1] - gap[0])) * 1000 * (where === "city" || ch === "guild" ? 1 : 1.6);
     if (mute) continue;
     const line = ch === "general" ? genGeneral() : ch === "trade" ? genTrade() : ch === "lfg" ? genLfg() : ch === "guild" ? genGuild() : genWhisper();
-    if (line) { chatSay(ch, line[0].name, line[1], line[0].cls); chatReplies(ch, line[0].name, line[1]); }
+    if (line) { chatSay(ch, line[0].name, line[1], line[0].cls); chatReplies(ch, line[0].name, line[1]); if (ch === "whisper") whisperBack(line[0].name, line[1]); }
     if (ch === "trade" && line && cr() < 0.3) chatNext[ch] = now + 3000; // the spam comes in bursts
   }
 }
@@ -192,7 +192,25 @@ function chatEvent(kind, x) {
   if (kind === "wipe" && S.guild && S.dg && S.dg.raid) several(2 + cR(2), () => cpick(["rez pls", "who pulled?", "release and run back", "healers oom?", "again, we got this", "wipe it", "nice threat, tank"]));
   if (kind === "raidinv" && S.guild) { const o = g(); if (o) chatSay("guild", o.name, `Invites going out for ${x}, be at the stone in 10`, o.cls); several(2, () => cpick(["inv pls", "+1 inv", "omw", "can i get a summon?"])); }
   if (kind === "lfg") chatSay("lfg", S.name, x, S.cls);
-  if (kind === "whisper") chatSay("whisper", x.name, x.txt, x.cls);
+  if (kind === "whisper") {
+    chatSay("whisper", x.name, x.txt, x.cls);
+    whisperBack(x.name, x.txt);
+  }
+}
+
+// the hero answers a friend's whisper, a few seconds later
+const WHISPER_BACK = [
+  [/spot|coming/, ["sure, omw!", "yes! be there in 2", "omw, thanks for the inv", "coming, summon?"]],
+  [/Need a hand|same quests/, ["sure, inv me", "yes please, these mobs hit hard", "sounds good, see you at the hub", "always, thanks!"]],
+  [/help with a quest/, ["sure, where are you?", "after this quest, 5 min", "which one?"]],
+  [/long time/, ["hey! been busy leveling", "hiii, how's your alt?", "o/ good to see you"]],
+  [/wanna run|wanna do/, ["sure, ping me", "maybe tonight?", "yes, need the quests there"]],
+  [/grats/, ["ty!", "thanks :)", "ty, finally"]],
+];
+function whisperBack(name, txt) {
+  if (name === S.name || !S.friends.some(f => f.name === name)) return;
+  const w = WHISPER_BACK.find(x => x[0].test(txt)); if (!w) return;
+  chatPending.push({ at: S.time + (3 + cr() * 6) * 1000, ch: "whisper", who: S.name, cls: S.cls, to: name, txt: cpick(w[1]) });
 }
 
 // ---------- the panel ----------
@@ -207,7 +225,7 @@ function renderChat() {
   const rows = chatLog().filter(l => chatTab === "all" || l.ch === chatTab).slice(-60);
   const nameCol = l => l.cls && CLASSES[l.cls] ? ` style="color:${CLASSES[l.cls].color}"` : "";
   el.innerHTML = rows.map(l => l.ch === "whisper"
-    ? `<li class="c-whisper"><b${nameCol(l)}>[${esc(l.who)}]</b> whispers: ${esc(l.txt)}</li>`
+    ? (l.to ? `<li class="c-whisper">To <b style="color:${CLASSES[S.cls].color}">[${esc(l.to)}]</b>: ${esc(l.txt)}</li>` : `<li class="c-whisper"><b${nameCol(l)}>[${esc(l.who)}]</b> whispers: ${esc(l.txt)}</li>`)
     : `<li class="c-${l.ch}">[${l.ch === "general" || l.ch === "trade" ? `${l.ch === "general" ? "1" : "2"}. ${CH[l.ch]}${l.ch === "general" && zoneNow() ? " - " + esc(zoneNow()) : l.ch === "trade" ? " - City" : ""}` : l.ch === "lfg" ? "4. LookingForGroup" : CH[l.ch]}] <b${nameCol(l)}>[${esc(l.who)}]</b>: ${esc(l.txt)}</li>`).join("") || `<li class="cempty">Nobody's talking.</li>`;
   el.scrollTop = el.scrollHeight;
 }
