@@ -216,17 +216,24 @@ function heroWeights(t, casts, N) {
 // one enemy: name, level, rank ("", elite, boss, raid elite, raid boss) and kind (from the name)
 const foeUnit = (name, L, rank) => ({ name, L, rank, kind: foeKind(name) });
 // who the hero fights in a task: the pulled mobs, a dungeon pack, or a boss with its adds (boss last)
+// dungeon levels as in classic: the first boss a couple of levels over the dungeon's minimum, the last a few under its
+// maximum (VanCleef 22 in the Deadmines, 17-26); the level 60 dungeons from 60 to 62. Trash climbs along the way.
+// Raids: elites 61-62, bosses 63 ("??")
+function dungeonLevels(d) { const lo = d.min + 2, hi = d.max >= 60 ? 62 : Math.max(lo, d.max - 4); return [Math.min(lo, hi), hi]; }
+function bossLevel(d, boss) { const [lo, hi] = dungeonLevels(d), i = Math.max(0, d.bosses.indexOf(boss)), n = d.bosses.length; return n > 1 ? Math.round(lo + (hi - lo) * i / (n - 1)) : hi; }
 function foeUnits(t, raid) {
   if (t.foes) return bgUnits(t); // a battleground fight
   const d = dungeonRow(), top = d ? d.max : S.level, units = [];
+  const next = d && S.dg ? d.bosses[Math.min(d.bosses.length - 1, S.dg.killed || 0)] : null, here = d ? bossLevel(d, next) : top;
   if (t.k === "kill") (t.mobs || [t.mob]).forEach(n => units.push(foeUnit(n, t.mobL || S.level, t.elite ? "elite" : "")));
   else if (t.k === "trash") {
     // tasks from old saves only have the description: "Clearing a pack of Defias Miners"
     const names = t.mobs || (() => { const m = /pack of (.+)$/.exec(t.d || ""), n = m ? m[1].replace(/ies$/, "y").replace(/ves$/, "f").replace(/s$/, "") : "Enemy"; return [n, n, n]; })();
-    names.forEach(n => units.push(foeUnit(n, raid ? 61 + R(2) : top - 1 + R(2), raid ? "raid elite" : "elite")));
+    names.forEach(n => units.push(foeUnit(n, raid ? 61 + R(2) : here - 1 + R(2), raid ? "raid elite" : "elite")));
   } else {
-    (t.adds || BOSS_ADDS[t.boss] || []).forEach(n => units.push(foeUnit(n, raid ? 62 : top, raid ? "raid elite" : "elite")));
-    units.push(foeUnit(t.boss, raid ? 63 : top + 1, raid ? "raid boss" : "boss"));
+    const bl = d && !raid ? bossLevel(d, t.boss) : top + 1;
+    (t.adds || BOSS_ADDS[t.boss] || []).forEach(n => units.push(foeUnit(n, raid ? 62 : bl - 1, raid ? "raid elite" : "elite")));
+    units.push(foeUnit(t.boss, raid ? 63 : bl, raid ? "raid boss" : "boss"));
   }
   return units;
 }

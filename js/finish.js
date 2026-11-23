@@ -12,6 +12,15 @@ function noteDone(name) { S.done.unshift(name); if (S.done.length > 10) S.done.l
 // a quest reward slot: the weakest of three random picks
 function randomSlot() { let best = null; for (let i = 0; i < 3; i++) { const s = pick(SLOTS); if (!best || power(S.equip[s]) < power(S.equip[best])) best = s; } return best; }
 
+// a dungeon pack's share of the loot for the hero (the group rolls on the rest): greys, cloth or meat, now and then a green
+function trashLoot(t) {
+  if (!S.dg || S.dg.bg || S.dg.wb) return;
+  const L = S.level, raid = !!S.dg.raid, junk = () => Math.round((L * L * 0.35 + 3) * (0.5 + Math.random()) * (L >= 60 ? 0.35 : 1));
+  if (Math.random() < (raid ? 0.25 : 0.5)) addBag({ name: pick(GREYS), val: junk(), q: 0 });
+  if (S.prof) profLoot(t); else if (Math.random() < 0.3) addBag({ name: CLOTH[clamp(Math.floor(L / 12), 0, 4)], val: junk(), q: 0 });
+  const d = instanceRow(S.dg.name);
+  if (!raid && d && Math.random() < 0.04) gain(makeItem(pick(SLOTS), clamp(Math.round((d.min + d.max) / 2), 1, 60), 2), `A ${pick(t.mobs || ["mob"])} dropped`);
+}
 function lootDrop(dn, boss) {
   const d = instanceRow(dn); if (!d) return;
   const raid = RAIDS.includes(d) || !!RAID_INFO[dn], caster = isCaster(); // world bosses count as raids
@@ -207,7 +216,7 @@ const FINISH = {
     S.dq = null;
   },
   dtravel(t) { S.loc = "dungeon"; log(`Entering ${t.dn}.`, "dung"); },
-  trash(t) { if (t.bg) { if (t.wb) wbPvpEnd(t); else bgFightEnd(t); petAfterFight(t, null); friendChatter(); return; } if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); petAfterFight(t, null); minipetDrops(t.mobs || []); friendChatter(); },
+  trash(t) { if (t.bg) { if (t.wb) wbPvpEnd(t); else bgFightEnd(t); petAfterFight(t, null); friendChatter(); return; } if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); petAfterFight(t, null); minipetDrops(t.mobs || []); trashLoot(t); friendChatter(); },
   boss(t) {
     if (t.foe) t.foe.units.forEach(u => (u.phases || []).forEach(p => { if (p.say) log(p.say, "boss"); }));
     const raid = !!(S.dg && S.dg.raid);
