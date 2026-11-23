@@ -30,7 +30,9 @@ function planField(q, h) {
   if (pt) { q.push(pt); return; }
   const mb = missingBuff();
   if (mb) { q.push({ k: "buff", d: mb.cast, t: sec(2.5), b: mb }); return; }
-  if (S.since > 3 + R(6) || (S.hpF ?? 1) < 0.45 || (cls().mp && (S.mpF ?? 1) < 0.3)) {
+  // a rest every few fights, but only when there is something to top up (not right after a trip that filled you up)
+  const worn = (S.hpF ?? 1) < 0.9 || (cls().mp && (S.mpF ?? 1) < 0.85);
+  if ((S.since > 3 + R(6) && worn) || (S.hpF ?? 1) < 0.45 || (cls().mp && (S.mpF ?? 1) < 0.3)) {
     const dry = restKinds().find(k => !(S.cons[k] > 0) && canConjure(k));
     if (dry) { q.push(...rationTasks(h).filter(x => x.k === "conjure")); return; }
     S.since = 0; q.push(restTask()); return;
