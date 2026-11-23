@@ -218,7 +218,7 @@ function renderFoe() {
   setHtml("eCasts", s.alive ? (from > (u.spawn || 0) ? "… › " : "") + acts.map((a, i) => `<span${i + from === s.ci ? ' class="cur"' : ""}>${esc(a)}</span>`).join(" › ") : '<span class="dead">dead</span>');
   setHtml("eAdds", f.units.length > 1 ? f.units.map((x, i) => i === mi || !st[i].present ? "" : `<li class="${st[i].alive ? "" : "dead"}"><div class="an"><span>${esc(x.name)}</span><small>${st[i].alive ? esc(st[i].act) : "dead"}</small></div><div class="gbar thin"><i style="width:${(st[i].hp * 100).toFixed(1)}%;background:${hpCol(st[i].hp)}"></i></div></li>`).join("") : "");
   const left = st.filter(x => x.alive).length, seen = st.filter(x => x.present).length, bi = f.units.findIndex(x => x.phases), ph = bi >= 0 ? st[bi].phase : null;
-  setHtml("eInfo", [ph ? ["phase", esc(ph.label)] : null, ["target", esc(petHolding(f, k) ? S.pet.name : foeTarget())], seen > 1 ? ["pack", `${left} of ${seen} standing`] : null, ["health", u.max.toLocaleString()]]
+  setHtml("eInfo", [ph ? ["phase", esc(ph.label)] : null, ["target", esc(petHolding(f, k) ? S.pet.name : foeTarget())], seen > 1 ? ["pack", `${left} of ${seen} standing`] : null]
     .filter(Boolean).map(([a, b]) => `<li><span class="k">${a}</span><span class="v">${b}</span></li>`).join(""));
 }
 
