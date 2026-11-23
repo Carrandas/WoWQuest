@@ -234,14 +234,19 @@ function petVitals(t, hp, mp) {
 }
 
 // ---------- on screen: a small frame under the hero ----------
+// the pet's health right now (its own fight alone, healing up with the hero between fights)
+function petHpNow() {
+  const p = S.pet; if (!p || p.dead) return 0;
+  const t = S.task, fight = t && FIGHTS.includes(t.k), raw = t ? taskDone(t) : 0;
+  const sf = fight && t.k === "kill" && !S.party ? soloFight(t) : null;
+  return sf && sf.pet ? hpAt(sf.pet, raw) : t && !fight ? p.hp + (petHpAfter(t) - p.hp) * raw : p.hp;
+}
 function renderPet() {
   const box = $("petf"); if (!box) return;
   const p = S.pet;
   if (!p) { if (!box.hidden) box.hidden = true; return; }
   if (box.hidden) box.hidden = false;
-  const t = S.task, fight = t && FIGHTS.includes(t.k) && !p.dead, raw = t ? taskDone(t) : 0;
-  const sf = fight && t.k === "kill" && !S.party ? soloFight(t) : null;
-  const hp = p.dead ? 0 : sf && sf.pet ? hpAt(sf.pet, raw) : t && !fight ? p.hp + (petHpAfter(t) - p.hp) * raw : p.hp; // healing up with the hero
+  const t = S.task, fight = t && FIGHTS.includes(t.k) && !p.dead, raw = t ? taskDone(t) : 0, hp = petHpNow();
   const n = (t && t.casts && t.casts.length) || 0, k = n ? Math.min(n - 1, Math.floor(raw * n)) : 0;
   const act = p.dead ? "dead" : hp <= 0 ? "dead" : fight && n ? petActs(n)[k] : p.kind === "beast" ? HAPPY(p.happy) : "following";
   const what = p.kind === "beast" ? `${p.rare ? "rare " : ""}${p.family.toLowerCase()}` : p.type.toLowerCase();
