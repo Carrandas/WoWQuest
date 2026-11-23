@@ -15,7 +15,7 @@ const PERS = {
   joker: ["the joker", ["{n}: \"Who needs a healer when you have bandages?\"", "{n} /danced on the boss's corpse. Everyone joined in."]],
   afk: ["goes AFK at the worst moment", ["{n} went AFK mid-pull: \"sry, door\".", "{n}: \"brb, pizza\". The pull went fine anyway."]],
   helpful: ["always helps", ["{n} hands out water to everyone before the run.", "{n} explains every pull to the new guy, patiently."]],
-  need: ["needs on everything", ["{n} rolled Need on cloth again. As a warrior.", "{n}: \"oops, wrong button\" (it wasn't)."]],
+  need: ["needs on everything", ["{n} rolled Need on {wrong} again. As a {c}.", "{n}: \"oops, wrong button\" (it wasn't)."]],
   chatty: ["talks too much", ["{n} tells the story of their first epic again.", "{n} won't stop talking about their alt."]],
 };
 const GUILD_A = ["Crimson", "Silver", "Eternal", "Shadow", "Last", "Iron", "Wandering", "Dawn", "Ember", "Frost", "Storm", "Ashen", "Hidden", "Broken", "Twilight", "Golden"];
@@ -119,7 +119,8 @@ function friendChatter() {
   const fr = S.party.filter(m => isFriend(m.name)); if (!fr.length) return;
   S.dg.chat = true;
   const m = pick(fr), f = S.friends.find(x => x.name === m.name), lines = PERS[f.pers] ? PERS[f.pers][1] : PERS.joker[1];
-  log(pick(lines).replace("{n}", m.name), "chat");
+  const c = m.cls.toLowerCase(), wrong = ["Mage", "Priest", "Warlock"].includes(m.cls) ? "plate" : "cloth"; // armor they can't use
+  log(pick(lines).replace("{n}", m.name).replace("{wrong}", wrong).replace("{c}", c), "chat");
 }
 // a dungeon done: friends along count a run, and a stranger who played well may add you
 function socialDungeonEnd() {
