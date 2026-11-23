@@ -3,7 +3,7 @@
 
 // ---------- planning ----------
 const needCity = () => S.level < 60 ? S.level >= S.nextCity : S.cycleQ >= 8;
-function travelVerb() { return S.mount >= 2 ? "Galloping on your " + rideName() : S.mount ? "Riding your " + rideName() : cheetah() ? "Running with Aspect of the Cheetah" : "Running"; }
+function travelVerb() { return S.mount >= 2 ? "Galloping on your " + rideName() : S.mount ? "Riding your " + rideName() : travelForm() ? travelForm()[1] : "Running"; }
 
 function plan() {
   const q = S.queue, z = curZone(), h = hub();
@@ -169,7 +169,7 @@ function rotation(elite, count, mobs = 1) {
 
 function queueCity() {
   const q = S.queue, c = cls(), local = S.level < 10, where = local ? hub() : city();
-  if (!local) q.push({ k: "travel", d: `Hearthing to ${where}`, t: sec(14, 1), to: "city" });
+  if (!local) q.push({ k: "travel", d: S.cls === "Mage" && spellName("Teleport: {city}") in S.spells ? `Teleporting to ${where}` : `Hearthing to ${where}`, t: sec(14, 1), to: "city" }); // a mage has their own way home
   q.push({ k: "train", d: `Training with your ${S.cls.toLowerCase()} trainer in ${where}`, t: sec(10) });
   cqQueue(q); // a class quest the trainer has
   const p = S.prof;

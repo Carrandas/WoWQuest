@@ -308,6 +308,8 @@ const XP_TABLE = [0, 400, 900, 1400, 2100, 2800, 3600, 4500, 5400, 6500, 7600, 8
 let TF = 1;                        // global time factor, tuned by simulation
 const SPAN = L => TF * (0.45 + L / 22); // durations stretch as you level: the first levels fly by, the 50s crawl
 const sec = (s, L = S.level) => Math.round(s * 1000 * SPAN(L) * (0.8 + Math.random() * 0.4));
-// a hunter without a mount runs with Aspect of the Cheetah (and switches back to Hawk for the fight)
-const cheetah = () => !S.mount && S.cls === "Hunter" && "Aspect of the Cheetah" in S.spells;
-const mountF = () => S.mount >= 2 ? 0.5 : S.mount ? 0.65 : cheetah() ? 0.8 : 1;
+// before the mount, the classes with a way to run faster use it: a hunter Aspect of the Cheetah (Hawk again for the
+// fight), a shaman Ghost Wolf, a druid Travel Form: [spell, how it reads, travel time]
+const TRAVEL_FORM = { Hunter: ["Aspect of the Cheetah", "Running with Aspect of the Cheetah", 0.8], Shaman: ["Ghost Wolf", "Running as a Ghost Wolf", 0.8], Druid: ["Travel Form", "Bounding along in Travel Form", 0.75] };
+const travelForm = () => { const f = TRAVEL_FORM[S.cls]; return !S.mount && f && f[0] in S.spells ? f : null; };
+const mountF = () => S.mount >= 2 ? 0.5 : S.mount ? 0.65 : travelForm() ? travelForm()[2] : 1;
