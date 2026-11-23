@@ -308,4 +308,6 @@ const XP_TABLE = [0, 400, 900, 1400, 2100, 2800, 3600, 4500, 5400, 6500, 7600, 8
 let TF = 1;                        // global time factor, tuned by simulation
 const SPAN = L => TF * (0.45 + L / 22); // durations stretch as you level: the first levels fly by, the 50s crawl
 const sec = (s, L = S.level) => Math.round(s * 1000 * SPAN(L) * (0.8 + Math.random() * 0.4));
-const mountF = () => S.mount >= 2 ? 0.5 : S.mount ? 0.65 : 1;
+// a hunter without a mount runs with Aspect of the Cheetah (and switches back to Hawk for the fight)
+const cheetah = () => !S.mount && S.cls === "Hunter" && "Aspect of the Cheetah" in S.spells;
+const mountF = () => S.mount >= 2 ? 0.5 : S.mount ? 0.65 : cheetah() ? 0.8 : 1;
