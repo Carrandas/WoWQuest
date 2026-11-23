@@ -197,6 +197,12 @@ function petTick(t) {
   if (!S.pet || S.pet.dead || FIGHTS.includes(t.k)) return;
   S.pet.hp = petHpAfter(t);
 }
+// a dead pet back between pulls in a dungeon and at the end of a run (in the field, petTask does it)
+function petRezGroup() {
+  const p = S.pet; if (!p || !p.dead) return;
+  p.dead = false; p.hp = 0.6;
+  log(S.cls === "Hunter" ? `Revive Pet: ${p.name} is back on its feet.` : `Summoned ${p.name} again.`, "spell");
+}
 const PET_FINISH = {
   tame(t) {
     const old = S.pet, name = t.rare ? t.beast : Math.random() < 0.6 ? pick(PET_NAMES[t.family] || PET_NAMES_ANY) : pick(PET_NAMES_ANY);

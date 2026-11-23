@@ -280,6 +280,7 @@ const FINISH = {
     if (got.length) log(`Buffed up: ${got.join(", ")}.`, "spell");
   },
   dend(t) {
+    petRezGroup();
     if (wbRow(t.dn)) return wbEnd(t); // a world boss: no lockout, no clear
     // a raid only counts as cleared once the last boss is down (that can take several nights)
     const ri = RAID_INFO[t.dn], full = !ri || !S.dg || S.dg.killed >= S.dg.total;
@@ -297,7 +298,7 @@ const FINISH = {
     S.dg = null; S.party = null; S.loc = "city";
   },
   // nothing to do when these end: the hero just moves on (health and mana are set in finish)
-  move() {}, rest() {}, ghost() {}, rez() {}, regroup() {},
+  move() {}, rest() {}, ghost() {}, rez() {}, regroup() { petRezGroup(); },
   ...PET_FINISH, // tame, summon, petrez, petheal, feed, ritual
   ...PVP_FINISH, // bgq, bgin, bgobj, bgrez, bgend
   ...WP_FINISH, // wpsee, wpgo, wpend, wpcity
