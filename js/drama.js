@@ -106,7 +106,7 @@ const dramaCalloff = () => !!S.guild && raidClears("Molten Core") > 0 && Math.ra
 function dramaYell(boss) {
   const d = S.drama; if (!S.guild || Math.random() < 0.4 || S.time - (d.yell || 0) < 3 * DAY) return;
   d.yell = S.time; d.yells = (d.yells || 0) + 1;
-  log(`The guild leader on Ventrilo after the third wipe on ${boss}: ${pick(["\"ARE YOU GUYS EVEN LISTENING? DOTS! DOTS! STOP STANDING IN THE FIRE!\"", "\"Who is that shaman with the Flametongue totem? FIRE RESISTANCE, PEOPLE.\"", "\"I have been raid leading for six hours. SIX HOURS.\" A long silence.", "\"Tanks, where are you? Healers, why is everyone dead?\" Somebody unmutes to laugh."])}`, "chat");
+  log(`The guild leader on Ventrilo after the third wipe on ${boss}: ${pick(["\"ARE YOU GUYS EVEN LISTENING? DOTS! DOTS! STOP STANDING IN THE FIRE!\"", S.faction === "Horde" ? "\"Who is that shaman with the Flametongue totem? FIRE RESISTANCE TOTEM, PEOPLE.\"" : "\"Paladins, Fire Resistance Aura. FIRE. RESISTANCE. AURA.\"", "\"I have been raid leading for six hours. SIX HOURS.\" A long silence.", "\"Tanks, where are you? Healers, why is everyone dead?\" Somebody unmutes to laugh."])}`, "chat");
   gsay(rosterPick(), "someone's mad"); gsay(rosterPick(), "it was the healers");
 }
 // the hero's loot: now and then the loot council hands it to someone else

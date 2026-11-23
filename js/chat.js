@@ -28,7 +28,17 @@ function chatSay(ch, who, txt, cls) {
 
 // ---------- who talks ----------
 const CHAT_NAMES = ["Leeroyz", "Healbot", "Gnomercy", "Moonfiyah", "Stabbyjoe", "Frostiez", "Bubblehearth", "Lokdar", "Totemz", "Arrowyn", "Pwnstar", "Darkbladez", "Elunea", "Grimtusk", "Shamwow", "Holycow", "Legolaz", "Arthaz", "Illidank", "Thrallz", "Druidude", "Lockjaww", "Facerollz", "Huntardo", "Mageeyes", "Tankenstein", "Rogueone", "Priestly", "Kaelthaz", "Muradinn"];
-const stranger = () => ({ name: cpick(CHAT_NAMES), cls: cpick(Object.keys(CLASSES)) });
+// the classes of the hero's faction (no Alliance shamans, no Horde paladins)
+const facClasses = () => Object.keys(CLASSES).filter(c => !(c === "Paladin" && S.faction === "Horde") && !(c === "Shaman" && S.faction === "Alliance"));
+const stranger = cls => ({ name: cpick(CHAT_NAMES), cls: cls || cpick(facClasses()) });
+// lines only some classes say (or never say): portals are a mage's, lockpicking is asked by anyone but a rogue
+function fitWho(txt, who) {
+  if (/portals/.test(txt)) return { ...who, cls: "Mage" };
+  if (/lockpicking/.test(txt) && who.cls === "Rogue") return { ...who, cls: cpick(facClasses().filter(c => c !== "Rogue")) };
+  if (/summon me/.test(txt) && who.cls === "Warlock") return { ...who, cls: cpick(facClasses().filter(c => c !== "Warlock")) };
+  return who;
+}
+const capitalOf = () => S.faction === "Horde" ? "Orgrimmar" : "Ironforge";
 const guildies = () => S.guild ? S.guild.roster.concat(S.friends) : [];
 const guildie = () => { const g = guildies(); return g.length ? g[cR(g.length)] : null; };
 const zoneNow = () => { const z = curZone(); return ZONES[z] ? z : null; };
@@ -42,11 +52,11 @@ function genGeneral() {
   const z = zoneNow(); if (!z) return null;
   const zr = ZONES[z], who = stranger();
   if (z === "The Barrens" && cr() < 0.5) return [who, cpick(BARRENS)];
-  const mob = cpick(zr.mobs), q = zr.quests.length ? cpick(zr.quests) : null;
+  const mob = cpick(zr.mobs), q = zr.quests.length ? cpick(zr.quests) : null, plural = c => c.toLowerCase() + "s";
   return [who, cpick([
     `anyone know where ${mob} spawns?`, q ? `where do i turn in "${q}"?` : `where is the flight master?`, q ? `LF group for "${q}", pst` : `LF group, anything`,
-    `can someone help me kill ${mob}? keeps killing me`, `where is the ${cpick(["warrior", "mage", "priest", "hunter", "rogue"])} trainer?`, `how do i get to ${cpick(Object.keys(ZONES))}?`,
-    `is there a mailbox in ${zr.hubA || zr.hubH || "town"}?`, `anyone else lagging?`, `lol`, `first!`, `what's the best class?`, `nerf ${cpick(["rogues", "mages", "hunters", "warlocks", "paladins"])}`,
+    `can someone help me kill ${mob}? keeps killing me`, `where is the ${who.cls.toLowerCase()} trainer?`, `how do i get to ${cpick(Object.keys(ZONES))}?`,
+    `is there a mailbox in ${zr.hubA || zr.hubH || "town"}?`, `anyone else lagging?`, `lol`, `first!`, `what's the best class?`, `nerf ${plural(cpick(facClasses().filter(c => c !== who.cls)))}`,
     `my cat walked on my keyboard asdfjkl`, `LEEEEROY JENKINS!`, `is it worth leveling ${cpick(["skinning", "fishing", "cooking", "engineering"])}?`, `/2 is for trade, noob`, `how do i get a mount`,
     `ninja looted again in ${zr.hubA || "town"}, watch out for ${cpick(CHAT_NAMES)}`, `anyone want to duel?`, `what level is ${cpick(Object.keys(ZONES))}?`, `brb`, `wts nothing, just wanted to talk`,
   ])];
@@ -56,12 +66,13 @@ function genTrade() {
   if (S.loc !== "city") return null;
   const who = stranger(), mat = cpick(Object.values(MATS).flat()), item = anyItem();
   if (cr() < 0.06) return [{ name: cpick(["Ggoldseller", "Xzqwlk", "Mmoggold", "Klpxzy"]), cls: "Rogue" }, cpick(GOLD_SPAM)];
-  return [who, cpick([
+  const txt = cpick([
     `WTS [${item}] ${priceTxt(20000 + cR(400) * 1000)}, pst`, `WTB [${mat}] x20, pst with price`, `WTS [${mat}] x20, ${priceTxt(500 + cR(40) * 500)} each`, `LF enchanter for [Enchant Weapon - Crusader], my mats, tips`,
     `LF blacksmith to make [Lionheart Helm], have mats`, `WTS portals ${S.faction === "Horde" ? "to Undercity, Thunder Bluff, Orgrimmar" : "to Ironforge, Darnassus, Stormwind"}, 1g`, `LF lockpicking, have lockbox`,
     `<${S.guild ? S.guild.rival.name : "Eternal Vanguard"}> is recruiting all classes for MC and BWL! pst for info`, `WTS [Black Lotus] ${priceTxt(600000 + cR(40) * 10000)}`, `WTB [Arcanite Bar], pst`,
     `WTS [${item}] ${priceTxt(50000 + cR(200) * 1000)} or best offer`, `anyone selling [Major Healing Potion]?`, `LF alchemist with Flask of the Titans, have mats`, `WTS [${item}] BoE, cheaper than AH`,
-  ])];
+  ]);
+  return [fitWho(txt, who), txt];
 }
 function genLfg() {
   const ds = levelDungeons(), who = stranger(), c = who.cls.toLowerCase();
@@ -75,21 +86,25 @@ const GUILD_LINES = {
   sixty: ["{raid} tonight, invites at 7 server time", "remember your fire res for Rag", "who has the Aqual Quintessence?", "DKP standings are up on the forum", "loot council decided, deal with it", "who still needs [{epic}]?", "{n} is in DKP minus again lol", "pls bring flasks and pots tonight", "Vael is going to be a pain", "we need more healers for {raid}", "can someone summon me to Blackrock Mountain?", "anyone farming Black Lotus?", "AV anyone?", "WSG premade in 10, need 2", "made rank 10 finally", "honor grind is killing me", "{foe} are raiding Southshore again", "who's coming to {raid}?", "Ony reset tomorrow, don't forget"],
   joke: ["how many {cls}s does it take to change a lightbulb? none, they just need a buff", "Leeroy would've pulled it already", "if at first you don't succeed, blame the healer", "i'm not lagging, i'm strategically delayed", "/roll for who explains the fight to the new guy"],
 };
-const PERS_CHAT = { leeroy: ["lets just pull it", "how hard can it be"], late: ["omw, 5 min", "sry late"], pets: ["look at my new pet!", "anyone selling a Bombay Cat?"], joker: ["knock knock", "who needs a healer when you have bandages"], afk: ["brb door", "sry was afk"], helpful: ["anyone need water? i have 40", "need help with anything?"], need: ["can i roll on that? it's an upgrade", "oops, wrong button"], chatty: ["so my alt got a new sword today, let me tell you about it", "did i ever tell you about my first epic?"] };
+const HELPFUL = { Mage: ["anyone need water? i have 40", "need a portal? free for guildies"], Warlock: ["need a summon? i'm at the stone", "anyone want a healthstone?"], Priest: ["need Fortitude? whisper me"], Druid: ["anyone want Mark of the Wild?"], Paladin: ["need a blessing?"], Shaman: ["need a Windfury totem in your group?"] };
+const PERS_CHAT = { leeroy: ["lets just pull it", "how hard can it be"], late: ["omw, 5 min", "sry late"], pets: ["look at my new pet!", "anyone selling a Bombay Cat?"], joker: ["knock knock", "who needs a healer when you have bandages"], afk: ["brb door", "sry was afk"], helpful: ["need help with anything?"], need: ["can i roll on that? it's an upgrade", "oops, wrong button"], chatty: ["so my alt got a new sword today, let me tell you about it", "did i ever tell you about my first epic?"] };
 function genGuild() {
   const g = guildie(); if (!g) return null;
   const sub = s => s.replace("{dn}", (cpick(levelDungeons()) || { abbr: "Strat" }).abbr).replace("{mat}", cpick(Object.values(MATS).flat())).replace("{raid}", cpick(["MC", "BWL", "Ony", "ZG", "AQ40", "Naxx"]).toString())
-    .replace("{epic}", anyItem()).replace("{n}", (guildie() || g).name).replace("{cls}", cpick(Object.keys(CLASSES)).toLowerCase()).replace("{foe}", foeSide());
+    .replace("{epic}", anyItem()).replace("{n}", (guildie() || g).name).replace("{cls}", cpick(facClasses()).toLowerCase()).replace("{foe}", foeSide());
   const r = cr();
+  if (r < 0.15 && g.pers === "helpful" && HELPFUL[g.cls] && cr() < 0.6) return [g, cpick(HELPFUL[g.cls])];
   if (r < 0.15 && PERS_CHAT[g.pers]) return [g, cpick(PERS_CHAT[g.pers])];
   if (r < 0.25) return [g, sub(cpick(GUILD_LINES.joke))];
-  return [g, sub(cpick(S.level >= 60 && cr() < 0.65 ? GUILD_LINES.sixty : GUILD_LINES.any))];
+  let line = sub(cpick(S.level >= 60 && cr() < 0.65 ? GUILD_LINES.sixty : GUILD_LINES.any));
+  for (let k = 0; k < 4 && /summon me/.test(line) && g.cls === "Warlock"; k++) line = sub(cpick(GUILD_LINES.any));
+  return [g, line];
 }
 function genWhisper() {
   const r = cr();
   if (r < 0.4 && S.friends.length) { const f = cpick(S.friends), d = cpick(levelDungeons()); return [f, cpick([`hey! long time no see`, d ? `wanna run ${d.abbr} later?` : `wanna do some quests?`, `got a minute? need help with a quest`, `grats on the level!`])]; }
   if (r < 0.7) return [{ name: cpick(["Ggoldseller", "Xzqwlk", "Mmoggold"]), cls: "Rogue" }, cpick(["Hello friend! Cheap gold at W W W . G 0 L D 4 U . C 0 M", "Congratulations! You have won a free epic mount! Visit www.blizzard-giveaway.c0m to claim"])];
-  return [stranger(), cpick(["can u spare some silver? :(", "can i have your old gear?", "how do i get to Ironforge", "wanna join my guild? we're new but we have a tabard", "u selling anything?"])];
+  return [stranger(), cpick(["can u spare some silver? :(", "can i have your old gear?", `how do i get to ${capitalOf()}`, "wanna join my guild? we're new but we have a tabard", "u selling anything?"])];
 }
 
 // ---------- the timer: a line now and then per channel, more in town ----------
