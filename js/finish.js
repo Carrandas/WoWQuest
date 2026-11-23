@@ -12,6 +12,15 @@ function noteDone(name) { S.done.unshift(name); if (S.done.length > 10) S.done.l
 // a quest reward slot: the weakest of three random picks
 function randomSlot() { let best = null; for (let i = 0; i < 3; i++) { const s = pick(SLOTS); if (!best || power(S.equip[s]) < power(S.equip[best])) best = s; } return best; }
 
+// a dungeon pack's share of the loot for the hero (the group rolls on the rest): greys, cloth or meat, now and then a green
+function trashLoot(t) {
+  if (!S.dg || S.dg.bg || S.dg.wb) return;
+  const L = S.level, raid = !!S.dg.raid, junk = () => Math.round((L * L * 0.35 + 3) * (0.5 + Math.random()) * (L >= 60 ? 0.35 : 1));
+  if (Math.random() < (raid ? 0.25 : 0.5)) addBag({ name: pick(GREYS), val: junk(), q: 0 });
+  if (S.prof) profLoot(t); else if (Math.random() < 0.3) addBag({ name: CLOTH[clamp(Math.floor(L / 12), 0, 4)], val: junk(), q: 0 });
+  const d = instanceRow(S.dg.name);
+  if (!raid && d && Math.random() < 0.04) gain(makeItem(pick(SLOTS), clamp(Math.round((d.min + d.max) / 2), 1, 60), 2), `A ${pick(t.mobs || ["mob"])} dropped`);
+}
 function lootDrop(dn, boss) {
   const d = instanceRow(dn); if (!d) return;
   const raid = RAIDS.includes(d) || !!RAID_INFO[dn], caster = isCaster(); // world bosses count as raids
@@ -39,6 +48,14 @@ function lootDrop(dn, boss) {
   }
   if (!it) return;
   if (dramaLoot(it)) return; // the loot council has other plans (drama.js)
+  // no upgrade: the hero passes (or rolls Greed when nobody needs it) instead of rolling Need
+  if (power(it) <= power(S.equip[it.slot])) {
+    const taker = S.party && S.party.length ? pick(S.party).name : null;
+    if (taker && Math.random() < 0.75) { log(`${boss} dropped ${it.name}. ${S.name} passes, ${taker} wins it on Need.`, "loot" + it.q); return; }
+    log(`${boss} dropped ${it.name}. Everyone rolls Greed, and ${S.name} wins it with a ${40 + R(61)}: one for the vendor.`, "loot" + it.q);
+    addBag({ name: it.name, val: sellValue(it), q: it.q });
+    return;
+  }
   const bid = heroBid(); // guild raids: bought with DKP
   log(bid != null ? `${boss} dropped ${it.name}. You win it for ${bid} DKP.` : `${boss} dropped ${it.name}. Rolled Need: ${60 + R(41)}.`, "loot" + it.q);
   const de = dungeonEntry(dn); if (!de.loot.some(x => x.n === it.name)) de.loot.unshift({ n: it.name, q: it.q }); if (de.loot.length > 6) de.loot.length = 6;
@@ -199,7 +216,7 @@ const FINISH = {
     S.dq = null;
   },
   dtravel(t) { S.loc = "dungeon"; log(`Entering ${t.dn}.`, "dung"); },
-  trash(t) { if (t.bg) { if (t.wb) wbPvpEnd(t); else bgFightEnd(t); petAfterFight(t, null); friendChatter(); return; } if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); petAfterFight(t, null); minipetDrops(t.mobs || []); friendChatter(); },
+  trash(t) { if (t.bg) { if (t.wb) wbPvpEnd(t); else bgFightEnd(t); petAfterFight(t, null); friendChatter(); return; } if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); petAfterFight(t, null); minipetDrops(t.mobs || []); trashLoot(t); friendChatter(); },
   boss(t) {
     if (t.foe) t.foe.units.forEach(u => (u.phases || []).forEach(p => { if (p.say) log(p.say, "boss"); }));
     const raid = !!(S.dg && S.dg.raid);
@@ -263,6 +280,7 @@ const FINISH = {
     if (got.length) log(`Buffed up: ${got.join(", ")}.`, "spell");
   },
   dend(t) {
+    petRezGroup();
     if (wbRow(t.dn)) return wbEnd(t); // a world boss: no lockout, no clear
     // a raid only counts as cleared once the last boss is down (that can take several nights)
     const ri = RAID_INFO[t.dn], full = !ri || !S.dg || S.dg.killed >= S.dg.total;
@@ -280,7 +298,7 @@ const FINISH = {
     S.dg = null; S.party = null; S.loc = "city";
   },
   // nothing to do when these end: the hero just moves on (health and mana are set in finish)
-  move() {}, rest() {}, ghost() {}, rez() {}, regroup() {},
+  move() {}, rest() {}, ghost() {}, rez() {}, regroup() { petRezGroup(); },
   ...PET_FINISH, // tame, summon, petrez, petheal, feed, ritual
   ...PVP_FINISH, // bgq, bgin, bgobj, bgrez, bgend
   ...WP_FINISH, // wpsee, wpgo, wpend, wpcity
