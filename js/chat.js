@@ -107,12 +107,64 @@ function genWhisper() {
   return [stranger(), cpick(["can u spare some silver? :(", "can i have your old gear?", `how do i get to ${capitalOf()}`, "wanna join my guild? we're new but we have a tabard", "u selling anything?"])];
 }
 
+// ---------- replies: some lines get an answer or two, a few seconds later ----------
+// [what was said, the chance of an answer, the answers ({c}: a class named in the line, {cs}: its plural, {cap}: the capital,
+// {hub}: the zone's hub, {who}: the one who said it)]
+const REPLIES = [
+  [/trainer\?/, 0.8, ["in {cap}, ask a guard", "ask any guard, they mark it on your map", "/w me, i'll show you", "{cap}, follow the road past the bank", "you have one in your starting zone too"]],
+  [/^nerf (\w+)/, 0.9, ["yeah, {cs} are so op", "l2p", "roll a {c} yourself then", "{cs} are fine, you just suck", "it's always the {cs}", "nerf {other}s first"]],
+  [/spawns\?/, 0.6, ["east of {hub}", "camped by a rogue, good luck", "all over the place up north", "follow the road, can't miss them", "they respawn fast near the cave"]],
+  [/turn in/, 0.6, ["back at {hub}", "check your quest log", "the guy with the yellow ?", "{hub}, next to the inn"]],
+  [/^LF group for/, 0.5, ["inv", "i'm on that too, inv?", "/w me"]],
+  [/help me kill/, 0.6, ["omw", "what level are you?", "sorry, too low myself", "where are you?"]],
+  [/get a mount|mount$/, 0.6, ["level 40 and 90 gold", "farm, a lot", "riding trainer at 40", "save up, it's worth it"]],
+  [/Wailing Caverns/, 0.8, ["southwest of the Crossroads, in the big oasis", "follow the green mist", "lol every day", "it's on your map, it's the cave"]],
+  [/^how do i get to/, 0.6, ["flight path", "look at your map", "there's a boat", "follow the road and don't die"]],
+  [/Mankrik's wife/, 0.8, ["south of the Crossroads, by the Grimtotem camp", "she's dead, sorry", "lol", "Chuck Norris has her", "nobody knows", "ask Mankrik"]],
+  [/Chuck Norris/, 0.6, ["lol", "old", "haha", "Chuck Norris can divide by zero", "/facepalm"]],
+  [/best class/, 0.8, ["hunter", "{rnd}", "the one you like", "warrior, ask me again in 2 years", "whatever's fun"]],
+  [/^first!$/, 0.7, ["no", "/ignore", "lol", "second"]],
+  [/lagging\?/, 0.7, ["yes", "no", "it's your internet", "server is dying", "everyone is in {cap}"]],
+  [/duel\?/, 0.6, ["sure, where?", "no thanks", "outside {cap}, 5 min"]],
+  [/LEEEEROY/, 0.6, ["at least i have chicken", "omg", "lol", "time's up, let's do this"]],
+  [/G 0 L D|g0ld|WOWG0LD|blizzard-giveaway/i, 0.7, ["reported", "/ignore", "go away", "reported, again"]],
+  [/Black Lotus\] \d+g/, 0.5, ["lol no", "AH has it cheaper", "pst", "{who} that's a rip off"]],
+  [/LF enchanter/, 0.6, ["pst", "what enchant?", "/w me, 5g tip"]],
+  [/is recruiting/, 0.5, ["lol, no", "/w me", "no thanks, my guild is better"]],
+  [/^anyone up for|^LF 2 more|anyone want to quest/, 0.7, ["sure", "me!", "in 10", "can't, gotta go soon", "inv"]],
+  [/who's online/, 0.7, ["me", "o/", "here"]],
+  [/^morning all/, 0.8, ["morning", "o/", "hi", "morning!"]],
+  [/^night all/, 0.8, ["night", "gn", "night!", "o/"]],
+  [/tonight, invites/, 0.8, ["+1", "will be there", "can't tonight, sorry", "late, 15 min"]],
+  [/how many .* lightbulb|blame the healer|strategically delayed|Leeroy would/, 0.7, ["lol", "haha", "/groan", "rofl"]],
+  [/look at my new pet/, 0.6, ["cute", "where did you get it?", "nice"]],
+  [/my alt/, 0.5, ["nobody cares about your alt", "lol", "what class?"]],
+];
+const chatPending = [];
+function chatReplies(ch, who, txt) {
+  if (ch === "lfg" || ch === "whisper") return;
+  const r = REPLIES.find(x => x[0].test(txt)); if (!r || cr() >= r[1]) return;
+  const m = txt.match(r[0]), named = m && m[1] ? m[1].replace(/s$/, "") : null, cls = facClasses().find(c => named && c.toLowerCase() === named.toLowerCase());
+  const z = zoneNow(), zr = z && ZONES[z], hub = zr ? (S.faction === "Horde" ? zr.hubH || zr.hubA : zr.hubA || zr.hubH) || "town" : "town";
+  const fill = s => s.replace(/\{cs\}/g, cls ? cls.toLowerCase() + "s" : "they").replace(/\{c\}/g, cls ? cls.toLowerCase() : "one").replace(/\{other\}/g, cpick(facClasses().filter(c => c !== cls)).toLowerCase())
+    .replace(/\{cap\}/g, capitalOf()).replace(/\{hub\}/g, hub).replace(/\{who\}/g, who).replace(/\{rnd\}/g, cpick(facClasses()).toLowerCase());
+  const used = [];
+  for (let i = 0, n = cr() < 0.35 ? 2 : 1; i < n; i++) {
+    let s = cpick(r[2]); for (let k = 0; k < 4 && used.includes(s); k++) s = cpick(r[2]); used.push(s);
+    const by = ch === "guild" ? (guildie() || stranger()) : stranger();
+    if (by.name === who) continue;
+    chatPending.push({ at: S.time + (4 + cr() * 14 + i * 8) * 1000, ch, who: by.name, cls: by.cls, txt: fill(s) });
+  }
+}
+
 // ---------- the timer: a line now and then per channel, more in town ----------
 const CHAT_GAP = { general: [40, 130], trade: [12, 40], lfg: [100, 260], guild: [45, 150], whisper: [1200, 3600] };
 const chatNext = {};
 function chatTick() {
   if (!S || !S.time) return;
   const now = S.time, where = S.loc, inRaid = !!(S.dg && S.dg.raid);
+  // the replies that are due (dropped if the hero has gone somewhere they can't be heard)
+  for (let i = 0; i < chatPending.length;) { const p = chatPending[i]; if (p.at > now) { i++; continue; } chatPending.splice(i, 1); if (now - p.at < 5 * MIN) chatSay(p.ch, p.who, p.txt, p.cls); }
   for (const ch of Object.keys(CHAT_GAP)) {
     if (chatNext[ch] == null || chatNext[ch] - now > 4 * HOUR) { chatNext[ch] = now + (CHAT_GAP[ch][0] + cr() * (CHAT_GAP[ch][1] - CHAT_GAP[ch][0])) * 1000; continue; }
     if (now < chatNext[ch]) continue;
@@ -124,7 +176,7 @@ function chatTick() {
     chatNext[ch] = now + (gap[0] + cr() * (gap[1] - gap[0])) * 1000 * (where === "city" || ch === "guild" ? 1 : 1.6);
     if (mute) continue;
     const line = ch === "general" ? genGeneral() : ch === "trade" ? genTrade() : ch === "lfg" ? genLfg() : ch === "guild" ? genGuild() : genWhisper();
-    if (line) chatSay(ch, line[0].name, line[1], line[0].cls);
+    if (line) { chatSay(ch, line[0].name, line[1], line[0].cls); chatReplies(ch, line[0].name, line[1]); }
     if (ch === "trade" && line && cr() < 0.3) chatNext[ch] = now + 3000; // the spam comes in bursts
   }
 }
