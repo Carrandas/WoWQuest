@@ -311,6 +311,7 @@ const buffUp = n => (S.buffs[n] || 0) > S.time;
 function missingBuff() { return wantedBuffs().find(b => !buffUp(b.name)); }
 function applyBuff(b) {
   if (b.item) { if (!(S.cons[b.item] > 0)) return; S.cons[b.item]--; if (b.item === "feast") bump("meals"); }
+  if (/^Aspect of the /.test(b.name)) Object.keys(S.buffs).forEach(n => { if (/^Aspect of the /.test(n)) delete S.buffs[n]; }); // one aspect at a time
   S.buffs[b.name] = b.min ? S.time + b.min * MIN : FOREVER;
 }
 function activeBuffs() { return Object.keys(S.buffs).filter(buffUp); }
