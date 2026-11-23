@@ -39,6 +39,14 @@ function lootDrop(dn, boss) {
   }
   if (!it) return;
   if (dramaLoot(it)) return; // the loot council has other plans (drama.js)
+  // no upgrade: the hero passes (or rolls Greed when nobody needs it) instead of rolling Need
+  if (power(it) <= power(S.equip[it.slot])) {
+    const taker = S.party && S.party.length ? pick(S.party).name : null;
+    if (taker && Math.random() < 0.75) { log(`${boss} dropped ${it.name}. ${S.name} passes, ${taker} wins it on Need.`, "loot" + it.q); return; }
+    log(`${boss} dropped ${it.name}. Everyone rolls Greed, and ${S.name} wins it with a ${40 + R(61)}: one for the vendor.`, "loot" + it.q);
+    addBag({ name: it.name, val: sellValue(it), q: it.q });
+    return;
+  }
   const bid = heroBid(); // guild raids: bought with DKP
   log(bid != null ? `${boss} dropped ${it.name}. You win it for ${bid} DKP.` : `${boss} dropped ${it.name}. Rolled Need: ${60 + R(41)}.`, "loot" + it.q);
   const de = dungeonEntry(dn); if (!de.loot.some(x => x.n === it.name)) de.loot.unshift({ n: it.name, q: it.q }); if (de.loot.length > 6) de.loot.length = 6;
