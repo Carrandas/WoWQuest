@@ -64,7 +64,8 @@ const newPvp = () => ({ honor: 0, wk: null, rp: 0, rank: 0, best: 0, total: 0, h
 function pvpPick() {
   if (!pvpOpen()) return null;
   const goal = goalWith("pvp:"), av = hasGoal("avmount");
-  if (Math.random() >= (goal || av ? BG_GOAL_CHANCE : BG_CHANCE)) return null;
+  const pv = guildies().some(m => m.pers === "pvper") ? 1.5 : 1; // a friend who lives for PvP drags you along
+  if (Math.random() >= (goal || av ? BG_GOAL_CHANCE : BG_CHANCE * pv)) return null;
   return av && Math.random() < 0.6 ? bgRow("Alterac Valley") : pick(BGS);
 }
 

@@ -18,6 +18,11 @@ const PERS = {
   leader: ["the leader", ["{n} explains the next pull: \"sheep the moon, kill skull first, nobody stands in the fire.\"", "{n}: \"Great job everyone, one more boss and we're done!\"", "{n} explains the boss before the pull. Twice, for the hunter.", "{n} keeps everyone going after a rough pull: \"we got this, people.\""]],
   need: ["needs on everything", ["{n} rolled Need on {wrong} again. As a {c}.", "{n}: \"oops, wrong button\" (it wasn't)."]],
   aggro: ["pulls aggro", ["{n} pulled aggro again. The tank sighs.", "{n}: \"why is it hitting me??\"", "{n} opens with the biggest crit before the tank has a single Sunder up."]],
+  crafter: ["the crafter", ["{n} crafts everyone a stack of bandages before the run.", "{n} links their new recipe. Twice.", "{n} skins every beast on the way in."]],
+  pvper: ["lives for PvP", ["{n} keeps alt-tabbing to check the Warsong Gulch queue.", "{n}: \"after this, AV?\"", "{n} is still in their PvP gear. It shows."]],
+  newbie: ["the newbie", ["{n} asks what \"pst\" means.", "{n} stood in the fire. They're learning.", "{n}: \"wait, warriors don't have mana?\"", "{n} asks how to loot. Everyone helps."]],
+  theory: ["the theorycrafter", ["{n} links the damage meter after every pull.", "{n} explains why their spec is the best. With numbers.", "{n} is testing a new rotation. On the boss."]],
+  drama: ["the drama queen", ["{n} is upset about the last loot roll. Again.", "{n} writes a long rant on the guild forum during the run.", "{n}: \"I'm not mad, I'm just disappointed.\""]],
   chatty: ["talks too much", ["{n} tells the story of their first epic again.", "{n} won't stop talking about their alt."]],
 };
 const GUILD_A = ["Crimson", "Silver", "Eternal", "Shadow", "Last", "Iron", "Wandering", "Dawn", "Ember", "Frost", "Storm", "Ashen", "Hidden", "Broken", "Twilight", "Golden"];
@@ -115,6 +120,16 @@ function friendGift(f) {
   if (mana) S.cons.mp += n; else S.cons.hp += n;
   log(`${f.name} sends you ${n} ${plural(mana ? mpPot() : hpPot())}: "had some spare, you need them more :)"`, "quest");
 }
+// after a dungeon: the crafter's piece of gear, a spare minipet from the pet lover
+function friendGifts() {
+  if (!S.dg || S.dg.raid || S.dg.bg) return;
+  const cr8 = partyPers("crafter"); if (cr8 && Math.random() < 0.08) gain(makeItem(randomSlot(), S.level + 1, 3), `${cr8.name} crafted you something after the run:`);
+  const pl = partyPers("pets");
+  if (pl && Math.random() < 0.06) {
+    const pets = MINIPETS.filter(p => p.src === "vendor" && ownFaction(p) && !hasMinipet(p.name));
+    if (pets.length) { const n = pick(pets).name; addMinipet(n, `${pl.name} hands you a ${n}: "I had two!"`); }
+  }
+}
 // the leader in a 5-man: knows the way, explains every boss; the group wipes a little less
 const leadWipe = () => partyPers("leader") ? 0.8 : 1;
 
@@ -132,6 +147,13 @@ function socialMember(role, raid, used) {
   const pool = S.friends.filter(free).concat(S.guild ? S.guild.roster.filter(free) : []);
   if (!pool.length) return null;
   const p = pool[0]; used.push(p.name); return asMember(p, true);
+}
+// a stranger rolls Need, wins and leaves the group without a word: someone new takes the spot
+function ninjaLeave(name) {
+  const i = (S.party || []).findIndex(m => m.name === name); if (i < 0) return;
+  const m = S.party[i], p = newPlayer(m.role), nm = { ...asMember(p), gear: contentGear(), hp: 1, mp: 1 };
+  S.party[i] = nm; if (S.meter) { S.meter.dmg[i + 1] = 0; S.meter.heal[i + 1] = 0; }
+  log(`${m.name} has left the group. Ninja. "LF1M ${ROLE_NAME[m.role].toLowerCase()} for ${S.dg.name}, our last one ninja'd and left" ${nm.name} joins.`, "chat");
 }
 // what the other classes in a dungeon group hand out at the entrance (the hero's own buffs are in wantedBuffs)
 const GROUP_GIFTS = {

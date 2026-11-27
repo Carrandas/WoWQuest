@@ -227,12 +227,15 @@ const TAUNT = { Warrior: n => `${n} hits Taunt and Mocking Blow`, Druid: n => `$
 // now and then on a trash pull they rip it off the tank and take a beating until the tank gets it back
 function aggroPull(P, t, ev) {
   if (t.k !== "trash" || !S.dg || S.dg.bg || S.dg.raid) return;
-  const ai = P.findIndex((p, i) => i && aggroProne(S.party[p.pi])); if (ai < 0 || Math.random() > 0.3) return;
+  let ai = P.findIndex((p, i) => i && aggroProne(S.party[p.pi])), nb = false;
+  if (ai < 0) { const nbi = P.findIndex((p, i) => i && p.role !== "tank" && partyPers("newbie") && partyPers("newbie").name === p.name); if (nbi > 0 && Math.random() < 0.5) { ai = nbi; nb = true; } }
+  if (ai < 0 || Math.random() > 0.3) return;
   const a = 0.2 + Math.random() * 0.35, tot = 0.45 + Math.random() * 0.3;
   [0, 0.04, 0.08].forEach(d => ev.push({ at: a + d, i: ai, dmg: tot / 3 }));
   ev.sort((x, y) => x.at - y.at);
   const dg = S.dg; dg.aggro = (dg.aggro || 0) + 1; if (dg.aggro > 2) return; // a line for the first couple of times a run
   const n = P[ai].name, tk = P.find(p => p.role === "tank"), tn = tk ? tk.name : null;
+  if (nb) { log(pick([`${n} runs ahead and pulls the patrol. Everyone saves them.`, `${n} stands in the fire a little too long.`, `${n} runs the wrong way and brings friends back.`]), "chat"); return; }
   const tcls = !tk ? null : tk === P[0] ? S.cls : S.party[tk.pi].cls;
   const back = !tk ? "Nobody can taunt it back" : tk === P[0] ? `${S.name} taunts it back` : (TAUNT[tcls] || (x => `${x} gets it back`))(tn);
   log(pick([`${n} pulls aggro off ${tn || "the tank"} and gets their ass kicked. ${back}.`, `${n} goes all in before the tank has threat. The mob turns around. ${back}.`, `Aggro on ${n}! ${back}.`]), "chat");
