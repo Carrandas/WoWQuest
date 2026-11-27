@@ -60,7 +60,7 @@ function lootDrop(dn, boss) {
     addBag({ name: it.name, val: sellValue(it), q: it.q });
     return;
   }
-  const nd = S.dg && !S.dg.raid && partyPers("need");
+  const nd = S.level < 60 && S.dg && !S.dg.raid && partyPers("need"); // while levelling: the pre-raid set at 60 stays the hero's
   if (nd && Math.random() < 0.2) { log(`${boss} dropped ${it.name}. ${nd.name} rolls Need too and wins with a 98: "it's for my offspec".`, "loot" + it.q); return; }
   const bid = heroBid(); // guild raids: bought with DKP
   log(bid != null ? `${boss} dropped ${it.name}. You win it for ${bid} DKP.` : `${boss} dropped ${it.name}. Rolled Need: ${60 + R(41)}.`, "loot" + it.q);

@@ -64,8 +64,7 @@ const newPvp = () => ({ honor: 0, wk: null, rp: 0, rank: 0, best: 0, total: 0, h
 function pvpPick() {
   if (!pvpOpen()) return null;
   const goal = goalWith("pvp:"), av = hasGoal("avmount");
-  const pv = guildies().some(m => m.pers === "pvper") ? 1.5 : 1; // a friend who lives for PvP drags you along
-  if (Math.random() >= (goal || av ? BG_GOAL_CHANCE : BG_CHANCE * pv)) return null;
+  if (Math.random() >= (goal || av ? BG_GOAL_CHANCE : BG_CHANCE)) return null;
   return av && Math.random() < 0.6 ? bgRow("Alterac Valley") : pick(BGS);
 }
 
@@ -77,6 +76,13 @@ function bgParty(b, pre) {
   const hi = roles.indexOf(heroRole()); roles.splice(hi < 0 ? roles.length - 1 : hi, 1);
   const taken = takenNames(), used = [];
   return roles.map(role => {
+    // the friend who lives for PvP is in nearly every game you queue for
+    const pv = S.friends.find(f => f.pers === "pvper" && f.role === role && !used.includes(f.name));
+    if (pv && Math.random() < 0.85) {
+      used.push(pv.name);
+      chatEvent("whisper", { name: pv.name, cls: pv.cls, txt: pick(["saw you queue, i'm in!", "finally, someone to queue with", `FOR THE ${S.faction.toUpperCase()}!`, "inv me, i'll carry"]) });
+      return { ...asMember(pv, true), L: 60, hp: 1, mp: 1, gear: pv.gear ?? bgGear() };
+    }
     const known = socialMember(role, pre, used); if (known) return { ...known, L: 60, gear: known.gear ?? bgGear() };
     return { ...pugMember(role, taken), L: 60, hp: 1, mp: 1, gear: bgGear() };
   });
