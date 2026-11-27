@@ -283,6 +283,7 @@ const FINISH = {
     if (t.raid) guildFlask();
     const ex = drinkElixir(t.raid); if (ex) got.push(ex);
     if (got.length) log(`Buffed up: ${got.join(", ")}.`, "spell");
+    const gb = groupBuffs(); if (gb.length) log(`From the group: ${gb.join(", ")}.`, "spell");
   },
   dend(t) {
     petRezGroup();

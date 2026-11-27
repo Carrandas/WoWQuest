@@ -14,7 +14,7 @@ const PERS = {
   pets: ["loves pets", ["{n} shows off a new minipet before the first pull.", "{n} stops to /pet every critter on the way in."]],
   joker: ["the joker", ["{n}: \"Who needs a healer when you have bandages?\"", "{n} /danced on the boss's corpse. Everyone joined in."]],
   afk: ["goes AFK at the worst moment", ["{n} went AFK mid-pull: \"sry, door\".", "{n}: \"brb, pizza\". The pull went fine anyway."]],
-  helpful: ["always helps", ["{n} hands out water to everyone before the run.", "{n} explains every pull to the new guy, patiently."]],
+  helpful: ["always helps", ["{n} explains every pull to the new guy, patiently.", "{n} marks every pull: skull first, then the moon gets sheeped."]],
   need: ["needs on everything", ["{n} rolled Need on {wrong} again. As a {c}.", "{n}: \"oops, wrong button\" (it wasn't)."]],
   chatty: ["talks too much", ["{n} tells the story of their first epic again.", "{n} won't stop talking about their alt."]],
 };
@@ -113,6 +113,29 @@ function socialMember(role, raid, used) {
   if (!pool.length) return null;
   const p = pool[0]; used.push(p.name); return asMember(p, true);
 }
+// what the other classes in a dungeon group hand out at the entrance (the hero's own buffs are in wantedBuffs)
+const GROUP_GIFTS = {
+  Mage: [[1, "Arcane Intellect"], [4, "conjured water"]], Priest: [[1, "Power Word: Fortitude"]], Druid: [[1, "Mark of the Wild"]],
+  Paladin: [[4, "a Blessing"]], Warlock: [[10, "Healthstones"], [18, "a Soulstone on the healer"]], Shaman: [[10, "totems"]],
+};
+function groupBuffs() {
+  if (!S.party || !S.dg || S.dg.raid || S.dg.bg || S.dg.wb) return [];
+  const out = [];
+  S.party.forEach(m => (GROUP_GIFTS[m.cls] || []).forEach(([L, g]) => { if (m.L >= L && !out.includes(g) && !(m.cls === S.cls && g !== "conjured water" && g !== "Healthstones" && g !== "a Soulstone on the healer")) out.push(g); }));
+  return out.map(g => g === "a Soulstone on the healer" && heroRole() === "heal" ? "a Soulstone on you" : g);
+}
+// the helpful friend helps the way their class can
+const HELPFUL_CLS = {
+  Mage: ["{n} conjures a stack of water for everyone before the run.", "{n} hands out water and opens a portal home after the last boss."],
+  Warlock: ["{n} hands out Healthstones and puts a Soulstone on the healer.", "{n} summons the two who are late. Click the portal, people."],
+  Priest: ["{n} buffs Fortitude on everyone, and again on the one who died.", "{n} keeps Fear Ward on the tank for the whole run."],
+  Druid: ["{n} buffs Mark of the Wild and Thorns on the tank.", "{n} battle rezzes the healer. Wipe averted."],
+  Paladin: ["{n} gives everyone the right Blessing: Wisdom for the casters, Might for the rest.", "{n} bubbles and resurrects the group after the wipe."],
+  Shaman: ["{n} drops Windfury next to the warrior and Mana Spring by the healer.", "{n} reincarnates after the wipe and rezzes everyone."],
+  Rogue: ["{n} opens every lockbox in the group for free.", "{n} saps the patrol before it joins the pull."],
+  Hunter: ["{n} pulls with the pet and Feign Deaths the extra pack away.", "{n} cooks a stack of food from the boar meat in everyone's bags."],
+  Warrior: ["{n} tanks the adds that get loose. Nobody dies.", "{n} hands out bandages and keeps the threat steady."],
+};
 // one chronicle line per run from a friend in the group, now and then
 function friendChatter() {
   if (!S.dg || S.dg.chat || !S.party || Math.random() > 0.06) return;
@@ -120,7 +143,8 @@ function friendChatter() {
   S.dg.chat = true;
   const m = pick(fr), f = S.friends.find(x => x.name === m.name), lines = PERS[f.pers] ? PERS[f.pers][1] : PERS.joker[1];
   const c = m.cls.toLowerCase(), wrong = ["Mage", "Priest", "Warlock"].includes(m.cls) ? "plate" : "cloth"; // armor they can't use
-  log(pick(lines).replace("{n}", m.name).replace("{wrong}", wrong).replace("{c}", c), "chat");
+  const all = f.pers === "helpful" && HELPFUL_CLS[m.cls] ? lines.concat(HELPFUL_CLS[m.cls]) : lines;
+  log(pick(all).replace("{n}", m.name).replace("{wrong}", wrong).replace("{c}", c), "chat");
 }
 // a dungeon done: friends along count a run, and a stranger who played well may add you
 function socialDungeonEnd() {
