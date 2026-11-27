@@ -226,7 +226,8 @@ function queueDungeon(d) {
   if (dq.length) q.push({ k: "dqpick", d: `Picking up quests for ${dn}`, t: sec(6 + 3 * dq.length), dn, dq: dq.map(x => ({ name: x.name, boss: x.boss, obj: x.obj, raid, done: false })) });
   if (raid) dramaRaidStart(q, dn); // people late for the invite, or not attuned yet (drama.js)
   q.push({ k: "lfg", d: raid ? `Waiting on the raid invite for ${dn}` : `Looking for group: "${chat}"`, t: sec(raid ? 120 : 60 + R(120)), chat: raid ? `[${S.guild ? "Guild" : "Raid"}] ${abbr} invites going out, ${RAID_INFO[dn].size} man, be on time!` : chat, dn });
-  q.push({ k: "dtravel", d: `Traveling to ${dn} with the group`, t: sec(raid ? 180 : 120), dn });
+  const lead = !raid && partyPers("leader");
+  q.push({ k: "dtravel", d: lead ? `${lead.name} leads the way to ${dn}: they know every shortcut` : `Traveling to ${dn} with the group`, t: sec(raid ? 180 : lead ? 90 : 120), dn });
   const petBoss = petDungeon(q, raid, bosses);
   q.push({ k: "dbuff", d: raid ? "Buffing up and drinking a flask at the instance portal" : "Buffing up at the instance entrance", t: sec(8), raid });
   bosses.forEach((b, bi) => {

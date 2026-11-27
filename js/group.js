@@ -133,7 +133,7 @@ function wipeChance(t) {
     const b = instanceRow(t.dn).bosses, i = Math.max(0, b.indexOf(t.boss)), first = !(S.bossKills[t.boss] > 0);
     return Math.min(0.85, ri.wipe * clamp(1 + (ri.gs - gearScore()) / 25, 0.5, 2) * (1 + 0.8 * i / Math.max(1, b.length - 1)) * (first ? FIRST_KILL : 1) * resWipe(t.boss) * siWipe(t.dn) * dsetWipe(t.dn, i) * dramaWipe());
   }
-  const d = instanceRow(t.dn); return 0.06 * (d ? clamp(1 + (d.max - 2 - S.level) * 0.12, 0.4, 2) : 1);
+  const d = instanceRow(t.dn); return 0.06 * (d ? clamp(1 + (d.max - 2 - S.level) * 0.12, 0.4, 2) : 1) * leadWipe();
 }
 // the boss fight that decides the pull (fightsim.js): the wipe chance the gear, the boss and the raid's preparation give
 // (wipeChance) sets how hard the boss hits (the pressure: a reference group wipes about that often), then the fight

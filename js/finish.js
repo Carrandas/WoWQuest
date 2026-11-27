@@ -287,6 +287,7 @@ const FINISH = {
   },
   dend(t) {
     petRezGroup();
+    const kind = S.dg && !S.dg.raid && partyPers("helpful"); if (kind && Math.random() < 0.3) friendGift(S.friends.find(x => x.name === kind.name) || kind);
     if (wbRow(t.dn)) return wbEnd(t); // a world boss: no lockout, no clear
     // a raid only counts as cleared once the last boss is down (that can take several nights)
     const ri = RAID_INFO[t.dn], full = !ri || !S.dg || S.dg.killed >= S.dg.total;
