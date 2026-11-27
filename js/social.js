@@ -14,8 +14,15 @@ const PERS = {
   pets: ["loves pets", ["{n} shows off a new minipet before the first pull.", "{n} stops to /pet every critter on the way in."]],
   joker: ["the joker", ["{n}: \"Who needs a healer when you have bandages?\"", "{n} /danced on the boss's corpse. Everyone joined in."]],
   afk: ["goes AFK at the worst moment", ["{n} went AFK mid-pull: \"sry, door\".", "{n}: \"brb, pizza\". The pull went fine anyway."]],
-  helpful: ["always helps", ["{n} hands out water to everyone before the run.", "{n} explains every pull to the new guy, patiently."]],
+  helpful: ["always helps", ["{n} explains every pull to the new guy, patiently.", "{n} stays after the run to help the new guy with a quest.", "{n} hands out their spare potions: \"just in case\"."]],
+  leader: ["the leader", ["{n} explains the next pull: \"sheep the moon, kill skull first, nobody stands in the fire.\"", "{n}: \"Great job everyone, one more boss and we're done!\"", "{n} explains the boss before the pull. Twice, for the hunter.", "{n} keeps everyone going after a rough pull: \"we got this, people.\""]],
   need: ["needs on everything", ["{n} rolled Need on {wrong} again. As a {c}.", "{n}: \"oops, wrong button\" (it wasn't)."]],
+  aggro: ["pulls aggro", ["{n} pulled aggro again. The tank sighs.", "{n}: \"why is it hitting me??\"", "{n} opens with the biggest crit before the tank has a single Sunder up."]],
+  crafter: ["the crafter", ["{n} crafts everyone a stack of bandages before the run.", "{n} links their new recipe. Twice.", "{n} skins every beast on the way in."]],
+  pvper: ["lives for PvP", ["{n} keeps alt-tabbing to check the Warsong Gulch queue.", "{n}: \"after this, AV?\"", "{n} is still in their PvP gear. It shows."]],
+  newbie: ["the newbie", ["{n} asks what \"pst\" means.", "{n} stood in the fire. They're learning.", "{n}: \"wait, warriors don't have mana?\"", "{n} asks how to loot. Everyone helps."]],
+  theory: ["the theorycrafter", ["{n} links the damage meter after every pull.", "{n} explains why their spec is the best. With numbers.", "{n} is testing a new rotation. On the boss."]],
+  drama: ["the drama queen", ["{n} is upset about the last loot roll. Again.", "{n} writes a long rant on the guild forum during the run.", "{n}: \"I'm not mad, I'm just disappointed.\""]],
   chatty: ["talks too much", ["{n} tells the story of their first epic again.", "{n} won't stop talking about their alt."]],
 };
 const GUILD_A = ["Crimson", "Silver", "Eternal", "Shadow", "Last", "Iron", "Wandering", "Dawn", "Ember", "Frost", "Storm", "Ashen", "Hidden", "Broken", "Twilight", "Golden"];
@@ -88,17 +95,43 @@ function helpersAfter(t) {
     const stranger = t.helpers.find(h => !isFriend(h.name));
     if (stranger && Math.random() < 0.5) addFriend(stranger, t.zone || curZone());
   } else if (S.duo && --S.duo.left <= 0) {
-    log(`${S.duo.name} has to log off: "gtg, thanks for the help!"`, "chat"); S.duo = null;
+    log(`${S.duo.name} has to log off: "gtg, thanks for the help!"`, "chat");
+    const f = S.friends.find(x => x.name === S.duo.name); if (f && f.pers === "helpful" && Math.random() < 0.4) friendGift(f);
+    S.duo = null;
   }
 }
 // heading out to a new quest: now and then a friend asks to come along
 function duoStart() {
-  if (S.duo || !S.friends.length || Math.random() > 0.04) return;
-  const f = pick(S.friends);
+  const kind = S.friends.filter(f => f.pers === "helpful");
+  if (S.duo || !S.friends.length || Math.random() > (kind.length ? 0.07 : 0.04)) return;
+  const f = kind.length && Math.random() < 0.6 ? pick(kind) : pick(S.friends); // the helpful ones ask the most
   S.duo = { name: f.name, left: 25 + R(30) };
   log(`${f.name} whispers: "Need a hand? I'm on the same quests." They join you for a while.`, "chat");
   chatEvent("whisper", { name: f.name, cls: f.cls, txt: "Need a hand? I'm on the same quests." });
 }
+
+// a party member (friend or guildie) with a personality
+function partyPers(key) {
+  return (S.party || []).find(m => { const f = S.friends.find(x => x.name === m.name) || (S.guild && S.guild.roster.find(x => x.name === m.name)); return f && f.pers === key; }) || null;
+}
+// the helpful friend's gift now and then: a few potions
+function friendGift(f) {
+  const mana = cls().mp && Math.random() < 0.5, n = 3 + R(3);
+  if (mana) S.cons.mp += n; else S.cons.hp += n;
+  log(`${f.name} sends you ${n} ${plural(mana ? mpPot() : hpPot())}: "had some spare, you need them more :)"`, "quest");
+}
+// after a dungeon: the crafter's piece of gear, a spare minipet from the pet lover
+function friendGifts() {
+  if (!S.dg || S.dg.raid || S.dg.bg) return;
+  const cr8 = partyPers("crafter"); if (cr8 && Math.random() < 0.08) gain(makeItem(randomSlot(), S.level + 1, 3), `${cr8.name} crafted you something after the run:`);
+  const pl = partyPers("pets");
+  if (pl && Math.random() < 0.06) {
+    const pets = MINIPETS.filter(p => p.src === "vendor" && ownFaction(p) && !hasMinipet(p.name));
+    if (pets.length) { const n = pick(pets).name; addMinipet(n, `${pl.name} hands you a ${n}: "I had two!"`); }
+  }
+}
+// the leader in a 5-man: knows the way, explains every boss; the group wipes a little less
+const leadWipe = () => partyPers("leader") ? 0.8 : 1;
 
 // ---------- dungeons and raids ----------
 // filling a group's slots: friends first (some of them, for dungeons), the guild in raids, strangers for the rest
@@ -106,6 +139,8 @@ function socialMember(role, raid, used) {
   const free = p => p.role === role && !used.includes(p.name);
   if (!raid) {
     const fr = S.friends.filter(free);
+    const kind = fr.filter(f => f.pers === "helpful");
+    if (kind.length && Math.random() < 0.85) { const f = pick(kind); used.push(f.name); return asMember(f); } // always up for a run
     if (fr.length && Math.random() < FRIEND_DUNGEON) { const f = pick(fr); used.push(f.name); return asMember(f); }
     return null;
   }
@@ -113,6 +148,36 @@ function socialMember(role, raid, used) {
   if (!pool.length) return null;
   const p = pool[0]; used.push(p.name); return asMember(p, true);
 }
+// a stranger rolls Need, wins and leaves the group without a word: someone new takes the spot
+function ninjaLeave(name) {
+  const i = (S.party || []).findIndex(m => m.name === name); if (i < 0) return;
+  const m = S.party[i], p = newPlayer(m.role), nm = { ...asMember(p), gear: contentGear(), hp: 1, mp: 1 };
+  S.party[i] = nm; if (S.meter) { S.meter.dmg[i + 1] = 0; S.meter.heal[i + 1] = 0; }
+  log(`${m.name} has left the group. Ninja. "LF1M ${ROLE_NAME[m.role].toLowerCase()} for ${S.dg.name}, our last one ninja'd and left" ${nm.name} joins.`, "chat");
+}
+// what the other classes in a dungeon group hand out at the entrance (the hero's own buffs are in wantedBuffs)
+const GROUP_GIFTS = {
+  Mage: [[1, "Arcane Intellect"], [4, "conjured water"]], Priest: [[1, "Power Word: Fortitude"]], Druid: [[1, "Mark of the Wild"]],
+  Paladin: [[4, "a Blessing"]], Warlock: [[10, "Healthstones"], [18, "a Soulstone on the healer"]], Shaman: [[10, "totems"]],
+};
+function groupBuffs() {
+  if (!S.party || !S.dg || S.dg.raid || S.dg.bg || S.dg.wb) return [];
+  const out = [];
+  S.party.forEach(m => (GROUP_GIFTS[m.cls] || []).forEach(([L, g]) => { if (m.L >= L && !out.includes(g) && !(m.cls === S.cls && g !== "conjured water" && g !== "Healthstones" && g !== "a Soulstone on the healer")) out.push(g); }));
+  return out.map(g => g === "a Soulstone on the healer" && heroRole() === "heal" ? "a Soulstone on you" : g);
+}
+// what every friend's class has them do in a group (on top of their personality)
+const CLASS_LINES = {
+  Mage: ["{n} conjures a stack of water for everyone before the run.", "{n} hands out water and opens a portal home after the last boss."],
+  Warlock: ["{n} hands out Healthstones and puts a Soulstone on the healer.", "{n} summons the two who are late. Click the portal, people."],
+  Priest: ["{n} buffs Fortitude on everyone, and again on the one who died.", "{n} keeps Fear Ward on the tank for the whole run."],
+  Druid: ["{n} buffs Mark of the Wild and Thorns on the tank.", "{n} battle rezzes the healer. Wipe averted."],
+  Paladin: ["{n} gives everyone the right Blessing: Wisdom for the casters, Might for the rest.", "{n} bubbles and resurrects the group after the wipe."],
+  Shaman: ["{n} drops Windfury next to the warrior and Mana Spring by the healer.", "{n} reincarnates after the wipe and rezzes everyone."],
+  Rogue: ["{n} opens every lockbox in the group for free.", "{n} saps the patrol before it joins the pull."],
+  Hunter: ["{n} pulls with the pet and Feign Deaths the extra pack away.", "{n} cooks a stack of food from the boar meat in everyone's bags."],
+  Warrior: ["{n} tanks the adds that get loose. Nobody dies.", "{n} hands out bandages and keeps the threat steady."],
+};
 // one chronicle line per run from a friend in the group, now and then
 function friendChatter() {
   if (!S.dg || S.dg.chat || !S.party || Math.random() > 0.06) return;
@@ -120,7 +185,8 @@ function friendChatter() {
   S.dg.chat = true;
   const m = pick(fr), f = S.friends.find(x => x.name === m.name), lines = PERS[f.pers] ? PERS[f.pers][1] : PERS.joker[1];
   const c = m.cls.toLowerCase(), wrong = ["Mage", "Priest", "Warlock"].includes(m.cls) ? "plate" : "cloth"; // armor they can't use
-  log(pick(lines).replace("{n}", m.name).replace("{wrong}", wrong).replace("{c}", c), "chat");
+  const all = lines.concat(CLASS_LINES[m.cls] || []);
+  log(pick(all).replace("{n}", m.name).replace("{wrong}", wrong).replace("{c}", c), "chat");
 }
 // a dungeon done: friends along count a run, and a stranger who played well may add you
 function socialDungeonEnd() {

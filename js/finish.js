@@ -51,11 +51,17 @@ function lootDrop(dn, boss) {
   // no upgrade: the hero passes (or rolls Greed when nobody needs it) instead of rolling Need
   if (power(it) <= power(S.equip[it.slot])) {
     const taker = S.party && S.party.length ? pick(S.party).name : null;
-    if (taker && Math.random() < 0.75) { log(`${boss} dropped ${it.name}. ${S.name} passes, ${taker} wins it on Need.`, "loot" + it.q); return; }
+    if (taker && Math.random() < 0.75) {
+      log(`${boss} dropped ${it.name}. ${S.name} passes, ${taker} wins it on Need.`, "loot" + it.q);
+      if (!S.dg.raid && it.q >= 3 && !isFriend(taker) && Math.random() < 0.15) ninjaLeave(taker); // and off they go
+      return;
+    }
     log(`${boss} dropped ${it.name}. Everyone rolls Greed, and ${S.name} wins it with a ${40 + R(61)}: one for the vendor.`, "loot" + it.q);
     addBag({ name: it.name, val: sellValue(it), q: it.q });
     return;
   }
+  const nd = S.level < 60 && S.dg && !S.dg.raid && partyPers("need"); // while levelling: the pre-raid set at 60 stays the hero's
+  if (nd && Math.random() < 0.2) { log(`${boss} dropped ${it.name}. ${nd.name} rolls Need too and wins with a 98: "it's for my offspec".`, "loot" + it.q); return; }
   const bid = heroBid(); // guild raids: bought with DKP
   log(bid != null ? `${boss} dropped ${it.name}. You win it for ${bid} DKP.` : `${boss} dropped ${it.name}. Rolled Need: ${60 + R(41)}.`, "loot" + it.q);
   const de = dungeonEntry(dn); if (!de.loot.some(x => x.n === it.name)) de.loot.unshift({ n: it.name, q: it.q }); if (de.loot.length > 6) de.loot.length = 6;
@@ -221,7 +227,7 @@ const FINISH = {
     S.dq = null;
   },
   dtravel(t) { S.loc = "dungeon"; log(`Entering ${t.dn}.`, "dung"); },
-  trash(t) { if (t.bg) { if (t.wb) wbPvpEnd(t); else bgFightEnd(t); petAfterFight(t, null); friendChatter(); return; } if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); petAfterFight(t, null); minipetDrops(t.mobs || []); trashLoot(t); friendChatter(); },
+  trash(t) { if (t.leeroy) log(`${t.leeroy} pulled two packs at once. ${pick(["Somehow everyone lives.", "The healer is not amused.", "\"At least I have chicken.\""])}`, "chat"); if (t.bg) { if (t.wb) wbPvpEnd(t); else bgFightEnd(t); petAfterFight(t, null); friendChatter(); return; } if (!S.dg || !S.dg.raid) gainXp(mobXp(S.level + 1) * 2.4); petAfterFight(t, null); minipetDrops(t.mobs || []); trashLoot(t); friendChatter(); },
   boss(t) {
     if (t.foe) t.foe.units.forEach(u => (u.phases || []).forEach(p => { if (p.say) log(p.say, "boss"); }));
     const raid = !!(S.dg && S.dg.raid);
@@ -253,6 +259,7 @@ const FINISH = {
       guildLoot(t.dn, t.boss);
     }
     log(`${t.boss} has been defeated.${fightDeaths(t)}`, "boss");
+    const tc = partyPers("theory"); if (tc && Math.random() < (raid ? 0.15 : 0.35)) log(`${tc.name} links the damage meter: "${pick([`${1 + R(6)}% behind the ${pick(facClasses()).toLowerCase()}, lag`, "new personal best!", "my rotation was off, again", "that's with two deaths, so it doesn't count"])}"`, "chat");
     wbBossKill(t.boss); // a head for the city gates
     facBoss(t.dn, t.boss); // reputation from raid bosses
     if (raid) resLine(t.boss); // resistance gear for the bosses that check it
@@ -283,9 +290,12 @@ const FINISH = {
     if (t.raid) guildFlask();
     const ex = drinkElixir(t.raid); if (ex) got.push(ex);
     if (got.length) log(`Buffed up: ${got.join(", ")}.`, "spell");
+    const gb = groupBuffs(); if (gb.length) log(`From the group: ${gb.join(", ")}.`, "spell");
   },
   dend(t) {
     petRezGroup();
+    const kind = S.dg && !S.dg.raid && partyPers("helpful"); if (kind && Math.random() < 0.3) friendGift(S.friends.find(x => x.name === kind.name) || kind);
+    friendGifts(); // the crafter's piece, the pet lover's spare
     if (wbRow(t.dn)) return wbEnd(t); // a world boss: no lockout, no clear
     // a raid only counts as cleared once the last boss is down (that can take several nights)
     const ri = RAID_INFO[t.dn], full = !ri || !S.dg || S.dg.killed >= S.dg.total;

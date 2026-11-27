@@ -9,7 +9,8 @@
 const newDrama = () => ({ last: 0, mtGone: 0, split: false, n: 0 });
 const DRAMA_GAP = () => (S.level >= 60 ? 1 + Math.random() * 1.5 : 3 + Math.random() * 3) * DAY;
 const gsay = (m, txt) => { if (m && typeof chatSay === "function") chatSay("guild", m.name, txt, m.cls); };
-const rosterPick = f => { const g = S.guild; const l = g ? g.roster.filter(f || (() => true)) : []; return l.length ? pick(l) : null; };
+// the drama queens are in the middle of it more often than not
+const rosterPick = f => { const g = S.guild; const l = g ? g.roster.filter(f || (() => true)) : []; if (!l.length) return null; const dq = l.filter(m => m.pers === "drama"); return dq.length && Math.random() < 0.5 ? pick(dq) : pick(l); };
 
 // ---------- now and then, on a city visit ----------
 function dramaTick() {

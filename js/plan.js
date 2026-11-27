@@ -226,16 +226,22 @@ function queueDungeon(d) {
   if (dq.length) q.push({ k: "dqpick", d: `Picking up quests for ${dn}`, t: sec(6 + 3 * dq.length), dn, dq: dq.map(x => ({ name: x.name, boss: x.boss, obj: x.obj, raid, done: false })) });
   if (raid) dramaRaidStart(q, dn); // people late for the invite, or not attuned yet (drama.js)
   q.push({ k: "lfg", d: raid ? `Waiting on the raid invite for ${dn}` : `Looking for group: "${chat}"`, t: sec(raid ? 120 : 60 + R(120)), chat: raid ? `[${S.guild ? "Guild" : "Raid"}] ${abbr} invites going out, ${RAID_INFO[dn].size} man, be on time!` : chat, dn });
-  q.push({ k: "dtravel", d: `Traveling to ${dn} with the group`, t: sec(raid ? 180 : 120), dn });
+  const late = !raid && partyPers("late");
+  if (late) q.push({ k: "move", d: `Waiting at the stone for ${late.name}: "omw, 5 min"`, t: sec(45) });
+  const lead = !raid && partyPers("leader");
+  q.push({ k: "dtravel", d: lead ? `${lead.name} leads the way to ${dn}: they know every shortcut` : `Traveling to ${dn} with the group`, t: sec(raid ? 180 : lead ? 90 : 120), dn });
   const petBoss = petDungeon(q, raid, bosses);
   q.push({ k: "dbuff", d: raid ? "Buffing up and drinking a flask at the instance portal" : "Buffing up at the instance entrance", t: sec(8), raid });
+  const lee = !raid && partyPers("leeroy"), afk = !raid && partyPers("afk");
   bosses.forEach((b, bi) => {
     if (bi < start) return;
     const n = raid ? 2 + R(2) : 1 + R(3);
     for (let i = 0; i < n; i++) {
       const main = pick(trash), mobs = Array.from({ length: raid ? 3 + R(3) : 2 + R(3) }, (_, j) => j && Math.random() < 0.3 ? pick(trash) : main);
-      const share = groupAoe(mobs.length), p = packTrim(heroGroupCasts(raid ? 70 : 40, false, mobs.length), mobs.length, share, sec(raid ? 70 : 40));
-      q.push({ k: "trash", d: `Clearing a pack of ${plural(main)}`, t: p.t, mobs, casts: p.casts, aoeShare: share });
+      const two = lee && Math.random() < 0.12, away = !two && afk && Math.random() < 0.1; // the Leeroy pulls the next pack too; the AFK one isn't there
+      if (two) mobs.push(...Array.from({ length: 2 + R(2) }, () => pick(trash)));
+      const share = groupAoe(mobs.length), p = packTrim(heroGroupCasts(raid ? 70 : 40, false, mobs.length), mobs.length, share, sec((raid ? 70 : 40) * (away ? 1.25 : 1)));
+      q.push({ k: "trash", d: two ? `${lee.name} pulls the next pack too: ${mobs.length} at once` : away ? `Clearing a pack of ${plural(main)} with four: ${afk.name} is AFK` : `Clearing a pack of ${plural(main)}`, t: p.t, mobs, casts: p.casts, aoeShare: share, ...(two ? { leeroy: lee.name } : {}) });
     }
     const adds = BOSS_ADDS[b] || [], late = (BOSS_SCRIPT[b] || []).some(p => p.adds), pb = petBoss(b);
     q.push({ k: "boss", d: adds.length && !late ? `Fighting ${b} and ${adds.length === 1 ? "an add" : adds.length + " adds"}` : `Fighting ${b}`, t: sec(raid ? 260 : 110), boss: b, dn, adds, casts: heroGroupCasts(raid ? 260 : 110, true), ...(pb || {}) });

@@ -87,9 +87,13 @@ const GUILD_LINES = {
   joke: ["how many {cls}s does it take to change a lightbulb? none, they just need a buff", "Leeroy would've pulled it already", "if at first you don't succeed, blame the healer", "i'm not lagging, i'm strategically delayed", "/roll for who explains the fight to the new guy"],
 };
 const HELPFUL = { Mage: ["anyone need water? i have 40", "need a portal? free for guildies"], Warlock: ["need a summon? i'm at the stone", "anyone want a healthstone?"], Priest: ["need Fortitude? whisper me"], Druid: ["anyone want Mark of the Wild?"], Paladin: ["need a blessing?"], Shaman: ["need a Windfury totem in your group?"] };
-const PERS_CHAT = { leeroy: ["lets just pull it", "how hard can it be"], late: ["omw, 5 min", "sry late"], pets: ["look at my new pet!", "anyone selling a Bombay Cat?"], joker: ["knock knock", "who needs a healer when you have bandages"], afk: ["brb door", "sry was afk"], helpful: ["need help with anything?"], need: ["can i roll on that? it's an upgrade", "oops, wrong button"], chatty: ["so my alt got a new sword today, let me tell you about it", "did i ever tell you about my first epic?"] };
+const PERS_CHAT = { leeroy: ["lets just pull it", "how hard can it be"], late: ["omw, 5 min", "sry late"], pets: ["look at my new pet!", "anyone selling a Bombay Cat?"], joker: ["knock knock", "who needs a healer when you have bandages"], afk: ["brb door", "sry was afk"], helpful: ["need help with anything?"], need: ["can i roll on that? it's an upgrade", "oops, wrong button"], chatty: ["so my alt got a new sword today, let me tell you about it", "did i ever tell you about my first epic?", "anyway, as i was saying", "ok so funny story"],
+  leader: ["remember: kill order is skull, then cross", "good job last night everyone", "who needs what from the next run? make a list"], crafter: ["anyone need bags? i have the mats", "can craft that for you, bring mats", "skill up! 225 now"],
+  pvper: ["AV anyone?", "WSG premade in 10, need 2", "who wants to go world pvp in Tarren Mill?", "made a new rank this week"], newbie: ["what's a pst?", "how do i train my talents?", "what does the yellow ! mean?", "is it normal that my pet ran off?"],
+  theory: ["did 412 dps on that boss, the rogues are 3% behind me", "you're all using the wrong talents lol", "posted a spreadsheet on the forum"], drama: ["i'm not saying the loot council is rigged, but…", "can't believe the officers did that", "fine. FINE."] };
 function genGuild() {
-  const g = guildie(); if (!g) return null;
+  let g = guildie(); if (!g) return null;
+  const ch = guildies().filter(m => m.pers === "chatty"); if (ch.length && cr() < 0.3) g = ch[cR(ch.length)]; // the chatty ones talk the most
   const sub = s => s.replace("{dn}", (cpick(levelDungeons()) || { abbr: "Strat" }).abbr).replace("{mat}", cpick(Object.values(MATS).flat())).replace("{raid}", cpick(["MC", "BWL", "Ony", "ZG", "AQ40", "Naxx"]).toString())
     .replace("{epic}", anyItem()).replace("{n}", (guildie() || g).name).replace("{cls}", cpick(facClasses()).toLowerCase()).replace("{foe}", foeSide());
   const r = cr();
@@ -102,7 +106,9 @@ function genGuild() {
 }
 function genWhisper() {
   const r = cr();
-  if (r < 0.4 && S.friends.length) { const f = cpick(S.friends), d = cpick(levelDungeons()); return [f, cpick([`hey! long time no see`, d ? `wanna run ${d.abbr} later?` : `wanna do some quests?`, `got a minute? need help with a quest`, `grats on the level!`])]; }
+  if (r < 0.4 && S.friends.length) { const f = cpick(S.friends), d = cpick(levelDungeons());
+    if (f.pers === "pvper" && cr() < 0.6) return [f, cpick(S.level >= 60 ? ["AV?", "WSG premade, you in?", "honor grind tonight?"] : ["wanna duel outside the city?", "Tarren Mill raid, you coming?", "can't wait for battlegrounds"])];
+    return [f, cpick([`hey! long time no see`, d ? `wanna run ${d.abbr} later?` : `wanna do some quests?`, `got a minute? need help with a quest`, `grats on the level!`])]; }
   if (r < 0.7) return [{ name: cpick(["Ggoldseller", "Xzqwlk", "Mmoggold"]), cls: "Rogue" }, cpick(["Hello friend! Cheap gold at W W W . G 0 L D 4 U . C 0 M", "Congratulations! You have won a free epic mount! Visit www.blizzard-giveaway.c0m to claim"])];
   return [stranger(), cpick(["can u spare some silver? :(", "can i have your old gear?", `how do i get to ${capitalOf()}`, "wanna join my guild? we're new but we have a tabard", "u selling anything?"])];
 }
@@ -186,6 +192,7 @@ function chatEvent(kind, x) {
   if (!S) return;
   const g = () => guildie(), grats = () => cpick(["grats!", "gz", "grats :)", "GZ!!", "nice, grats", "grats mate"]);
   const several = (n, f) => { const said = []; for (let i = 0; i < n; i++) { const m = g(); if (!m) continue; let s = f(); for (let k = 0; k < 4 && said.includes(s); k++) s = f(); said.push(s); chatSay("guild", m.name, s, m.cls); } };
+  if (kind === "level" && x === 60) { const nb = S.friends.find(f => f.pers === "newbie"); if (nb) chatPending.push({ at: S.time + 20000, ch: "whisper", who: nb.name, cls: nb.cls, txt: "grats on 60!! thanks for being so patient with me all the way, i learned a lot" }); }
   if (kind === "level" && S.guild) several(x === 60 ? 4 : cR(3), () => x === 60 ? cpick(["GRATS ON 60!!", "welcome to 60!", "grats! now the real game starts", "gz, see you in MC"]) : grats());
   if (kind === "epic" && S.guild) several(2 + cR(2), grats);
   if (kind === "firstkill" && S.guild) several(4, () => cpick(["GG!!!", "finally!", "grats all!", "WOOOO", `${x} down!`, "gg, screenshot!"]));

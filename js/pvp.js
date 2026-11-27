@@ -76,6 +76,13 @@ function bgParty(b, pre) {
   const hi = roles.indexOf(heroRole()); roles.splice(hi < 0 ? roles.length - 1 : hi, 1);
   const taken = takenNames(), used = [];
   return roles.map(role => {
+    // the friend who lives for PvP is in nearly every game you queue for
+    const pv = S.friends.find(f => f.pers === "pvper" && f.role === role && !used.includes(f.name));
+    if (pv && Math.random() < 0.85) {
+      used.push(pv.name);
+      chatEvent("whisper", { name: pv.name, cls: pv.cls, txt: pick(["saw you queue, i'm in!", "finally, someone to queue with", `FOR THE ${S.faction.toUpperCase()}!`, "inv me, i'll carry"]) });
+      return { ...asMember(pv, true), L: 60, hp: 1, mp: 1, gear: pv.gear ?? bgGear() };
+    }
     const known = socialMember(role, pre, used); if (known) return { ...known, L: 60, gear: known.gear ?? bgGear() };
     return { ...pugMember(role, taken), L: 60, hp: 1, mp: 1, gear: bgGear() };
   });

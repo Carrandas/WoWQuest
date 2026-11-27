@@ -133,7 +133,7 @@ function wipeChance(t) {
     const b = instanceRow(t.dn).bosses, i = Math.max(0, b.indexOf(t.boss)), first = !(S.bossKills[t.boss] > 0);
     return Math.min(0.85, ri.wipe * clamp(1 + (ri.gs - gearScore()) / 25, 0.5, 2) * (1 + 0.8 * i / Math.max(1, b.length - 1)) * (first ? FIRST_KILL : 1) * resWipe(t.boss) * siWipe(t.dn) * dsetWipe(t.dn, i) * dramaWipe());
   }
-  const d = instanceRow(t.dn); return 0.06 * (d ? clamp(1 + (d.max - 2 - S.level) * 0.12, 0.4, 2) : 1);
+  const d = instanceRow(t.dn); return 0.06 * (d ? clamp(1 + (d.max - 2 - S.level) * 0.12, 0.4, 2) : 1) * leadWipe();
 }
 // the boss fight that decides the pull (fightsim.js): the wipe chance the gear, the boss and the raid's preparation give
 // (wipeChance) sets how hard the boss hits (the pressure: a reference group wipes about that often), then the fight
@@ -199,7 +199,8 @@ function simFight(t) {
   foeOf(t);
   const P = pullMembers(t);
   pullCosts(P, t);
-  playPull(P, t, pullEvents(P, t));
+  const ev = pullEvents(P, t); aggroPull(P, t, ev);
+  playPull(P, t, ev);
   // the deaths the fight decided (bossWipes): each one at its moment; on a wipe the rest go down after the last of them
   if (t.dead) {
     const die = (p, at) => { p.tl = p.tl.filter(x => x[0] < at); p.tl.push([at, 0]); p.cur = 0; };
@@ -215,6 +216,29 @@ function simFight(t) {
   bgDeath(t, P[0]); // killed in a battleground skirmish
   P.forEach(p => p.end = p.cur);
   return P;
+}
+// the damage dealer who keeps pulling aggro: a friend or guildie with the trait, or about one stranger in six
+function aggroProne(m) {
+  if (m.role !== "dps") return false;
+  const f = S.friends.find(x => x.name === m.name) || (S.guild && S.guild.roster.find(x => x.name === m.name));
+  return f ? f.pers === "aggro" : nameHash(m.name) % 6 === 0;
+}
+const TAUNT = { Warrior: n => `${n} hits Taunt and Mocking Blow`, Druid: n => `${n} Growls it back`, Paladin: n => `${n} has no taunt (it's a paladin) and just keeps hitting it with Holy Shield up` };
+// now and then on a trash pull they rip it off the tank and take a beating until the tank gets it back
+function aggroPull(P, t, ev) {
+  if (t.k !== "trash" || !S.dg || S.dg.bg || S.dg.raid) return;
+  let ai = P.findIndex((p, i) => i && aggroProne(S.party[p.pi])), nb = false;
+  if (ai < 0) { const nbi = P.findIndex((p, i) => i && p.role !== "tank" && partyPers("newbie") && partyPers("newbie").name === p.name); if (nbi > 0 && Math.random() < 0.5) { ai = nbi; nb = true; } }
+  if (ai < 0 || Math.random() > 0.3) return;
+  const a = 0.2 + Math.random() * 0.35, tot = 0.45 + Math.random() * 0.3;
+  [0, 0.04, 0.08].forEach(d => ev.push({ at: a + d, i: ai, dmg: tot / 3 }));
+  ev.sort((x, y) => x.at - y.at);
+  const dg = S.dg; dg.aggro = (dg.aggro || 0) + 1; if (dg.aggro > 2) return; // a line for the first couple of times a run
+  const n = P[ai].name, tk = P.find(p => p.role === "tank"), tn = tk ? tk.name : null;
+  if (nb) { log(pick([`${n} runs ahead and pulls the patrol. Everyone saves them.`, `${n} stands in the fire a little too long.`, `${n} runs the wrong way and brings friends back.`]), "chat"); return; }
+  const tcls = !tk ? null : tk === P[0] ? S.cls : S.party[tk.pi].cls;
+  const back = !tk ? "Nobody can taunt it back" : tk === P[0] ? `${S.name} taunts it back` : (TAUNT[tcls] || (x => `${x} gets it back`))(tn);
+  log(pick([`${n} pulls aggro off ${tn || "the tank"} and gets their ass kicked. ${back}.`, `${n} goes all in before the tank has threat. The mob turns around. ${back}.`, `Aggro on ${n}! ${back}.`]), "chat");
 }
 // everyone in the pull: the hero (casts already rolled) and the companions (their casts rolled here)
 function pullMembers(t) {
