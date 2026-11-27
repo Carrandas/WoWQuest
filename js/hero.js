@@ -207,13 +207,36 @@ const KIN = [
 ];
 const kinOf = mob => KIN.find(([p]) => mob.startsWith(p + " "));
 // a quest with several objectives: two or three of the camp's kin (one may be a collection from them), now and then the leader too
-function multiObjs(mob) {
+// boss: true always ends with the leader, false never, otherwise now and then
+function multiObjs(mob, boss) {
   const [p, roles, lead] = kinOf(mob), kin = roles.map(r => p + " " + r).filter(x => x !== mob);
-  const objs = [{ mob, max: 4 + R(5), prog: 0 }], n = Math.random() < 0.3 ? 2 : 1;
+  const objs = [{ mob, max: 4 + R(5), prog: 0 }], n = boss ? 0 : Math.random() < 0.3 ? 2 : 1;
   for (let i = 0; i < n && kin.length; i++) objs.push({ mob: kin.splice(R(kin.length), 1)[0], max: 3 + R(5), prog: 0 });
   if (Math.random() < 0.3) { const o = pick(objs); o.item = mobPart(o.mob); }
-  if (Math.random() < 0.35) objs.push({ mob: `${p} ${lead}`, max: 1, prog: 0, boss: true });
+  if (boss || (boss === undefined && Math.random() < 0.35)) objs.push({ mob: `${p} ${lead}`, max: 1, prog: 0, boss: true });
   return objs;
+}
+// quest chains against a camp: three parts from the same quest giver, the last one ends with the leader and a reward
+const CHAIN_PARTS = 3;
+const chainName = p => p === "Defias" ? "The Defias Brotherhood" : pick([`The ${p} Threat`, `Trouble with the ${p}`, `Driving Back the ${p}`, `The ${p} Uprising`, `Against the ${p}`]);
+function chainQuest(z, chain, mob) {
+  const last = chain.part === CHAIN_PARTS;
+  const q = { id: ++S.qid, name: `${chain.name} (Part ${chain.part})`, zone: z, mob, prog: 0, xp: 0, money: 0, type: "multi", chain };
+  q.objs = multiObjs(mob, last); q.max = q.objs.reduce((a, o) => a + o.max, 0);
+  return q;
+}
+// the next part, handed out as the last one is turned in
+function chainNext(q) {
+  const c = q.chain, k = KIN.find(([p]) => p === c.p), z = q.zone;
+  const pool = zoneMobs(z).filter(m => m.startsWith(c.p + " ")), mob = pool.length ? pick(pool) : `${c.p} ${k[1][0]}`;
+  const n = chainQuest(z, { ...c, part: c.part + 1 }, mob); questPay(n); S.quests.push(n);
+  return n;
+}
+function questPay(q) {
+  const L = S.level;
+  q.xp = Math.round(mobXp(L) * (q.type === "elite" ? 14 : q.type === "multi" ? 9 + R(4) + (q.objs.some(o => o.boss) ? 3 : 0) + (q.chain ? q.chain.part : 0) : 7 + R(5)) * 1.15);
+  // at 60 the questing is for gold only, and there's a lot of it: a third of the pay, so the epic mount takes a few weeks
+  q.money = Math.round((L * L * 2.5 + 40) * (0.7 + Math.random() * 0.6) * (L >= 60 ? 0.35 : 1));
 }
 const objText = o => o.boss ? `${o.mob} slain ${o.prog}/1` : o.item ? `${plural(o.item)} ${o.prog}/${o.max}` : `${plural(o.mob)} slain ${o.prog}/${o.max}`;
 // a kill counts for every objective it fits (a collection drops most of the time); the next target is the first one left
@@ -228,16 +251,14 @@ function newQuest() {
   let name;
   if (i < list.length) { name = list[i]; S.zq[z] = i + 1; }
   else { const taken = S.quests.map(x => x.name); const opts = [`${mob} Menace`, `Thinning the ${plural(mob)}`, `Bounty: ${plural(mob)}`, `Culling the ${plural(mob)}`, `Trouble in ${z}`, `A Task for ${hub()}`, `${hub()} Needs You`, `Supplies for ${hub()}`].filter(n => !taken.includes(n)); name = pick(opts.length ? opts : [`${plural(mob)} Again`]); }
-  const q = { id: ++S.qid, name, zone: z, mob, prog: 0, xp: 0, money: 0 };
+  let q = { id: ++S.qid, name, zone: z, mob, prog: 0, xp: 0, money: 0 };
   const wanted = name.match(/^Wanted:? ?-? ?"?([^"]+?)"?$/i);
   if (wanted) { q.type = "elite"; q.mob = wanted[1].trim(); q.max = 1; }
+  else if (kinOf(mob) && S.level < 60 && !S.chains[z] && Math.random() < 0.3) { const p = kinOf(mob)[0]; S.chains[z] = 1; q = chainQuest(z, { p, name: chainName(p), part: 1 }, mob); q.id = S.qid; } // one chain per zone
   else if (kinOf(mob) && Math.random() < 0.5) { q.type = "multi"; q.objs = multiObjs(mob); q.max = q.objs.reduce((a, o) => a + o.max, 0); }
   else if (Math.random() < 0.5) { q.type = "col"; q.item = mobPart(mob); q.max = 5 + R(6); }
   else { q.type = "kill"; q.max = 6 + R(7); }
-  const L = S.level;
-  q.xp = Math.round(mobXp(L) * (q.type === "elite" ? 14 : q.type === "multi" ? 9 + R(4) + (q.objs.some(o => o.boss) ? 3 : 0) : 7 + R(5)) * 1.15);
-  // at 60 the questing is for gold only, and there's a lot of it: a third of the pay, so the epic mount takes a few weeks
-  q.money = Math.round((L * L * 2.5 + 40) * (0.7 + Math.random() * 0.6) * (L >= 60 ? 0.35 : 1));
+  questPay(q);
   S.quests.push(q);
   return q;
 }
@@ -444,7 +465,7 @@ function newHero(f) {
   STATS.forEach((k, i) => stats[k] = r.base[i] + Math.round(c.w[i] * 0.7));
   S = { v: 1, name: (f.name || "").trim() || randomName(), race: f.race, cls: f.cls, spec: f.spec, faction: r.f,
     level: 1, xp: 0, money: 0, stats, equip: {}, bags: [], bagSlots: [], spells: {}, leg: 0, endZone: "Eastern Plaguelands",
-    loc: "start", arrived: null, quests: [], zq: {}, done: [], dungeons: [], nextCity: 2, cycleQ: 0, mount: 0,
+    loc: "start", arrived: null, quests: [], zq: {}, chains: {}, done: [], dungeons: [], nextCity: 2, cycleQ: 0, mount: 0,
     buffs: {}, cons: { hp: 0, mp: 0, elix: 0, stone: 0, food: 10, drink: CLASSES[f.cls].mp ? 10 : 0, band: 0, bomb: 0, feast: 0, flask: 0, pvp: 0 },
     prof: newProf(pairsFor(f.cls).includes(f.prof) ? f.prof : PAIR_FOR[f.cls], 1), elites: [], feats: [], zones: [], dstat: {}, ach: {},
     parts: {}, legendaries: [], lock: {}, runs: 0, trip: 0, cd: {}, achProf: 1, achGuild: 1,

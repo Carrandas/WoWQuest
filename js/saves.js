@@ -36,6 +36,7 @@ function migrate() {
   if (!S.drama) S.drama = newDrama();
   if (S.buffs && S.buffs["Aspect of the Hawk"] && S.buffs["Aspect of the Monkey"]) delete S.buffs["Aspect of the Monkey"]; // one aspect at a time
   if (!Array.isArray(S.chatLog)) S.chatLog = []; // chat is saved with the hero now
+  S.chains = S.chains || {}; // the zones whose quest chain has been handed out
   if (S.tabard === undefined) S.tabard = facRank("Argent Dawn") >= 1 ? "Tabard of the Argent Dawn" : null; // tabards came later
   if (!S.cal) S.cal = newCal(); // the calendar came later
   prebMigrate(); // the pre-raid set came later

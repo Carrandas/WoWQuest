@@ -135,7 +135,9 @@ const FINISH = {
     noteDone(q.name);
     log(`Quest complete: "${q.name}". ${S.level < 60 ? "+" + q.xp.toLocaleString() + " XP, " : ""}${moneyTxt(q.money)}.`, "quest");
     gainXp(q.xp);
+    if (q.chain && q.chain.part >= CHAIN_PARTS) { gain(makeItem(randomSlot(), S.level + 2, 3), `The end of "${q.chain.name}". Quest reward:`); return; }
     if (Math.random() < 0.5) { const qq = S.level < 6 ? 1 : Math.random() < 0.05 ? 3 : 2; gain(makeItem(randomSlot(), S.level + 1, qq), "Quest reward:"); }
+    if (q.chain) { const n = chainNext(q); log(`The quest giver has more work: "${n.name}".`, "quest"); }
   },
   accept() { flushTrip(); const q = newQuest(); log(`Accepted "${q.name}".`, "quest"); },
   travel() { S.loc = "city"; log(`Arrived in ${city()}.`, "zone"); },
@@ -180,7 +182,9 @@ const FINISH = {
   // the next zone on the route (or a random endgame zone at 60), then maybe a dungeon or raid
   choose() {
     const r = route(), old = curZone();
-    while (S.leg < r.length && S.level >= r[S.leg].until) S.leg++;
+    // a quest chain in progress keeps the hero in the zone a little longer (up to two levels past it)
+    const hold = S.leg < r.length && S.level < r[S.leg].until + 2 && S.quests.some(x => x.chain && x.zone === old);
+    if (!hold) while (S.leg < r.length && S.level >= r[S.leg].until) S.leg++;
     if (S.level >= 60) { S.cycleQ = 0; const pool = ENDGAME_ZONES.filter(z => z !== S.endZone); S.endZone = goalZone() || pick(pool); }
     S.nextCity = S.level + 2;
     if (S.level >= 10 || curZone() !== old) S.arrived = null; else S.loc = "hub";
