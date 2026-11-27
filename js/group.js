@@ -199,7 +199,8 @@ function simFight(t) {
   foeOf(t);
   const P = pullMembers(t);
   pullCosts(P, t);
-  playPull(P, t, pullEvents(P, t));
+  const ev = pullEvents(P, t); aggroPull(P, t, ev);
+  playPull(P, t, ev);
   // the deaths the fight decided (bossWipes): each one at its moment; on a wipe the rest go down after the last of them
   if (t.dead) {
     const die = (p, at) => { p.tl = p.tl.filter(x => x[0] < at); p.tl.push([at, 0]); p.cur = 0; };
@@ -215,6 +216,26 @@ function simFight(t) {
   bgDeath(t, P[0]); // killed in a battleground skirmish
   P.forEach(p => p.end = p.cur);
   return P;
+}
+// the damage dealer who keeps pulling aggro: a friend or guildie with the trait, or about one stranger in six
+function aggroProne(m) {
+  if (m.role !== "dps") return false;
+  const f = S.friends.find(x => x.name === m.name) || (S.guild && S.guild.roster.find(x => x.name === m.name));
+  return f ? f.pers === "aggro" : nameHash(m.name) % 6 === 0;
+}
+const TAUNT = { Warrior: n => `${n} hits Taunt and Mocking Blow`, Druid: n => `${n} Growls it back`, Paladin: n => `${n} has no taunt (it's a paladin) and just keeps hitting it with Holy Shield up` };
+// now and then on a trash pull they rip it off the tank and take a beating until the tank gets it back
+function aggroPull(P, t, ev) {
+  if (t.k !== "trash" || !S.dg || S.dg.bg || S.dg.raid) return;
+  const ai = P.findIndex((p, i) => i && aggroProne(S.party[p.pi])); if (ai < 0 || Math.random() > 0.3) return;
+  const a = 0.2 + Math.random() * 0.35, tot = 0.45 + Math.random() * 0.3;
+  [0, 0.04, 0.08].forEach(d => ev.push({ at: a + d, i: ai, dmg: tot / 3 }));
+  ev.sort((x, y) => x.at - y.at);
+  const dg = S.dg; dg.aggro = (dg.aggro || 0) + 1; if (dg.aggro > 2) return; // a line for the first couple of times a run
+  const n = P[ai].name, tk = P.find(p => p.role === "tank"), tn = tk ? tk.name : null;
+  const tcls = !tk ? null : tk === P[0] ? S.cls : S.party[tk.pi].cls;
+  const back = !tk ? "Nobody can taunt it back" : tk === P[0] ? `${S.name} taunts it back` : (TAUNT[tcls] || (x => `${x} gets it back`))(tn);
+  log(pick([`${n} pulls aggro off ${tn || "the tank"} and gets their ass kicked. ${back}.`, `${n} goes all in before the tank has threat. The mob turns around. ${back}.`, `Aggro on ${n}! ${back}, just in time.`]), "chat");
 }
 // everyone in the pull: the hero (casts already rolled) and the companions (their casts rolled here)
 function pullMembers(t) {

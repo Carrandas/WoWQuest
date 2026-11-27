@@ -16,6 +16,7 @@ const PERS = {
   afk: ["goes AFK at the worst moment", ["{n} went AFK mid-pull: \"sry, door\".", "{n}: \"brb, pizza\". The pull went fine anyway."]],
   helpful: ["always helps", ["{n} explains every pull to the new guy, patiently.", "{n} marks every pull: skull first, then the moon gets sheeped."]],
   need: ["needs on everything", ["{n} rolled Need on {wrong} again. As a {c}.", "{n}: \"oops, wrong button\" (it wasn't)."]],
+  aggro: ["pulls aggro", ["{n} pulled aggro again. The tank sighs.", "{n}: \"why is it hitting me??\"", "{n} opens with the biggest crit before the tank has a single Sunder up."]],
   chatty: ["talks too much", ["{n} tells the story of their first epic again.", "{n} won't stop talking about their alt."]],
 };
 const GUILD_A = ["Crimson", "Silver", "Eternal", "Shadow", "Last", "Iron", "Wandering", "Dawn", "Ember", "Frost", "Storm", "Ashen", "Hidden", "Broken", "Twilight", "Golden"];
