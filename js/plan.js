@@ -67,17 +67,18 @@ function groupBags() {
 
 function killTask(quest) {
   const c = cls(), zr = ZONES[quest.zone], zmin = zr ? zr.min : S.level, zmax = zr ? zr.max : S.level;
-  const elite = quest.type === "elite";
-  const mobL = elite ? Math.min(S.level + 2, zmax + 2) : clamp(S.level + R(3) - 1, Math.max(1, zmin - 1), zmax + 2);
-  const mob = elite ? quest.mob : quest.type === "col" && Math.random() < 0.15 ? pick(zoneMobs(quest.zone)) : quest.mob;
+  const elite = quest.type === "elite", obj = quest.type === "multi" ? quest.objs.find(o => o.mob === quest.mob) : null, leader = !!(obj && obj.boss);
+  const mobL = elite || leader ? Math.min(S.level + 2, zmax + 2) : clamp(S.level + R(3) - 1, Math.max(1, zmin - 1), zmax + 2);
+  const mob = elite || obj ? quest.mob : quest.type === "col" && Math.random() < 0.15 ? pick(zoneMobs(quest.zone)) : quest.mob;
   // now and then a second or third mob joins in (sometimes a local wanderer)
-  const roll = Math.random(), n = elite || S.level < 6 ? 1 : roll < 0.03 ? 3 : roll < 0.13 ? 2 : 1;
-  const mobs = [mob]; for (let i = 1; i < n; i++) mobs.push(Math.random() < 0.7 ? mob : pick(zoneMobs(quest.zone)));
-  const d = elite ? `Fighting ${mob} (elite) with a group` : n > 1 ? `${pick(c.verbs)} ${n === 2 ? "two" : "three"} mobs at once` : `${pick(c.verbs)} ${article(mob)}`;
+  const roll = Math.random(), n = elite || leader || S.level < 6 ? 1 : roll < 0.03 ? 3 : roll < 0.13 ? 2 : 1;
+  const left = obj ? quest.objs.filter(o => o.prog < o.max && !o.boss).map(o => o.mob) : [];
+  const mobs = [mob]; for (let i = 1; i < n; i++) mobs.push(Math.random() < 0.7 ? (left.length ? pick(left) : mob) : pick(zoneMobs(quest.zone)));
+  const d = elite ? `Fighting ${mob} (elite) with a group` : leader ? `Fighting ${mob}, the camp's leader` : n > 1 ? `${pick(c.verbs)} ${n === 2 ? "two" : "three"} mobs at once` : `${pick(c.verbs)} ${article(mob)}`;
   const gear = gearFor();
   const p = packTrim(rotation(elite, n > 1 ? (4 + R(2)) * n : undefined, n), n, 0,
-    sec((9 + S.level * 0.12) * (elite ? 5 : 1) * (1 + 0.6 * (n - 1)) * clamp(1.35 - gear * 0.35, 0.8, 1.2) * buffSpeed() * petSpeed() / talMod("d")));
-  const t = { k: "kill", d, t: p.t, mob, mobs, mobL, qid: quest.id, elite, casts: p.casts };
+    sec((9 + S.level * 0.12) * (elite ? 5 : leader ? 1.8 : 1) * (1 + 0.6 * (n - 1)) * clamp(1.35 - gear * 0.35, 0.8, 1.2) * buffSpeed() * petSpeed() / talMod("d")));
+  const t = { k: "kill", d, t: p.t, mob, mobs, mobL, qid: quest.id, elite, casts: p.casts, ...(leader ? { leader: true } : {}) };
   killHelpers(t); // company: helpers on elites, a friend questing along
   return t;
 }

@@ -96,10 +96,12 @@ const FINISH = {
     S.kills += (t.mobs || [1]).length; S.repair += Math.round(S.level * 0.6);
     gainXp(mobXp(t.mobL) * (t.elite ? 6 : 1));
     const q = findQuest(t.qid);
-    if (q && !questDone(q) && (q.type !== "col" ? t.mob === q.mob : Math.random() < 0.65)) {
+    if (q && !questDone(q) && q.type === "multi") { multiCredit(q, t.mobs || [t.mob]); if (questDone(q)) log(`Objective complete: ${questText(q)}.`, "quest"); }
+    else if (q && !questDone(q) && (q.type !== "col" ? t.mob === q.mob : Math.random() < 0.65)) {
       q.prog++;
       if (questDone(q)) log(`Objective complete: ${questText(q)}.`, "quest");
     }
+    if (t.leader) log(`${t.mob} has been slain.`, "boss");
     if (t.elite) { log(`${t.mob} has been slain.`, "boss"); if (!S.elites.includes(t.mob)) S.elites.push(t.mob); }
     helpersAfter(t);
     if (S.arrived) { const ze = zoneEntry(S.arrived); ze.k++; ze.L1 = S.level; ze.t1 = realNow(); }

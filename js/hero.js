@@ -136,6 +136,91 @@ const PARTS = [
   [/Elemental|Golem|Ooze|Sludge|Dust Devil|Watcher|Stormer|Rumbler|Tar Beast|Horror/, ["Core", "Essence"]], [/Scorpid|Silithid|Hive/, ["Stinger", "Carapace"]],
   [/Tiger|Panther|Saber|Cougar|Lion|Leopard|Stalker|Jaguar|Cheetah/, ["Pelt", "Fang"]],
 ];
+// the humanoid camps: a zone mob's kin for quests with several objectives ("5 Defias Trappers and 5 Defias Pathstalkers"),
+// and the camp's leader, a named mini boss to finish the job
+const KIN = [
+  ["Defias", ["Trapper", "Pathstalker", "Highwayman", "Looter", "Smuggler", "Footpad", "Knuckleduster", "Pillager", "Bandit", "Thug"], "Taskmaster"],
+  ["Kobold", ["Miner", "Laborer", "Tunneler", "Worker", "Geomancer", "Vermin"], "Foreman"],
+  ["Murloc", ["Raider", "Coastrunner", "Tidehunter", "Oracle", "Netter", "Forager", "Streamfin", "Flesheater", "Warrior"], "Tidecaller"],
+  ["Bluegill", ["Murloc", "Raider", "Muckdweller", "Puddlejumper", "Oracle"], "Warlord"],
+  ["Mirefin", ["Murloc", "Puddlejumper", "Muckdweller", "Oracle", "Coastrunner"], "Chieftain"],
+  ["Torn Fin", ["Tidehunter", "Oracle", "Muckdweller", "Coastrunner"], "Warlord"],
+  ["Riverpaw", ["Gnoll", "Mongrel", "Brute", "Mystic", "Scout", "Herbalist"], "Overseer"],
+  ["Rot Hide", ["Gnoll", "Mongrel", "Brute", "Mystic", "Plague Weaver"], "Graverobber"],
+  ["Mosshide", ["Gnoll", "Brute", "Mystic", "Trapper", "Mongrel"], "Alpha"],
+  ["Redridge", ["Mongrel", "Brute", "Mystic", "Thrasher", "Basher", "Poacher"], "Alpha"],
+  ["Wildpaw", ["Gnoll", "Brute", "Mystic", "Mongrel"], "Overseer"],
+  ["Rockjaw", ["Trogg", "Bonesnapper", "Skullthumper", "Raider", "Ambusher"], "Backbreaker"],
+  ["Stonesplinter", ["Trogg", "Scout", "Shaman", "Skullthumper", "Bonesnapper", "Seer"], "Geomancer"],
+  ["Frostmane", ["Troll Whelp", "Seer", "Headhunter", "Hideskinner", "Shadowcaster", "Snowstrider"], "Chieftain"],
+  ["Gnarlpine", ["Ursa", "Mystic", "Defender", "Augur", "Pathfinder", "Warrior"], "Shaman"],
+  ["Burning Blade", ["Cultist", "Neophyte", "Apprentice", "Fanatic", "Thug", "Felsworn", "Summoner"], "Acolyte"],
+  ["Razormane", ["Quilboar", "Thornweaver", "Dustrunner", "Water Seeker", "Hunter", "Battleguard"], "Warfrenzy"],
+  ["Bristleback", ["Quilboar", "Shaman", "Geomancer", "Hunter", "Thornweaver", "Water Seeker"], "Chief"],
+  ["Venture Co.", ["Laborer", "Logger", "Operator", "Geologist", "Enforcer", "Lumberjack", "Miner"], "Overseer"],
+  ["Scarlet", ["Convert", "Warrior", "Missionary", "Zealot", "Lumberjack", "Medic", "Crusader", "Monk"], "Commander"],
+  ["Dalaran", ["Apprentice", "Wizard", "Shield Guard", "Summoner", "Mage"], "Archmage"],
+  ["Kolkar", ["Drudge", "Centaur", "Stormer", "Wrangler", "Outrunner", "Pack Runner"], "Khan"],
+  ["Magram", ["Scout", "Wrangler", "Outrunner", "Stormer", "Mauler"], "Khan"],
+  ["Gelkis", ["Earthcaller", "Scout", "Outrunner", "Stamper", "Rumbler"], "Khan"],
+  ["Galak", ["Scout", "Wrangler", "Windchaser", "Outrunner", "Mauler"], "Khan"],
+  ["Southsea", ["Brigand", "Pirate", "Freebooter", "Cannoneer", "Cutthroat"], "Captain"],
+  ["Bloodsail", ["Swashbuckler", "Raider", "Sea Dog", "Mage", "Deckhand", "Warlock"], "Captain"],
+  ["Blackrock", ["Grunt", "Outrunner", "Renegade", "Tracker", "Summoner", "Shadowcaster", "Soldier", "Sentry"], "Champion"],
+  ["Nightbane", ["Dark Runner", "Shadow Weaver", "Worgen", "Vile Fang", "Tainted One"], "Packleader"],
+  ["Dragonmaw", ["Raider", "Grunt", "Centurion", "Shadowwarder", "Bonewarder"], "Battlemaster"],
+  ["Dark Iron", ["Dwarf", "Saboteur", "Demolitionist", "Geologist", "Steamsmith", "Taskmaster"], "Ambassador"],
+  ["Thistlefur", ["Avenger", "Shaman", "Den Watcher", "Pathfinder", "Totemic"], "Ursa"],
+  ["Foulweald", ["Warrior", "Shaman", "Den Watcher", "Pathfinder", "Totemic"], "Chieftain"],
+  ["Deadwood", ["Warrior", "Shaman", "Den Watcher", "Pathfinder", "Gardener"], "Avenger"],
+  ["Dark Strand", ["Cultist", "Fanatic", "Excavator", "Voidcaller", "Adept", "Enforcer"], "Assassin"],
+  ["Grimtotem", ["Ruffian", "Bandit", "Raider", "Brute", "Mercenary", "Naturalist", "Geomancer"], "Stomper"],
+  ["Hillsbrad", ["Farmer", "Farmhand", "Peasant", "Footman", "Miner", "Tailor"], "Councilman"],
+  ["Syndicate", ["Thief", "Highwayman", "Footpad", "Spy", "Conjuror", "Mercenary", "Enforcer"], "Shadow Mage"],
+  ["Crushridge", ["Ogre", "Brute", "Mauler", "Warmonger", "Enforcer", "Mage"], "Warlord"],
+  ["Boulderfist", ["Ogre", "Brute", "Enforcer", "Shaman", "Mauler"], "Lord"],
+  ["Mo'grosh", ["Ogre", "Enforcer", "Brute", "Mystic", "Shaman"], "Lord"],
+  ["Witherbark", ["Troll", "Axe Thrower", "Witch Doctor", "Headhunter", "Berserker", "Scalper", "Shadowcaster"], "Zealot"],
+  ["Vilebranch", ["Headhunter", "Berserker", "Witch Doctor", "Shadowcaster", "Scalper", "Raiding Wolf"], "Hideskinner"],
+  ["Kurzen", ["Jungle Fighter", "Medicine Man", "Headshrinker", "Commando", "Wrangler"], "Subchief"],
+  ["Bloodscalp", ["Headhunter", "Axe Thrower", "Mystic", "Shaman", "Berserker", "Witch Doctor", "Scavenger"], "Chieftain"],
+  ["Skullsplitter", ["Mystic", "Hunter", "Warrior", "Axe Thrower", "Witch Doctor", "Scout"], "Chieftain"],
+  ["Hatefury", ["Rogue", "Felsworn", "Shadowstalker", "Trickster", "Hellcaller"], "Betrayer"],
+  ["Firemane", ["Scout", "Scalebane", "Ash Tail", "Flamecaller"], "Champion"],
+  ["Dustbelcher", ["Brute", "Ogre", "Mauler", "Shaman", "Warrior", "Mystic"], "Lord"],
+  ["Shadowforge", ["Surveyor", "Digger", "Ruffian", "Darkweaver", "Tunneler"], "Ambassador"],
+  ["Lost One", ["Fisherman", "Hunter", "Seer", "Cook", "Mudlurker", "Riftseeker"], "Chieftain"],
+  ["Wastewander", ["Bandit", "Thief", "Rogue", "Assassin", "Shadow Mage", "Pirate"], "Boss"],
+  ["Sandfury", ["Hideskinner", "Axe Thrower", "Shadowcaster", "Soul Eater", "Cretin"], "Executioner"],
+  ["Gordunni", ["Ogre", "Brute", "Mage-Lord", "Shaman", "Warlock", "Mauler"], "Warlord"],
+  ["Northspring", ["Harpy", "Roguefeather", "Slayer", "Windcaller"], "Matriarch"],
+  ["Bloodfeather", ["Harpy", "Rogue", "Sorceress", "Fury", "Wind Witch"], "Matriarch"],
+  ["Windfury", ["Harpy", "Wind Witch", "Sorceress"], "Matriarch"],
+  ["Bloodfury", ["Harpy", "Ambusher", "Slayer", "Windcaller"], "Matriarch"],
+  ["Spitelash", ["Myrmidon", "Siren", "Warrior", "Screamer", "Serpent Guard"], "Enchantress"],
+  ["Jadefire", ["Satyr", "Rogue", "Felsworn", "Shadowstalker", "Trickster", "Hellcaller"], "Betrayer"],
+  ["Haldarr", ["Satyr", "Trickster", "Felsworn", "Hellcaller"], "Betrayer"],
+  ["Legashi", ["Rogue", "Satyr", "Hellcaller"], "Betrayer"],
+  ["Shadowsworn", ["Cultist", "Thug", "Enforcer", "Adept", "Ritualist", "Warlock"], "Dreadweaver"],
+  ["Firegut", ["Ogre", "Brute", "Ogre Mage", "Banger"], "Captain"],
+  ["Twilight", ["Geolord", "Avenger", "Thug", "Geomancer", "Dark Shaman", "Reaver"], "Overlord"],
+];
+const kinOf = mob => KIN.find(([p]) => mob.startsWith(p + " "));
+// a quest with several objectives: two or three of the camp's kin (one may be a collection from them), now and then the leader too
+function multiObjs(mob) {
+  const [p, roles, lead] = kinOf(mob), kin = roles.map(r => p + " " + r).filter(x => x !== mob);
+  const objs = [{ mob, max: 4 + R(5), prog: 0 }], n = Math.random() < 0.3 ? 2 : 1;
+  for (let i = 0; i < n && kin.length; i++) objs.push({ mob: kin.splice(R(kin.length), 1)[0], max: 3 + R(5), prog: 0 });
+  if (Math.random() < 0.3) { const o = pick(objs); o.item = mobPart(o.mob); }
+  if (Math.random() < 0.35) objs.push({ mob: `${p} ${lead}`, max: 1, prog: 0, boss: true });
+  return objs;
+}
+const objText = o => o.boss ? `${o.mob} slain ${o.prog}/1` : o.item ? `${plural(o.item)} ${o.prog}/${o.max}` : `${plural(o.mob)} slain ${o.prog}/${o.max}`;
+// a kill counts for every objective it fits (a collection drops most of the time); the next target is the first one left
+function multiCredit(q, mobs) {
+  for (const m of mobs) { const o = q.objs.find(x => x.mob === m && x.prog < x.max); if (!o || (o.item && Math.random() >= 0.65)) continue; o.prog++; if (o.prog >= o.max && !q.objs.every(x => x.prog >= x.max)) log(`${objText(o)}.`, "quest"); }
+  q.prog = q.objs.reduce((a, o) => a + o.prog, 0); const nx = q.objs.find(x => x.prog < x.max); if (nx) q.mob = nx.mob;
+}
 function mobPart(mob) { for (const [re, a] of PARTS) if (re.test(mob)) return mob.replace(/^(Young|Elder|Dire|Giant|Greater|Adult) /, "") + " " + pick(a); return mob + " " + pick(["Trophy", "Totem", "Sample", "Ear"]); }
 function zoneMobs(z = curZone()) { return ZONES[z].mobs; }
 function newQuest() {
@@ -146,16 +231,17 @@ function newQuest() {
   const q = { id: ++S.qid, name, zone: z, mob, prog: 0, xp: 0, money: 0 };
   const wanted = name.match(/^Wanted:? ?-? ?"?([^"]+?)"?$/i);
   if (wanted) { q.type = "elite"; q.mob = wanted[1].trim(); q.max = 1; }
+  else if (kinOf(mob) && Math.random() < 0.5) { q.type = "multi"; q.objs = multiObjs(mob); q.max = q.objs.reduce((a, o) => a + o.max, 0); }
   else if (Math.random() < 0.5) { q.type = "col"; q.item = mobPart(mob); q.max = 5 + R(6); }
   else { q.type = "kill"; q.max = 6 + R(7); }
   const L = S.level;
-  q.xp = Math.round(mobXp(L) * (q.type === "elite" ? 14 : 7 + R(5)) * 1.15);
+  q.xp = Math.round(mobXp(L) * (q.type === "elite" ? 14 : q.type === "multi" ? 9 + R(4) + (q.objs.some(o => o.boss) ? 3 : 0) : 7 + R(5)) * 1.15);
   // at 60 the questing is for gold only, and there's a lot of it: a third of the pay, so the epic mount takes a few weeks
   q.money = Math.round((L * L * 2.5 + 40) * (0.7 + Math.random() * 0.6) * (L >= 60 ? 0.35 : 1));
   S.quests.push(q);
   return q;
 }
-function questText(q) { return q.type === "col" ? `${plural(q.item)} ${q.prog}/${q.max}` : q.type === "elite" ? `${q.mob} slain ${q.prog}/1` : `${plural(q.mob)} slain ${q.prog}/${q.max}`; }
+function questText(q) { return q.type === "multi" ? q.objs.map(objText).join(", ") : q.type === "col" ? `${plural(q.item)} ${q.prog}/${q.max}` : q.type === "elite" ? `${q.mob} slain ${q.prog}/1` : `${plural(q.mob)} slain ${q.prog}/${q.max}`; }
 const questDone = q => q.prog >= q.max;
 function plural(s) { return /Tooth$/.test(s) ? s.slice(0, -5) + "Teeth" : /[^aeiou]y$/.test(s) ? s.slice(0, -1) + "ies" : /(ss|x|ch|sh)$/.test(s) ? s + "es" : /s$/.test(s) ? s : /(Wolf|Thief)$/.test(s) ? s.slice(0, -1) + "ves" : s + "s"; }
 
