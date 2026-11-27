@@ -235,7 +235,7 @@ function aggroPull(P, t, ev) {
   const n = P[ai].name, tk = P.find(p => p.role === "tank"), tn = tk ? tk.name : null;
   const tcls = !tk ? null : tk === P[0] ? S.cls : S.party[tk.pi].cls;
   const back = !tk ? "Nobody can taunt it back" : tk === P[0] ? `${S.name} taunts it back` : (TAUNT[tcls] || (x => `${x} gets it back`))(tn);
-  log(pick([`${n} pulls aggro off ${tn || "the tank"} and gets their ass kicked. ${back}.`, `${n} goes all in before the tank has threat. The mob turns around. ${back}.`, `Aggro on ${n}! ${back}, just in time.`]), "chat");
+  log(pick([`${n} pulls aggro off ${tn || "the tank"} and gets their ass kicked. ${back}.`, `${n} goes all in before the tank has threat. The mob turns around. ${back}.`, `Aggro on ${n}! ${back}.`]), "chat");
 }
 // everyone in the pull: the hero (casts already rolled) and the companions (their casts rolled here)
 function pullMembers(t) {
